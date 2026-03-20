@@ -577,7 +577,7 @@ function PlayerView({ courseId, onBack }: { courseId: number, onBack: () => void
             </div>
           </div>
         </div>
-      </div>
+
         {/* Panel lateral de recursos */}
         {panelOpen && (
           <div className="absolute right-0 top-0 bottom-0 w-[300px] bg-white border-l border-dee2e6 flex flex-col z-10 shadow-xl">
@@ -621,6 +621,11 @@ function PlayerView({ courseId, onBack }: { courseId: number, onBack: () => void
               )}
             </div>
           </div>
+        )}
+      </div>
+    </div>
+  );
+}
 
 // --- Profile View Component ---
 function ProfileView({ user, onUpdate }: { user: UserData | null, onUpdate: (u: UserData) => void }) {
@@ -1078,3 +1083,4 @@ function LoginView({ onLoginSuccess }: { onLoginSuccess: (role: string) => void 
     </div>
   );
 }
+
