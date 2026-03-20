@@ -312,8 +312,9 @@ const CourseCard: React.FC<{ course: Course, onClick: () => void }> = ({ course,
   return (
     <div 
       onClick={onClick}
-      className="bg-white border border-dee2e6 rounded-lg overflow-hidden hover:border-verde-brillante transition-all group flex flex-col cursor-pointer"
+      className="bg-white border border-dee2e6 rounded-xl overflow-hidden hover:shadow-lg hover:-translate-y-1 transition-all duration-300 group flex flex-col cursor-pointer"
     >
+      {/* Thumbnail */}
       <div className="h-[180px] bg-verde-navbar relative overflow-hidden">
         {course.imagen_url ? (
           <img 
@@ -323,33 +324,53 @@ const CourseCard: React.FC<{ course: Course, onClick: () => void }> = ({ course,
             referrerPolicy="no-referrer"
           />
         ) : (
-          <div className="w-full h-full flex items-center justify-center text-4xl">📊</div>
+          <div className="w-full h-full flex items-center justify-center bg-verde-navbar">
+            <BookOpen size={48} className="text-white/30" />
+          </div>
         )}
+        {/* Overlay degradado */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+        {/* Badge estado */}
+        <div className="absolute top-3 right-3">
+          {isCompleted ? (
+            <span className="bg-green-500 text-white text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wide">Completado</span>
+          ) : isStarted ? (
+            <span className="bg-verde-brillante text-white text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wide">En curso</span>
+          ) : (
+            <span className="bg-black/40 text-white text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wide backdrop-blur-sm">Sin iniciar</span>
+          )}
+        </div>
+        {/* Nombre del curso sobre la imagen */}
+        <div className="absolute bottom-0 left-0 right-0 p-3">
+          <h4 className="font-bold text-white text-sm line-clamp-1 drop-shadow">{course.nombre}</h4>
+        </div>
       </div>
       
       <div className="p-4 flex flex-col flex-1">
-        <h4 className="font-bold text-azul-marino mb-1 line-clamp-1">{course.nombre}</h4>
         <p className="text-texto-gris text-[13px] mb-4 line-clamp-2 h-10">
           {course.descripcion}
         </p>
 
         <div className="mt-auto">
-          <div className="flex justify-between text-[11px] text-texto-gris mb-1.5">
-            <span>{course.lecciones_completadas} de {course.total_lecciones} lecciones</span>
-            <span className="font-bold text-verde-brillante">{course.progreso}%</span>
-          </div>
-          <div className="w-full h-1.5 bg-dee2e6 rounded-full overflow-hidden mb-4">
-            <div 
-              className="h-full bg-verde-brillante transition-all duration-500" 
-              style={{ width: `${course.progreso}%` }}
-            ></div>
+          {/* Progreso */}
+          <div className="mb-3">
+            <div className="flex justify-between text-[11px] mb-1.5">
+              <span className="text-texto-gris">{course.lecciones_completadas} de {course.total_lecciones} lecciones</span>
+              <span className="font-bold text-verde-brillante">{course.progreso}%</span>
+            </div>
+            <div className="w-full h-2 bg-[#e8f5e9] rounded-full overflow-hidden">
+              <div 
+                className="h-full bg-verde-brillante rounded-full transition-all duration-700" 
+                style={{ width: `${course.progreso}%` }}
+              />
+            </div>
           </div>
 
           <button 
             className={`w-full py-2.5 rounded-lg font-bold text-sm transition-all flex items-center justify-center gap-2 ${
               isCompleted 
                 ? 'bg-[#d4edda] text-verde-boton cursor-default' 
-                : 'bg-verde-boton hover:bg-verde-brillante text-white'
+                : 'bg-verde-boton hover:bg-verde-brillante text-white shadow-sm hover:shadow-md'
             }`}
           >
             {isCompleted ? (
@@ -992,6 +1013,10 @@ function LoginView({ onLoginSuccess }: { onLoginSuccess: (role: string) => void 
             </p>
           </div>
         </div>
+      </main>
+    </div>
+  );
+}
       </main>
     </div>
   );
