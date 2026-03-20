@@ -621,11 +621,6 @@ function PlayerView({ courseId, onBack }: { courseId: number, onBack: () => void
               )}
             </div>
           </div>
-        )}
-      </div>
-    </div>
-  );
-}
 
 // --- Profile View Component ---
 function ProfileView({ user, onUpdate }: { user: UserData | null, onUpdate: (u: UserData) => void }) {
