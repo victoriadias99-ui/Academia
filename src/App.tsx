@@ -549,7 +549,7 @@ function PlayerView({ courseId, onBack }: { courseId: number, onBack: () => void
           <div className="h-[72px] bg-white border-t border-dee2e6 flex items-center justify-between px-6 shrink-0">
             <div className="overflow-hidden">
               <h3 className="font-bold text-azul-marino truncate">{currentLesson.titulo}</h3>
-              <p className="text-texto-gris text-xs">Lección {currentLessonIndex + 1} de {lessons.length}</p>
+              <p className="text-texto-gris text-xs">Leccion {currentLessonIndex + 1} de {lessons.length}</p>
             </div>
 
             <div className="flex items-center gap-3">
@@ -616,7 +616,7 @@ function PlayerView({ courseId, onBack }: { courseId: number, onBack: () => void
                     <BookOpen size={20} className="text-texto-gris" />
                   </div>
                   <p className="text-sm font-medium text-azul-marino mb-1">Sin materiales por ahora</p>
-                  <p className="text-xs text-texto-gris">Los PDFs de este curso se agregarán pronto</p>
+                  <p className="text-xs text-texto-gris">Los PDFs de este curso se agregaran pronto</p>
                 </div>
               )}
             </div>
