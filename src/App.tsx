@@ -41,6 +41,22 @@ const formatDuracion = (segundos: number) => {
   return `${m}:${String(s).padStart(2, '0')}`;
 };
 
+
+// --- JWT Auth Helpers ---
+const getToken = () => localStorage.getItem('token');
+const setToken = (t: string) => localStorage.setItem('token', t);
+const removeToken = () => localStorage.removeItem('token');
+
+const authFetch = (url: string, options: RequestInit = {}) =>
+  fetch(url, {
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      ...(getToken() ? { Authorization: `Bearer ${getToken()}` } : {}),
+      ...((options.headers as Record<string, string>) || {}),
+    },
+  });
+
 // --- Components ---
 
 const LoadingSpinner = () => (
@@ -58,12 +74,15 @@ export default function App() {
   const [isDataLoading, setIsDataLoading] = useState(false);
 
   const fetchProfile = async () => {
+    if (!getToken()) return null;
     try {
-      const res = await fetch('/api/auth/perfil');
+      const res = await authFetch('/api/auth/perfil');
       if (res.ok) {
         const data = await res.json();
         setUser(data.usuario);
         return data.usuario;
+      } else {
+        removeToken();
       }
     } catch (err) {
       console.error("Auth check failed", err);
@@ -99,7 +118,7 @@ export default function App() {
   const fetchCourses = async () => {
     setIsDataLoading(true);
     try {
-      const res = await fetch('/api/cursos/mis-cursos');
+      const res = await authFetch('/api/cursos/mis-cursos');
       if (res.ok) {
         const data = await res.json();
         setCourses(data.cursos);
@@ -111,14 +130,10 @@ export default function App() {
     }
   };
 
-  const handleLogout = async () => {
-    try {
-      await fetch('/api/auth/logout', { method: 'POST' });
-      setView('login');
-      setUser(null);
-    } catch (err) {
-      console.error("Logout failed", err);
-    }
+  const handleLogout = () => {
+    removeToken();
+    setView('login');
+    setUser(null);
   };
 
   const navigateToPlayer = (id: number) => {
@@ -362,7 +377,7 @@ function PlayerView({ courseId, onBack }: { courseId: number, onBack: () => void
     const fetchCourseData = async () => {
       setIsLoading(true);
       try {
-        const res = await fetch(`/api/cursos/${courseId}`);
+        const res = await authFetch(`/api/cursos/${courseId}`);
         if (res.ok) {
           const data = await res.json();
           setCourse(data.curso);
@@ -386,9 +401,8 @@ function PlayerView({ courseId, onBack }: { courseId: number, onBack: () => void
     if (lesson.completada) return;
 
     try {
-      const res = await fetch(`/api/cursos/progreso/${lesson.id}`, {
+      const res = await authFetch(`/api/cursos/progreso/${lesson.id}`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ completada: true, porcentaje_visto: 100 })
       });
 
@@ -560,9 +574,8 @@ function ProfileView({ user, onUpdate }: { user: UserData | null, onUpdate: (u: 
     setMessage(null);
 
     try {
-      const res = await fetch('/api/auth/update-profile', {
+      const res = await authFetch('/api/auth/update-profile', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ nombre, email, foto_url: fotoUrl })
       });
 
@@ -670,9 +683,8 @@ function ChangePasswordView() {
     setMessage(null);
 
     try {
-      const res = await fetch('/api/auth/change-password', {
+      const res = await authFetch('/api/auth/change-password', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ currentPassword, newPassword })
       });
 
@@ -773,9 +785,8 @@ function LoginView({ onLoginSuccess }: { onLoginSuccess: (role: string) => void 
 
     try {
       if (isRegistering) {
-        const response = await fetch('/api/auth/register', {
+        const response = await authFetch('/api/auth/register', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ email, password, nombre, apellido }),
         });
 
@@ -787,14 +798,14 @@ function LoginView({ onLoginSuccess }: { onLoginSuccess: (role: string) => void 
           setError(data.error || 'Error al registrarse.');
         }
       } else {
-        const response = await fetch('/api/auth/login', {
+        const response = await authFetch('/api/auth/login', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ email, password }),
         });
 
         if (response.ok) {
           const data = await response.json();
+          setToken(data.token);
           onLoginSuccess(data.role);
         } else {
           const data = await response.json();
