@@ -54,7 +54,7 @@ const COURSE_MAPPING: Record<string, string> = {
 const ADMIN_EMAILS = ["victoria.pdias99@gmail.com", "admin@gmail.com"];
 
 const TEST_USERS: Record<string, any> = {
-  "juan@example.com": { id: 2, nombre: "Juan Pérez", email: "juan@example.com", inicial: "J", role: "user", foto_url: null, cursos: "excel" },
+  "juan@example.com": { id: 2, nombre: "Juan Pérez", email: "juan@example.com", inicial: "J", role: "user", foto_url: null, cursos: "excel|excel_intermedio|excel_avanzado|excel_promo" }," },
   "maria@example.com": { id: 3, nombre: "Maria Garcia", email: "maria@example.com", inicial: "M", role: "user", foto_url: null, cursos: "excel_intermedio" },
   "pedro@example.com": { id: 4, nombre: "Pedro Lopez", email: "pedro@example.com", inicial: "P", role: "user", foto_url: null, cursos: "excel_avanzado" },
 };
