@@ -387,12 +387,26 @@ const CourseCard: React.FC<{ course: Course, onClick: () => void }> = ({ course,
   );
 };
 
+// --- Mock PDF resources per course ---
+const COURSE_RESOURCES: Record<number, { nombre: string; url: string; size: string }[]> = {
+  12286845: [
+    { nombre: 'Módulo 1 — Estructuras básicas.pdf', url: '#', size: '1.2 MB' },
+    { nombre: 'Ejercicios prácticos clase 3.pdf', url: '#', size: '840 KB' },
+    { nombre: 'Resumen fórmulas esenciales.pdf', url: '#', size: '560 KB' },
+  ],
+  12286854: [
+    { nombre: 'Guía tablas dinámicas.pdf', url: '#', size: '1.4 MB' },
+    { nombre: 'Ejercicios funciones avanzadas.pdf', url: '#', size: '920 KB' },
+  ],
+};
+
 // --- Player View Component ---
 function PlayerView({ courseId, onBack }: { courseId: number, onBack: () => void }) {
   const [course, setCourse] = useState<Course | null>(null);
   const [lessons, setLessons] = useState<Lesson[]>([]);
   const [currentLessonIndex, setCurrentLessonIndex] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
+  const [panelOpen, setPanelOpen] = useState(false);
 
   useEffect(() => {
     const fetchCourseData = async () => {
@@ -468,17 +482,24 @@ function PlayerView({ courseId, onBack }: { courseId: number, onBack: () => void
           </h2>
         </div>
 
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3">
           <div className="hidden md:flex flex-col items-end">
             <span className="text-xs font-bold text-verde-brillante">{progressPercent}% completado</span>
             <div className="w-[120px] h-1.5 bg-dee2e6 rounded-full overflow-hidden mt-1">
               <div className="h-full bg-verde-brillante" style={{ width: `${progressPercent}%` }}></div>
             </div>
           </div>
+          <button
+            onClick={() => setPanelOpen(!panelOpen)}
+            className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium border transition-all ${panelOpen ? 'bg-verde-boton text-white border-verde-boton' : 'text-verde-navbar border-dee2e6 hover:border-verde-brillante'}`}
+          >
+            <BookOpen size={15} />
+            <span className="hidden sm:inline">Recursos</span>
+          </button>
         </div>
       </header>
 
-      <div className="flex flex-1 overflow-hidden">
+      <div className="flex flex-1 overflow-hidden relative">
         {/* Sidebar */}
         <aside className="hidden md:flex flex-col w-[280px] bg-verde-navbar shrink-0 overflow-y-auto">
           <div className="p-4 border-b border-white/10">
@@ -556,6 +577,51 @@ function PlayerView({ courseId, onBack }: { courseId: number, onBack: () => void
             </div>
           </div>
         </div>
+      </div>
+        {/* Panel lateral de recursos */}
+        {panelOpen && (
+          <div className="absolute right-0 top-0 bottom-0 w-[300px] bg-white border-l border-dee2e6 flex flex-col z-10 shadow-xl">
+            <div className="flex items-center justify-between p-4 border-b border-dee2e6">
+              <div>
+                <h3 className="font-bold text-azul-marino text-sm">Recursos del curso</h3>
+                <p className="text-texto-gris text-xs mt-0.5">Materiales descargables</p>
+              </div>
+              <button onClick={() => setPanelOpen(false)} className="text-texto-gris hover:text-azul-marino transition-colors p-1">
+                <ChevronRight size={20} />
+              </button>
+            </div>
+            <div className="flex-1 overflow-y-auto p-4">
+              {(COURSE_RESOURCES[courseId] || []).length > 0 ? (
+                <div className="space-y-2">
+                  {(COURSE_RESOURCES[courseId] || []).map((pdf, i) => (
+                    <a
+                      key={i}
+                      href={pdf.url}
+                      className="flex items-center gap-3 p-3 border border-dee2e6 rounded-lg hover:bg-[#f0faf5] hover:border-verde-brillante transition-all group"
+                    >
+                      <div className="w-9 h-9 bg-[#eaf4ee] rounded-lg flex items-center justify-center shrink-0 group-hover:bg-verde-brillante/20 transition-colors">
+                        <BookOpen size={16} className="text-verde-boton" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-azul-marino truncate">{pdf.nombre}</p>
+                        <p className="text-xs text-texto-gris mt-0.5">{pdf.size}</p>
+                      </div>
+                      <ChevronRight size={14} className="text-texto-gris group-hover:text-verde-brillante transition-colors shrink-0" />
+                    </a>
+                  ))}
+                </div>
+              ) : (
+                <div className="flex flex-col items-center justify-center h-full text-center py-12">
+                  <div className="w-12 h-12 bg-[#f5f6f8] rounded-full flex items-center justify-center mb-3">
+                    <BookOpen size={20} className="text-texto-gris" />
+                  </div>
+                  <p className="text-sm font-medium text-azul-marino mb-1">Sin materiales por ahora</p>
+                  <p className="text-xs text-texto-gris">Los PDFs de este curso se agregarán pronto</p>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -1013,10 +1079,6 @@ function LoginView({ onLoginSuccess }: { onLoginSuccess: (role: string) => void 
             </p>
           </div>
         </div>
-      </main>
-    </div>
-  );
-}
       </main>
     </div>
   );
