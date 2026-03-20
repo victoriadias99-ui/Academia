@@ -1,0 +1,12 @@
+[
+  {
+    "id": 100,
+    "email": "test@aprendee.com",
+    "password": "$2b$10$7p6Z8E.vGvX.X.X.X.X.X.X.X.X.X.X.X.X.X.X.X.X.X.X.X.X.X.",
+    "nombre": "Usuario",
+    "apellido": "Prueba",
+    "cursos": "excel|excel_intermedio",
+    "activo": 1,
+    "fecha_creacion": "2024-03-13"
+  }
+]

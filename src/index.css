@@ -1,0 +1,28 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "DM Sans", ui-sans-serif, system-ui, sans-serif;
+  
+  --color-verde-navbar: #1a5c4a;
+  --color-verde-brillante: #00a86b;
+  --color-verde-boton: #1a7a5e;
+  --color-azul-marino: #0d2137;
+  --color-fondo-gris: #f4f5f7;
+  --color-texto-gris: #6c757d;
+}
+
+@layer base {
+  body {
+    @apply font-sans text-azul-marino bg-white;
+  }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateX(10px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.4s ease-out forwards;
+}
