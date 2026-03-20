@@ -390,12 +390,12 @@ const CourseCard: React.FC<{ course: Course, onClick: () => void }> = ({ course,
 // --- Mock PDF resources per course ---
 const COURSE_RESOURCES: Record<number, { nombre: string; url: string; size: string }[]> = {
   12286845: [
-    { nombre: 'Módulo 1 — Estructuras básicas.pdf', url: '#', size: '1.2 MB' },
-    { nombre: 'Ejercicios prácticos clase 3.pdf', url: '#', size: '840 KB' },
-    { nombre: 'Resumen fórmulas esenciales.pdf', url: '#', size: '560 KB' },
+    { nombre: 'Modulo 1 - Estructuras basicas.pdf', url: '#', size: '1.2 MB' },
+    { nombre: 'Ejercicios practicos clase 3.pdf', url: '#', size: '840 KB' },
+    { nombre: 'Resumen formulas esenciales.pdf', url: '#', size: '560 KB' },
   ],
   12286854: [
-    { nombre: 'Guía tablas dinámicas.pdf', url: '#', size: '1.4 MB' },
+    { nombre: 'Guia tablas dinamicas.pdf', url: '#', size: '1.4 MB' },
     { nombre: 'Ejercicios funciones avanzadas.pdf', url: '#', size: '920 KB' },
   ],
 };
