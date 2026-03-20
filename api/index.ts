@@ -195,4 +195,6 @@ app.get("/api/cursos/:id", requireAuth, async (req: any, res) => {
 
 app.post("/api/cursos/progreso/:leccionId", requireAuth, (req, res) => res.json({ status: "ok" }));
 
-export default app;
+export default function handler(req: any, res: any) {
+  return app(req, res);
+}
