@@ -477,9 +477,10 @@ function PlayerView({ courseId, onBack }: { courseId: number, onBack: () => void
             <span className="hidden sm:inline">Mis cursos</span>
           </button>
           <div className="h-6 w-px bg-dee2e6 hidden sm:block"></div>
-          <h2 className="font-semibold text-azul-marino truncate max-w-[200px] md:max-w-[400px]">
-            {course.nombre}
-          </h2>
+          <div className="hidden sm:flex flex-col">
+            <span className="text-[10px] text-texto-gris uppercase tracking-wide font-medium">{course.nombre}</span>
+            <span className="text-sm font-semibold text-azul-marino truncate max-w-[300px]">{currentLesson.titulo}</span>
+          </div>
         </div>
 
         <div className="flex items-center gap-3">
@@ -500,33 +501,45 @@ function PlayerView({ courseId, onBack }: { courseId: number, onBack: () => void
       </header>
 
       <div className="flex flex-1 overflow-hidden relative">
-        {/* Sidebar */}
-        <aside className="hidden md:flex flex-col w-[280px] bg-verde-navbar shrink-0 overflow-y-auto">
+        {/* Sidebar mejorado */}
+        <aside className="hidden md:flex flex-col w-[280px] bg-[#1a3a2a] shrink-0 overflow-hidden">
           <div className="p-4 border-b border-white/10">
-            <h3 className="text-white font-bold text-sm mb-1">{course.nombre}</h3>
-            <p className="text-white/60 text-xs">{lessons.length} lecciones</p>
+            <h3 className="text-white font-bold text-sm mb-3">{course.nombre}</h3>
+            <div className="w-full h-1.5 bg-white/10 rounded-full overflow-hidden mb-1.5">
+              <div className="h-full bg-verde-brillante rounded-full" style={{ width: `${progressPercent}%` }} />
+            </div>
+            <p className="text-white/40 text-[10px]">
+              <span className="text-verde-brillante font-semibold">{lessons.filter(l => l.completada).length}</span> de {lessons.length} lecciones completadas
+            </p>
           </div>
-          <div className="flex-1">
+          <div className="flex-1 overflow-y-auto">
             {lessons.map((lesson, index) => (
               <button
                 key={lesson.id}
                 onClick={() => setCurrentLessonIndex(index)}
-                className={`w-full flex items-center gap-3 p-4 border-b border-white/5 transition-colors text-left relative ${
-                  index === currentLessonIndex 
-                    ? 'bg-verde-brillante/20 border-l-[3px] border-l-verde-brillante' 
-                    : 'hover:bg-white/5'
+                className={`w-full flex items-center gap-3 px-4 py-3 transition-all text-left relative ${
+                  index === currentLessonIndex
+                    ? 'bg-verde-brillante/15 border-l-2 border-verde-brillante'
+                    : 'hover:bg-white/5 border-l-2 border-transparent'
                 }`}
               >
-                <div className={`w-6 h-6 rounded-md flex items-center justify-center text-xs shrink-0 ${
-                  lesson.completada ? 'bg-verde-brillante text-white' : 'bg-white/10 text-white/60'
+                <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0 ${
+                  lesson.completada
+                    ? 'bg-verde-brillante text-white'
+                    : index === currentLessonIndex
+                    ? 'bg-verde-brillante text-white'
+                    : 'bg-white/10 text-white/40'
                 }`}>
-                  {lesson.completada ? <Check size={14} /> : index + 1}
+                  {lesson.completada ? <Check size={12} /> : index + 1}
                 </div>
                 <div className="flex-1 overflow-hidden">
-                  <p className={`text-sm truncate ${index === currentLessonIndex ? 'text-white font-medium' : 'text-white/80'}`}>
+                  <p className={`text-[12px] truncate ${
+                    lesson.completada ? 'text-white/35 line-through' :
+                    index === currentLessonIndex ? 'text-white font-semibold' : 'text-white/65'
+                  }`}>
                     {lesson.titulo}
                   </p>
-                  <p className="text-[11px] text-white/60">{formatDuracion(lesson.duracion)}</p>
+                  <p className="text-[10px] text-white/25 mt-0.5">{formatDuracion(lesson.duracion)}</p>
                 </div>
               </button>
             ))}
@@ -545,33 +558,31 @@ function PlayerView({ courseId, onBack }: { courseId: number, onBack: () => void
             ></iframe>
           </div>
 
-          {/* Info Bar */}
-          <div className="h-[72px] bg-white border-t border-dee2e6 flex items-center justify-between px-6 shrink-0">
+          {/* Info Bar mejorado */}
+          <div className="bg-white border-t border-dee2e6 flex items-center justify-between px-6 py-3 shrink-0">
             <div className="overflow-hidden">
-              <h3 className="font-bold text-azul-marino truncate">{currentLesson.titulo}</h3>
-              <p className="text-texto-gris text-xs">Leccion {currentLessonIndex + 1} de {lessons.length}</p>
+              <h3 className="font-bold text-azul-marino truncate text-sm">{currentLesson.titulo}</h3>
+              <p className="text-texto-gris text-[11px] mt-0.5">Leccion {currentLessonIndex + 1} de {lessons.length} &middot; {course.nombre}</p>
             </div>
-
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 shrink-0 ml-4">
               <button
                 onClick={handleComplete}
                 className={`px-4 py-2 rounded-lg font-bold text-sm transition-all flex items-center gap-2 ${
                   currentLesson.completada
                     ? 'bg-[#d4edda] text-verde-boton cursor-default'
-                    : 'bg-verde-boton hover:bg-verde-brillante text-white'
+                    : 'bg-verde-boton hover:bg-verde-brillante text-white shadow-sm'
                 }`}
               >
-                <Check size={16} />
+                <Check size={15} />
                 {currentLesson.completada ? 'Completada' : 'Marcar como completada'}
               </button>
-              
               {currentLessonIndex < lessons.length - 1 && (
                 <button
                   onClick={nextLesson}
-                  className="px-4 py-2 bg-fondo-gris border border-dee2e6 text-azul-marino rounded-lg font-bold text-sm hover:border-verde-brillante transition-all flex items-center gap-1"
+                  className="px-4 py-2 bg-fondo-gris border border-dee2e6 text-azul-marino rounded-lg font-bold text-sm hover:border-verde-brillante hover:text-verde-brillante transition-all flex items-center gap-1.5"
                 >
                   Siguiente
-                  <ChevronRight size={16} />
+                  <ChevronRight size={15} />
                 </button>
               )}
             </div>
