@@ -170,7 +170,7 @@ export default function App() {
   }
 
   return (
-    <div className="flex min-h-screen overflow-hidden" style={{ fontFamily: 'Roboto, Arial, sans-serif' }}>
+    <div className="flex h-screen bg-fondo-gris font-sans overflow-hidden">
       {/* Sidebar */}
       <aside className="w-[220px] bg-verde-navbar flex flex-col shrink-0">
         <div className="p-3">
@@ -870,6 +870,13 @@ function LoginView({ onLoginSuccess }: { onLoginSuccess: (role: string) => void 
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
+  useEffect(() => {
+    const link = document.createElement('link');
+    link.href = 'https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700;800&display=swap';
+    link.rel = 'stylesheet';
+    document.head.appendChild(link);
+  }, []);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email || !password || (isRegistering && !nombre)) {
@@ -913,146 +920,108 @@ function LoginView({ onLoginSuccess }: { onLoginSuccess: (role: string) => void 
     }
   };
 
+  const RobotoStyle = { fontFamily: "'Roboto', Arial, sans-serif" };
+
   return (
-    <div className="flex min-h-screen font-sans overflow-hidden">
+    <div className="flex min-h-screen overflow-hidden" style={RobotoStyle}>
       {/* Sidebar izquierda */}
-      <aside className="hidden md:flex flex-col w-[320px] shrink-0 p-10 justify-between" style={{ background: '#0e2318' }}>
-        <div>
-          {/* Logo */}
-          <div className="flex items-center gap-2 mb-10">
-            <div className="w-2 h-2 rounded-full" style={{ background: '#22c55e' }}></div>
-            <span className="text-sm font-semibold tracking-wide" style={{ color: '#fff' }}>
-              Aprende<span style={{ color: '#22c55e' }}>Excel</span>
-            </span>
-          </div>
-
-          {/* Headline */}
-          <h2 className="text-3xl font-bold leading-tight mb-4" style={{ color: '#fff', fontFamily: 'Georgia, serif' }}>
-            El conocimiento que <span style={{ color: '#22c55e' }}>cambia</span> tu carrera
-          </h2>
-          <p className="text-sm font-light mb-10" style={{ color: 'rgba(255,255,255,.4)', lineHeight: '1.6' }}>
-            Miles de profesionales consiguieron trabajo, mejoraron su sueldo y crecieron en sus empresas.
-          </p>
-
-          {/* Beneficios */}
-          <ul className="space-y-4">
-            {[
-              'Consegui tu primer trabajo en datos',
-              'Aumenta tu sueldo con nuevas habilidades',
-              'Excel, Power BI y SQL desde cero',
-              'Certificado reconocido por empresas',
-            ].map((b, i) => (
-              <li key={i} className="flex items-start gap-3">
-                <div className="w-5 h-5 rounded-full flex items-center justify-center shrink-0 mt-0.5" style={{ background: 'rgba(34,197,94,.15)' }}>
-                  <Check size={10} color="#22c55e" />
-                </div>
-                <span className="text-sm" style={{ color: 'rgba(255,255,255,.6)', lineHeight: '1.4' }}>{b}</span>
-              </li>
-            ))}
-          </ul>
+      <aside className="hidden md:flex flex-col w-[300px] shrink-0 justify-between" style={{ ...RobotoStyle, background: '#0e2318', padding: '40px 36px' }}>
+        <div style={{ fontWeight: 700, fontSize: 15, color: '#fff' }}>
+          Aprende<span style={{ color: '#22c55e' }}>Excel</span>
         </div>
-
-        {/* Stats */}
-        <div className="grid grid-cols-2 gap-4 pt-8" style={{ borderTop: '1px solid rgba(255,255,255,.08)' }}>
-          {[
-            { num: '+270', label: 'Empresas' },
-            { num: '4.9★', label: 'Valoracion' },
-            { num: '100%', label: 'Online' },
-            { num: '+5k', label: 'Alumnos' },
-          ].map((s, i) => (
+        <div>
+          <h2 style={{ fontSize: 27, fontWeight: 800, color: '#fff', lineHeight: 1.2, letterSpacing: '-0.5px', marginBottom: 8 }}>
+            Tu carrera,<br /><span style={{ color: '#22c55e' }}>en tus manos</span>
+          </h2>
+          <p style={{ fontSize: 12, color: 'rgba(255,255,255,.35)', lineHeight: 1.55, fontWeight: 300 }}>
+            Excel, Power BI y SQL para el mercado laboral.
+          </p>
+        </div>
+        <div style={{ display: 'flex', gap: 20, paddingTop: 20, borderTop: '1px solid rgba(255,255,255,.08)' }}>
+          {[{ num: '+270', label: 'Empresas' }, { num: '4.9★', label: 'Valoracion' }, { num: '100%', label: 'Online' }].map((s, i) => (
             <div key={i}>
-              <div className="text-lg font-bold" style={{ color: '#fff', fontFamily: 'Georgia, serif' }}>{s.num}</div>
-              <div className="text-xs" style={{ color: 'rgba(255,255,255,.3)', textTransform: 'uppercase', letterSpacing: '.06em' }}>{s.label}</div>
+              <div style={{ fontSize: 17, fontWeight: 800, color: '#fff', letterSpacing: '-0.3px' }}>{s.num}</div>
+              <div style={{ fontSize: 10, color: 'rgba(255,255,255,.3)', textTransform: 'uppercase', letterSpacing: '0.07em' }}>{s.label}</div>
             </div>
           ))}
         </div>
       </aside>
 
       {/* Formulario derecha */}
-      <main className="flex-1 flex items-center justify-center p-8" style={{ background: '#fff' }}>
-        <div className="w-full max-w-[360px]">
-          {/* Mobile logo */}
-          <div className="md:hidden mb-8 text-center">
-            <span className="text-xl font-bold" style={{ color: '#0e2318' }}>
-              Aprende<span style={{ color: '#22c55e' }}>Excel</span>
-            </span>
+      <main className="flex-1 flex items-center justify-center" style={{ background: '#fff', padding: 40 }}>
+        <div style={{ width: '100%', maxWidth: 300, ...RobotoStyle }}>
+          <div className="md:hidden" style={{ textAlign: 'center', marginBottom: 28 }}>
+            <span style={{ fontSize: 18, fontWeight: 800, color: '#0e2318' }}>Aprende<span style={{ color: '#22c55e' }}>Excel</span></span>
           </div>
 
-          <h3 className="text-2xl font-bold mb-1" style={{ color: '#0e1a13', fontFamily: 'Georgia, serif' }}>
+          <h3 style={{ fontSize: 20, fontWeight: 800, color: '#0e1a13', marginBottom: 3, letterSpacing: '-0.3px' }}>
             {isRegistering ? 'Crear cuenta' : 'Bienvenido'}
           </h3>
-          <p className="text-sm mb-7" style={{ color: '#9ca3af' }}>
+          <p style={{ fontSize: 12, color: '#aaa', marginBottom: 24, fontWeight: 300 }}>
             {isRegistering ? 'Completa tus datos para empezar' : 'Ingresa para acceder a tus cursos'}
           </p>
 
           {error && (
-            <div className="mb-4 px-4 py-3 rounded-lg text-sm" style={{ background: '#fef2f2', color: '#991b1b', border: '1px solid #fecaca' }}>
+            <div style={{ marginBottom: 14, padding: '10px 14px', borderRadius: 7, fontSize: 13, background: '#fef2f2', color: '#991b1b', border: '1px solid #fecaca' }}>
               {error}
             </div>
           )}
           {success && (
-            <div className="mb-4 px-4 py-3 rounded-lg text-sm" style={{ background: '#f0fdf4', color: '#166534', border: '1px solid #bbf7d0' }}>
+            <div style={{ marginBottom: 14, padding: '10px 14px', borderRadius: 7, fontSize: 13, background: '#f0fdf4', color: '#166534', border: '1px solid #bbf7d0' }}>
               {success}
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit}>
             {isRegistering && (
-              <div className="grid grid-cols-2 gap-3">
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 14 }}>
                 <div>
-                  <label className="block text-xs font-semibold mb-1.5 uppercase tracking-wider" style={{ color: '#9ca3af' }}>Nombre</label>
+                  <label style={{ display: 'block', fontSize: 10, fontWeight: 600, color: '#aaa', marginBottom: 5, textTransform: 'uppercase', letterSpacing: '0.07em' }}>Nombre</label>
                   <input type="text" value={nombre} onChange={(e) => setNombre(e.target.value)}
-                    className="w-full px-3 py-2.5 rounded-lg text-sm outline-none transition-all"
-                    style={{ border: '1.5px solid #e5e7eb', background: '#fafafa' }} required />
+                    style={{ width: '100%', padding: '10px 12px', border: '1.5px solid #ebebeb', borderRadius: 7, fontSize: 13, outline: 'none', background: '#fafafa', fontFamily: 'Roboto, Arial, sans-serif' }} required />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold mb-1.5 uppercase tracking-wider" style={{ color: '#9ca3af' }}>Apellido</label>
+                  <label style={{ display: 'block', fontSize: 10, fontWeight: 600, color: '#aaa', marginBottom: 5, textTransform: 'uppercase', letterSpacing: '0.07em' }}>Apellido</label>
                   <input type="text" value={apellido} onChange={(e) => setApellido(e.target.value)}
-                    className="w-full px-3 py-2.5 rounded-lg text-sm outline-none transition-all"
-                    style={{ border: '1.5px solid #e5e7eb', background: '#fafafa' }} />
+                    style={{ width: '100%', padding: '10px 12px', border: '1.5px solid #ebebeb', borderRadius: 7, fontSize: 13, outline: 'none', background: '#fafafa', fontFamily: 'Roboto, Arial, sans-serif' }} />
                 </div>
               </div>
             )}
 
-            <div>
-              <label className="block text-xs font-semibold mb-1.5 uppercase tracking-wider" style={{ color: '#9ca3af' }}>Email</label>
-              <input type="email" value={email} onChange={(e) => setEmail(e.target.value)}
-                placeholder="tu@email.com"
-                className="w-full px-3 py-2.5 rounded-lg text-sm outline-none transition-all"
-                style={{ border: '1.5px solid #e5e7eb', background: '#fafafa' }} required />
+            <div style={{ marginBottom: 14 }}>
+              <label style={{ display: 'block', fontSize: 10, fontWeight: 600, color: '#aaa', marginBottom: 5, textTransform: 'uppercase', letterSpacing: '0.07em' }}>Email</label>
+              <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="tu@email.com"
+                style={{ width: '100%', padding: '10px 12px', border: '1.5px solid #ebebeb', borderRadius: 7, fontSize: 13, outline: 'none', background: '#fafafa', fontFamily: 'Roboto, Arial, sans-serif' }} required />
             </div>
 
-            <div>
-              <div className="flex justify-between items-center mb-1.5">
-                <label className="text-xs font-semibold uppercase tracking-wider" style={{ color: '#9ca3af' }}>Contrasena</label>
-                {!isRegistering && <a href="#" className="text-xs font-medium" style={{ color: '#1a6e3c' }}>Olvidaste tu contrasena?</a>}
+            <div style={{ marginBottom: 6 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 5 }}>
+                <label style={{ fontSize: 10, fontWeight: 600, color: '#aaa', textTransform: 'uppercase', letterSpacing: '0.07em' }}>Contrasena</label>
+                {!isRegistering && <a href="#" style={{ fontSize: 11, color: '#1a6e3c', fontWeight: 600, textDecoration: 'none' }}>Olvidaste?</a>}
               </div>
-              <div className="relative">
-                <input type={showPassword ? 'text' : 'password'} value={password} onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••"
-                  className="w-full px-3 py-2.5 rounded-lg text-sm outline-none transition-all pr-10"
-                  style={{ border: '1.5px solid #e5e7eb', background: '#fafafa' }} required />
+              <div style={{ position: 'relative' }}>
+                <input type={showPassword ? 'text' : 'password'} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••"
+                  style={{ width: '100%', padding: '10px 36px 10px 12px', border: '1.5px solid #ebebeb', borderRadius: 7, fontSize: 13, outline: 'none', background: '#fafafa', fontFamily: 'Roboto, Arial, sans-serif' }} required />
                 <button type="button" onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2" style={{ color: '#9ca3af' }}>
-                  {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                  style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: '#aaa' }}>
+                  {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
                 </button>
               </div>
             </div>
 
             <button type="submit" disabled={isLoading}
-              className="w-full py-3 rounded-lg text-sm font-semibold text-white transition-all"
-              style={{ background: '#0e2318', marginTop: '8px' }}>
+              style={{ width: '100%', padding: '12px', background: '#0e2318', color: '#fff', border: 'none', borderRadius: 7, fontSize: 13, fontWeight: 700, cursor: 'pointer', marginTop: 18, fontFamily: 'Roboto, Arial, sans-serif', letterSpacing: '0.01em' }}>
               {isLoading ? 'Cargando...' : isRegistering ? 'Crear cuenta' : 'Ingresar'}
             </button>
           </form>
 
-          <div className="mt-6 pt-6 flex items-center justify-between" style={{ borderTop: '1px solid #f0f0f0' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 18, paddingTop: 16, borderTop: '1px solid #f0f0f0' }}>
             <button onClick={() => { setIsRegistering(!isRegistering); setError(''); setSuccess(''); }}
-              className="text-xs" style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#9ca3af' }}>
+              style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 11, color: '#aaa', fontFamily: 'Roboto, Arial, sans-serif' }}>
               {isRegistering ? 'Ya tenes cuenta? ' : 'Sin cuenta? '}
-              <span style={{ color: '#1a6e3c', fontWeight: 600 }}>{isRegistering ? 'Inicia sesion' : 'Registrate'}</span>
+              <span style={{ color: '#1a6e3c', fontWeight: 700 }}>{isRegistering ? 'Inicia sesion' : 'Registrate'}</span>
             </button>
-            <a href="mailto:soporte@aprende-excel.com" className="text-xs" style={{ color: '#d1d5db' }}>Soporte</a>
+            <a href="mailto:soporte@aprende-excel.com" style={{ fontSize: 11, color: '#d1d5db', textDecoration: 'none' }}>Soporte</a>
           </div>
         </div>
       </main>
