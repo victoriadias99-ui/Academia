@@ -170,7 +170,7 @@ export default function App() {
   }
 
   return (
-    <div className="flex h-screen bg-fondo-gris font-sans overflow-hidden">
+    <div className="flex min-h-screen overflow-hidden" style={{ fontFamily: 'Roboto, Arial, sans-serif' }}>
       {/* Sidebar */}
       <aside className="w-[220px] bg-verde-navbar flex flex-col shrink-0">
         <div className="p-3">
