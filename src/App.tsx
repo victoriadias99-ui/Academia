@@ -876,21 +876,18 @@ function LoginView({ onLoginSuccess }: { onLoginSuccess: (role: string) => void 
       setError('Por favor, completa todos los campos.');
       return;
     }
-
     setError('');
     setSuccess('');
     setIsLoading(true);
-
     try {
       if (isRegistering) {
         const response = await authFetch('/api/auth/register', {
           method: 'POST',
           body: JSON.stringify({ email, password, nombre, apellido }),
         });
-
         const data = await response.json();
         if (response.ok) {
-          setSuccess('Registro exitoso. Ahora podés iniciar sesión.');
+          setSuccess('Registro exitoso. Ahora podes iniciar sesion.');
           setIsRegistering(false);
         } else {
           setError(data.error || 'Error al registrarse.');
@@ -900,198 +897,158 @@ function LoginView({ onLoginSuccess }: { onLoginSuccess: (role: string) => void 
           method: 'POST',
           body: JSON.stringify({ email, password }),
         });
-
         if (response.ok) {
           const data = await response.json();
           setToken(data.token);
           onLoginSuccess(data.role);
         } else {
           const data = await response.json();
-          setError(data.error || 'Error al iniciar sesión. Inténtalo de nuevo.');
+          setError(data.error || 'Error al iniciar sesion.');
         }
       }
     } catch (err) {
-      setError('Error de conexión con el servidor.');
+      setError('Error de conexion con el servidor.');
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <div className="flex min-h-screen font-sans overflow-hidden">
-      {/* Sidebar Izquierda - Oculta en mobile */}
-      <aside className="hidden md:flex flex-col w-[300px] bg-verde-navbar p-8 text-white shrink-0 relative">
-        <div className="mb-8">
-          <img 
-            src="/logo-aprende-excel.png" 
-            onError={(e) => { e.currentTarget.src = "https://www.aprende-excel.com/wp-content/uploads/2023/03/logo-aprende-excel-horizontal.png"; }}
-            alt="Aprende Excel" 
-            className="h-12 w-auto"
-            referrerPolicy="no-referrer"
-          />
-          <p className="text-white/60 text-sm font-medium mt-2">Academia Online</p>
+    <div className="flex min-h-screen font-sans" style={{ background: '#f7f6f3' }}>
+      <div className="m-auto w-full max-w-[420px] rounded-2xl overflow-hidden shadow-xl" style={{ boxShadow: '0 4px 40px rgba(0,0,0,.09)' }}>
+        
+        {/* Header verde */}
+        <div className="p-9" style={{ background: '#0e2318' }}>
+          {/* Brand */}
+          <div className="flex items-center gap-2 mb-6">
+            <div className="w-2 h-2 rounded-full" style={{ background: '#22c55e' }}></div>
+            <span className="text-xs font-medium tracking-widest uppercase" style={{ color: 'rgba(255,255,255,.4)' }}>
+              Aprende <span style={{ color: '#22c55e' }}>Excel</span>
+            </span>
+          </div>
+          {/* Headline */}
+          <h1 className="text-3xl font-bold text-white leading-tight mb-2" style={{ fontFamily: 'Georgia, serif' }}>
+            {isRegistering ? 'Crea tu cuenta' : <>Tu carrera,<br /><span style={{ color: '#22c55e' }}>en tus manos</span></>}
+          </h1>
+          <p className="text-xs font-light" style={{ color: 'rgba(255,255,255,.35)' }}>
+            {isRegistering ? 'Completa tus datos para empezar' : 'Excel, Power BI y SQL para el mercado laboral'}
+          </p>
         </div>
 
-        <div className="h-px bg-white/20 w-full mb-8"></div>
+        {/* Formulario */}
+        <div className="bg-white px-9 pt-8 pb-6">
+          {error && (
+            <div className="mb-4 px-4 py-3 rounded-lg text-sm" style={{ background: '#fef2f2', color: '#991b1b', border: '1px solid #fecaca' }}>
+              {error}
+            </div>
+          )}
+          {success && (
+            <div className="mb-4 px-4 py-3 rounded-lg text-sm" style={{ background: '#f0fdf4', color: '#166534', border: '1px solid #bbf7d0' }}>
+              {success}
+            </div>
+          )}
 
-        <ul className="space-y-6 flex-1">
-          {[
-            'Cursos cortos con amplia salida laboral',
-            'Domina las herramientas más demandadas',
-            'Cursos paso a paso desde cero',
-            'Más de 270 empresas capacitadas',
-          ].map((benefit, i) => (
-            <li key={i} className="flex items-start gap-3 text-sm leading-relaxed">
-              <Check className="text-verde-brillante shrink-0 mt-0.5" size={18} />
-              <span>{benefit}</span>
-            </li>
-          ))}
-        </ul>
-
-        <footer className="mt-auto pt-8">
-          <p className="text-white/40 text-xs">© 2024 Aprende Excel</p>
-        </footer>
-      </aside>
-
-      {/* Panel Derecho - Formulario */}
-      <main className="flex-1 bg-white flex items-center justify-center p-6 md:p-12 animate-fade-in">
-        <div className="w-full max-w-[400px]">
-          <div className="md:hidden flex flex-col items-center mb-8">
-            <img 
-              src="/logo-aprende-excel.png" 
-              onError={(e) => { e.currentTarget.src = "https://www.aprende-excel.com/wp-content/uploads/2023/03/logo-aprende-excel-horizontal.png"; }}
-              alt="Aprende Excel" 
-              className="h-12 w-auto"
-              referrerPolicy="no-referrer"
-            />
-            <p className="text-texto-gris text-xs mt-1">Academia Online</p>
-          </div>
-
-          <div className="mb-8">
-            <h2 className="text-[28px] font-bold text-azul-marino leading-tight mb-2">
-              {isRegistering ? 'Crear cuenta' : 'Iniciar sesión'}
-            </h2>
-            <p className="text-texto-gris">
-              {isRegistering ? 'Registrate para empezar a aprender' : 'Ingresá tus datos para acceder a tus cursos'}
-            </p>
-          </div>
-
-          <form onSubmit={handleSubmit} className="space-y-5">
-            {error && (
-              <div className="bg-[#f8d7da] border border-[#f5c6cb] text-[#721c24] px-4 py-3 rounded-md text-sm">
-                {error}
-              </div>
-            )}
-            {success && (
-              <div className="bg-[#d4edda] border border-[#c3e6cb] text-[#155724] px-4 py-3 rounded-md text-sm">
-                {success}
-              </div>
-            )}
-
+          <form onSubmit={handleSubmit}>
             {isRegistering && (
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                  <label className="text-sm font-semibold text-azul-marino">Nombre</label>
+              <div className="grid grid-cols-2 gap-3 mb-4">
+                <div>
+                  <label className="block text-xs font-semibold mb-1.5 tracking-wider uppercase" style={{ color: '#9ca3af' }}>Nombre</label>
                   <input
                     type="text"
                     value={nombre}
                     onChange={(e) => setNombre(e.target.value)}
-                    className="w-full px-4 py-3 rounded-lg border border-dee2e6 focus:border-verde-brillante outline-none transition-all"
+                    className="w-full px-3 py-2.5 rounded-lg text-sm outline-none transition-all"
+                    style={{ border: '1.5px solid #ebebeb', background: '#fafafa', fontFamily: 'inherit' }}
                     required
                   />
                 </div>
-                <div className="space-y-1.5">
-                  <label className="text-sm font-semibold text-azul-marino">Apellido</label>
+                <div>
+                  <label className="block text-xs font-semibold mb-1.5 tracking-wider uppercase" style={{ color: '#9ca3af' }}>Apellido</label>
                   <input
                     type="text"
                     value={apellido}
                     onChange={(e) => setApellido(e.target.value)}
-                    className="w-full px-4 py-3 rounded-lg border border-dee2e6 focus:border-verde-brillante outline-none transition-all"
+                    className="w-full px-3 py-2.5 rounded-lg text-sm outline-none transition-all"
+                    style={{ border: '1.5px solid #ebebeb', background: '#fafafa', fontFamily: 'inherit' }}
                   />
                 </div>
               </div>
             )}
 
-            <div className="space-y-1.5">
-              <label className="text-sm font-semibold text-azul-marino" htmlFor="email">
-                Email
-              </label>
+            <div className="mb-4">
+              <label className="block text-xs font-semibold mb-1.5 tracking-wider uppercase" style={{ color: '#9ca3af' }}>Email</label>
               <input
-                id="email"
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="tu@email.com"
-                className="w-full px-4 py-3 rounded-lg border border-dee2e6 focus:border-verde-brillante focus:ring-4 focus:ring-verde-brillante/10 outline-none transition-all"
+                className="w-full px-3 py-2.5 rounded-lg text-sm outline-none transition-all"
+                style={{ border: '1.5px solid #ebebeb', background: '#fafafa', fontFamily: 'inherit' }}
                 required
               />
             </div>
 
-            <div className="space-y-1.5">
-              <div className="flex items-center justify-between">
-                <label className="text-sm font-semibold text-azul-marino" htmlFor="password">
-                  Contraseña
-                </label>
-                {!isRegistering && (
-                  <a href="#" className="text-xs font-medium text-verde-brillante hover:underline">
-                    ¿Olvidaste tu contraseña?
-                  </a>
-                )}
-              </div>
+            <div className="mb-2">
+              <label className="block text-xs font-semibold mb-1.5 tracking-wider uppercase" style={{ color: '#9ca3af' }}>Contrasena</label>
               <div className="relative">
                 <input
-                  id="password"
                   type={showPassword ? 'text' : 'password'}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
-                  className="w-full px-4 py-3 rounded-lg border border-dee2e6 focus:border-verde-brillante focus:ring-4 focus:ring-verde-brillante/10 outline-none transition-all"
+                  className="w-full px-3 py-2.5 rounded-lg text-sm outline-none transition-all pr-10"
+                  style={{ border: '1.5px solid #ebebeb', background: '#fafafa', fontFamily: 'inherit' }}
                   required
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-texto-gris hover:text-azul-marino transition-colors"
+                  className="absolute right-3 top-1/2 -translate-y-1/2"
+                  style={{ color: '#9ca3af' }}
                 >
-                  {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                  {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                 </button>
               </div>
             </div>
 
+            {!isRegistering && (
+              <div className="text-right mb-5">
+                <a href="#" className="text-xs font-medium" style={{ color: '#1a6e3c' }}>
+                  Olvidaste tu contrasena?
+                </a>
+              </div>
+            )}
+
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full bg-verde-boton hover:bg-verde-brillante text-white font-bold py-3.5 rounded-lg transition-all flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
+              className="w-full py-3 rounded-lg text-sm font-semibold text-white transition-all mt-2"
+              style={{ background: '#0e2318', letterSpacing: '.02em' }}
             >
-              {isLoading ? (isRegistering ? 'Registrando...' : 'Iniciando sesión...') : (
-                <>
-                  {isRegistering ? 'Crear cuenta' : 'Ingresar'} <ArrowRight size={18} />
-                </>
-              )}
+              {isLoading ? 'Cargando...' : isRegistering ? 'Crear cuenta' : 'Ingresar'}
             </button>
           </form>
+        </div>
 
-          <div className="mt-6 text-center">
-            <button 
-              onClick={() => {
-                setIsRegistering(!isRegistering);
-                setError('');
-                setSuccess('');
-              }}
-              className="text-sm text-verde-brillante font-medium hover:underline"
-            >
-              {isRegistering ? '¿Ya tenés cuenta? Iniciar sesión' : '¿No tenés cuenta? Registrate'}
-            </button>
-          </div>
-
-          <div className="mt-8 pt-8 border-t border-dee2e6 text-center">
-            <p className="text-texto-gris text-xs">
-              ¿Problemas? <a href="mailto:soporte@aprende-excel.com" className="text-verde-brillante hover:underline">soporte@aprende-excel.com</a>
-            </p>
+        {/* Footer */}
+        <div className="bg-white px-9 pb-7 flex items-center justify-between" style={{ borderTop: '1px solid #f5f5f5' }}>
+          <button
+            onClick={() => { setIsRegistering(!isRegistering); setError(''); setSuccess(''); }}
+            className="text-xs font-medium"
+            style={{ color: '#9ca3af', background: 'none', border: 'none', cursor: 'pointer' }}
+          >
+            {isRegistering ? 'Ya tenes cuenta?' : 'Sin cuenta?'}{' '}
+            <span style={{ color: '#1a6e3c', fontWeight: 600 }}>
+              {isRegistering ? 'Iniciá sesion' : 'Registrate'}
+            </span>
+          </button>
+          <div className="flex gap-3">
+            <span className="text-xs" style={{ color: '#ccc' }}><strong style={{ color: '#888' }}>+270</strong> empresas</span>
+            <span className="text-xs" style={{ color: '#ccc' }}><strong style={{ color: '#888' }}>4.9★</strong></span>
           </div>
         </div>
-      </main>
+
+      </div>
     </div>
   );
 }
-
