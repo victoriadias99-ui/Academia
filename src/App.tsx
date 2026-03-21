@@ -914,29 +914,77 @@ function LoginView({ onLoginSuccess }: { onLoginSuccess: (role: string) => void 
   };
 
   return (
-    <div className="flex min-h-screen font-sans" style={{ background: '#f7f6f3' }}>
-      <div className="m-auto w-full max-w-[420px] rounded-2xl overflow-hidden shadow-xl" style={{ boxShadow: '0 4px 40px rgba(0,0,0,.09)' }}>
-        
-        {/* Header verde */}
-        <div className="p-9" style={{ background: '#0e2318' }}>
-          {/* Brand */}
-          <div className="flex items-center gap-2 mb-6">
+    <div className="flex min-h-screen font-sans overflow-hidden">
+      {/* Sidebar izquierda */}
+      <aside className="hidden md:flex flex-col w-[320px] shrink-0 p-10 justify-between" style={{ background: '#0e2318' }}>
+        <div>
+          {/* Logo */}
+          <div className="flex items-center gap-2 mb-10">
             <div className="w-2 h-2 rounded-full" style={{ background: '#22c55e' }}></div>
-            <span className="text-xs font-medium tracking-widest uppercase" style={{ color: 'rgba(255,255,255,.4)' }}>
-              Aprende <span style={{ color: '#22c55e' }}>Excel</span>
+            <span className="text-sm font-semibold tracking-wide" style={{ color: '#fff' }}>
+              Aprende<span style={{ color: '#22c55e' }}>Excel</span>
             </span>
           </div>
+
           {/* Headline */}
-          <h1 className="text-3xl font-bold text-white leading-tight mb-2" style={{ fontFamily: 'Georgia, serif' }}>
-            {isRegistering ? 'Crea tu cuenta' : <>Tu carrera,<br /><span style={{ color: '#22c55e' }}>en tus manos</span></>}
-          </h1>
-          <p className="text-xs font-light" style={{ color: 'rgba(255,255,255,.35)' }}>
-            {isRegistering ? 'Completa tus datos para empezar' : 'Excel, Power BI y SQL para el mercado laboral'}
+          <h2 className="text-3xl font-bold leading-tight mb-4" style={{ color: '#fff', fontFamily: 'Georgia, serif' }}>
+            El conocimiento que <span style={{ color: '#22c55e' }}>cambia</span> tu carrera
+          </h2>
+          <p className="text-sm font-light mb-10" style={{ color: 'rgba(255,255,255,.4)', lineHeight: '1.6' }}>
+            Miles de profesionales consiguieron trabajo, mejoraron su sueldo y crecieron en sus empresas.
           </p>
+
+          {/* Beneficios */}
+          <ul className="space-y-4">
+            {[
+              'Consegui tu primer trabajo en datos',
+              'Aumenta tu sueldo con nuevas habilidades',
+              'Excel, Power BI y SQL desde cero',
+              'Certificado reconocido por empresas',
+            ].map((b, i) => (
+              <li key={i} className="flex items-start gap-3">
+                <div className="w-5 h-5 rounded-full flex items-center justify-center shrink-0 mt-0.5" style={{ background: 'rgba(34,197,94,.15)' }}>
+                  <Check size={10} color="#22c55e" />
+                </div>
+                <span className="text-sm" style={{ color: 'rgba(255,255,255,.6)', lineHeight: '1.4' }}>{b}</span>
+              </li>
+            ))}
+          </ul>
         </div>
 
-        {/* Formulario */}
-        <div className="bg-white px-9 pt-8 pb-6">
+        {/* Stats */}
+        <div className="grid grid-cols-2 gap-4 pt-8" style={{ borderTop: '1px solid rgba(255,255,255,.08)' }}>
+          {[
+            { num: '+270', label: 'Empresas' },
+            { num: '4.9★', label: 'Valoracion' },
+            { num: '100%', label: 'Online' },
+            { num: '+5k', label: 'Alumnos' },
+          ].map((s, i) => (
+            <div key={i}>
+              <div className="text-lg font-bold" style={{ color: '#fff', fontFamily: 'Georgia, serif' }}>{s.num}</div>
+              <div className="text-xs" style={{ color: 'rgba(255,255,255,.3)', textTransform: 'uppercase', letterSpacing: '.06em' }}>{s.label}</div>
+            </div>
+          ))}
+        </div>
+      </aside>
+
+      {/* Formulario derecha */}
+      <main className="flex-1 flex items-center justify-center p-8" style={{ background: '#fff' }}>
+        <div className="w-full max-w-[360px]">
+          {/* Mobile logo */}
+          <div className="md:hidden mb-8 text-center">
+            <span className="text-xl font-bold" style={{ color: '#0e2318' }}>
+              Aprende<span style={{ color: '#22c55e' }}>Excel</span>
+            </span>
+          </div>
+
+          <h3 className="text-2xl font-bold mb-1" style={{ color: '#0e1a13', fontFamily: 'Georgia, serif' }}>
+            {isRegistering ? 'Crear cuenta' : 'Bienvenido'}
+          </h3>
+          <p className="text-sm mb-7" style={{ color: '#9ca3af' }}>
+            {isRegistering ? 'Completa tus datos para empezar' : 'Ingresa para acceder a tus cursos'}
+          </p>
+
           {error && (
             <div className="mb-4 px-4 py-3 rounded-lg text-sm" style={{ background: '#fef2f2', color: '#991b1b', border: '1px solid #fecaca' }}>
               {error}
@@ -948,107 +996,66 @@ function LoginView({ onLoginSuccess }: { onLoginSuccess: (role: string) => void 
             </div>
           )}
 
-          <form onSubmit={handleSubmit}>
+          <form onSubmit={handleSubmit} className="space-y-4">
             {isRegistering && (
-              <div className="grid grid-cols-2 gap-3 mb-4">
+              <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-semibold mb-1.5 tracking-wider uppercase" style={{ color: '#9ca3af' }}>Nombre</label>
-                  <input
-                    type="text"
-                    value={nombre}
-                    onChange={(e) => setNombre(e.target.value)}
+                  <label className="block text-xs font-semibold mb-1.5 uppercase tracking-wider" style={{ color: '#9ca3af' }}>Nombre</label>
+                  <input type="text" value={nombre} onChange={(e) => setNombre(e.target.value)}
                     className="w-full px-3 py-2.5 rounded-lg text-sm outline-none transition-all"
-                    style={{ border: '1.5px solid #ebebeb', background: '#fafafa', fontFamily: 'inherit' }}
-                    required
-                  />
+                    style={{ border: '1.5px solid #e5e7eb', background: '#fafafa' }} required />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold mb-1.5 tracking-wider uppercase" style={{ color: '#9ca3af' }}>Apellido</label>
-                  <input
-                    type="text"
-                    value={apellido}
-                    onChange={(e) => setApellido(e.target.value)}
+                  <label className="block text-xs font-semibold mb-1.5 uppercase tracking-wider" style={{ color: '#9ca3af' }}>Apellido</label>
+                  <input type="text" value={apellido} onChange={(e) => setApellido(e.target.value)}
                     className="w-full px-3 py-2.5 rounded-lg text-sm outline-none transition-all"
-                    style={{ border: '1.5px solid #ebebeb', background: '#fafafa', fontFamily: 'inherit' }}
-                  />
+                    style={{ border: '1.5px solid #e5e7eb', background: '#fafafa' }} />
                 </div>
               </div>
             )}
 
-            <div className="mb-4">
-              <label className="block text-xs font-semibold mb-1.5 tracking-wider uppercase" style={{ color: '#9ca3af' }}>Email</label>
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
+            <div>
+              <label className="block text-xs font-semibold mb-1.5 uppercase tracking-wider" style={{ color: '#9ca3af' }}>Email</label>
+              <input type="email" value={email} onChange={(e) => setEmail(e.target.value)}
                 placeholder="tu@email.com"
                 className="w-full px-3 py-2.5 rounded-lg text-sm outline-none transition-all"
-                style={{ border: '1.5px solid #ebebeb', background: '#fafafa', fontFamily: 'inherit' }}
-                required
-              />
+                style={{ border: '1.5px solid #e5e7eb', background: '#fafafa' }} required />
             </div>
 
-            <div className="mb-2">
-              <label className="block text-xs font-semibold mb-1.5 tracking-wider uppercase" style={{ color: '#9ca3af' }}>Contrasena</label>
+            <div>
+              <div className="flex justify-between items-center mb-1.5">
+                <label className="text-xs font-semibold uppercase tracking-wider" style={{ color: '#9ca3af' }}>Contrasena</label>
+                {!isRegistering && <a href="#" className="text-xs font-medium" style={{ color: '#1a6e3c' }}>Olvidaste tu contrasena?</a>}
+              </div>
               <div className="relative">
-                <input
-                  type={showPassword ? 'text' : 'password'}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                <input type={showPassword ? 'text' : 'password'} value={password} onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
                   className="w-full px-3 py-2.5 rounded-lg text-sm outline-none transition-all pr-10"
-                  style={{ border: '1.5px solid #ebebeb', background: '#fafafa', fontFamily: 'inherit' }}
-                  required
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2"
-                  style={{ color: '#9ca3af' }}
-                >
+                  style={{ border: '1.5px solid #e5e7eb', background: '#fafafa' }} required />
+                <button type="button" onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2" style={{ color: '#9ca3af' }}>
                   {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                 </button>
               </div>
             </div>
 
-            {!isRegistering && (
-              <div className="text-right mb-5">
-                <a href="#" className="text-xs font-medium" style={{ color: '#1a6e3c' }}>
-                  Olvidaste tu contrasena?
-                </a>
-              </div>
-            )}
-
-            <button
-              type="submit"
-              disabled={isLoading}
-              className="w-full py-3 rounded-lg text-sm font-semibold text-white transition-all mt-2"
-              style={{ background: '#0e2318', letterSpacing: '.02em' }}
-            >
+            <button type="submit" disabled={isLoading}
+              className="w-full py-3 rounded-lg text-sm font-semibold text-white transition-all"
+              style={{ background: '#0e2318', marginTop: '8px' }}>
               {isLoading ? 'Cargando...' : isRegistering ? 'Crear cuenta' : 'Ingresar'}
             </button>
           </form>
-        </div>
 
-        {/* Footer */}
-        <div className="bg-white px-9 pb-7 flex items-center justify-between" style={{ borderTop: '1px solid #f5f5f5' }}>
-          <button
-            onClick={() => { setIsRegistering(!isRegistering); setError(''); setSuccess(''); }}
-            className="text-xs font-medium"
-            style={{ color: '#9ca3af', background: 'none', border: 'none', cursor: 'pointer' }}
-          >
-            {isRegistering ? 'Ya tenes cuenta?' : 'Sin cuenta?'}{' '}
-            <span style={{ color: '#1a6e3c', fontWeight: 600 }}>
-              {isRegistering ? 'Iniciá sesion' : 'Registrate'}
-            </span>
-          </button>
-          <div className="flex gap-3">
-            <span className="text-xs" style={{ color: '#ccc' }}><strong style={{ color: '#888' }}>+270</strong> empresas</span>
-            <span className="text-xs" style={{ color: '#ccc' }}><strong style={{ color: '#888' }}>4.9★</strong></span>
+          <div className="mt-6 pt-6 flex items-center justify-between" style={{ borderTop: '1px solid #f0f0f0' }}>
+            <button onClick={() => { setIsRegistering(!isRegistering); setError(''); setSuccess(''); }}
+              className="text-xs" style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#9ca3af' }}>
+              {isRegistering ? 'Ya tenes cuenta? ' : 'Sin cuenta? '}
+              <span style={{ color: '#1a6e3c', fontWeight: 600 }}>{isRegistering ? 'Inicia sesion' : 'Registrate'}</span>
+            </button>
+            <a href="mailto:soporte@aprende-excel.com" className="text-xs" style={{ color: '#d1d5db' }}>Soporte</a>
           </div>
         </div>
-
-      </div>
+      </main>
     </div>
   );
 }
