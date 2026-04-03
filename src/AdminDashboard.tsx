@@ -364,12 +364,12 @@ export default function AdminDashboard() {
                               {availableSlugs.length > 0 && (
                                 <div className="relative">
                                   <button
-                                    onClick={() => setAddCourseDropdownEmail(addCourseDropdownEmail === student.email ? null : student.email)}
+                                    onClick={(e) => { e.stopPropagation(); setAddCourseDropdownEmail(addCourseDropdownEmail === student.email ? null : student.email); }}
                                     title="Agregar curso"
                                     className="w-5 h-5 rounded-full bg-gray-200 hover:bg-[#00a86b] hover:text-white text-gray-500 flex items-center justify-center transition-all text-xs font-bold"
                                   ><Plus size={11} /></button>
                                   {addCourseDropdownEmail === student.email && (
-                                    <div className="absolute left-0 top-7 z-30 bg-white border border-[#dee2e6] rounded-lg shadow-xl py-1 min-w-[170px]">
+                                    <div onClick={(e) => e.stopPropagation()} className="absolute left-0 top-7 z-30 bg-white border border-[#dee2e6] rounded-lg shadow-xl py-1 min-w-[170px]">
                                       <p className="px-3 py-1.5 text-[10px] text-gray-400 font-semibold uppercase tracking-wider border-b border-[#dee2e6] mb-1">Agregar curso</p>
                                       {availableSlugs.map(slug => (
                                         <button key={slug} onClick={() => handleToggleCourse(student, slug, true)}
