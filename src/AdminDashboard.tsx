@@ -19,7 +19,15 @@ const authFetch = (url: string, options: RequestInit = {}) =>
 
 interface AdminStats { totalAlumnos: number; totalVentas: number; ingresosUSD: number; cursosActivos: number; }
 interface Sale { email: string; nombre: string; curso: string; monto: number; fecha: string; }
-interface Student { email: string; nombre: string; academia: string; cursos: number; registro: string; ultimo_login: string; activo: boolean; vencimiento: string; }
+interface Student { email: string; nombre: string; academia: string; cursos: number; cursos_slugs?: string; registro: string; ultimo_login: string; activo: boolean; vencimiento: string; }
+
+// Mapeo de Vimeo ID → slug de curso (debe coincidir con el backend)
+const VIMEO_TO_SLUG: Record<number, string> = {
+  12286845: "excel",
+  12286854: "excel_intermedio",
+  12052707: "excel_avanzado",
+  12305404: "excel_promo",
+};
 interface Course { id: number; nombre: string; academia: string; stripe_price_id: string; precio_ars: number; precio_usd: number; activo: boolean; descripcion?: string; imagen_url?: string; orden?: number; }
 interface Lesson { id: number; titulo: string; vimeo_id: string; duracion: number; preview: boolean; orden: number; }
 
@@ -319,7 +327,7 @@ export default function AdminDashboard() {
                           <td className="px-6 py-4"><div className="flex items-center gap-2 text-gray-500 text-sm"><Calendar size={14} className="text-gray-400" />{student.vencimiento || '-'}</div></td>
                           <td className="px-6 py-4">
                             <div className="flex items-center gap-3">
-                              <button onClick={() => { setEditingStudent(student); setStudentForm({ nombre: student.nombre, email: student.email, cursos: String(student.cursos), activo: student.activo, vencimiento: student.vencimiento }); setIsStudentModalOpen(true); }} className="p-1.5 rounded border border-indigo-200 text-indigo-600 hover:bg-indigo-50 transition-all"><Edit2 size={16} /></button>
+                              <button onClick={() => { setEditingStudent(student); setStudentForm({ nombre: student.nombre, email: student.email, cursos: student.cursos_slugs || "", activo: student.activo, vencimiento: student.vencimiento }); setIsStudentModalOpen(true); }} className="p-1.5 rounded border border-indigo-200 text-indigo-600 hover:bg-indigo-50 transition-all"><Edit2 size={16} /></button>
                               <button onClick={() => handleDeleteStudent(student.email)} className="p-1.5 rounded border border-red-200 text-red-600 hover:bg-red-50 transition-all"><Trash2 size={16} /></button>
                               <button onClick={() => handleUpdateSubscription(student.email, undefined, !student.activo)} className={`p-1.5 rounded border transition-all ${student.activo ? 'border-red-200 text-red-600 hover:bg-red-50' : 'border-green-200 text-green-600 hover:bg-green-50'}`}>{student.activo ? <ShieldX size={16} /> : <ShieldCheck size={16} />}</button>
                               <div className="flex bg-gray-100 rounded p-1">
@@ -473,6 +481,35 @@ export default function AdminDashboard() {
           <div className="space-y-1"><label className="text-sm font-medium text-gray-700">Nombre</label><input type="text" required className="w-full px-3 py-2 rounded-md border border-[#dee2e6] focus:outline-none" value={studentForm.nombre} onChange={e => setStudentForm({...studentForm, nombre: e.target.value})} /></div>
           <div className="space-y-1"><label className="text-sm font-medium text-gray-700">Email</label><input type="email" disabled className="w-full px-3 py-2 rounded-md border border-[#dee2e6] bg-gray-50" value={studentForm.email} /></div>
           <div className="space-y-1"><label className="text-sm font-medium text-gray-700">Vencimiento</label><input type="date" className="w-full px-3 py-2 rounded-md border border-[#dee2e6] focus:outline-none" value={studentForm.vencimiento} onChange={e => setStudentForm({...studentForm, vencimiento: e.target.value})} /></div>
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-gray-700">Cursos asignados</label>
+            <div className="border border-[#dee2e6] rounded-md p-3 space-y-2 max-h-44 overflow-y-auto bg-gray-50">
+              {courses.filter(c => VIMEO_TO_SLUG[c.id]).map(c => {
+                const slug = VIMEO_TO_SLUG[c.id];
+                const selectedSlugs = studentForm.cursos.split("|").filter(Boolean);
+                const isChecked = selectedSlugs.includes(slug);
+                return (
+                  <label key={c.id} className="flex items-center gap-3 cursor-pointer group">
+                    <input
+                      type="checkbox"
+                      checked={isChecked}
+                      onChange={(e) => {
+                        const current = studentForm.cursos.split("|").filter(Boolean);
+                        const updated = e.target.checked ? [...current, slug] : current.filter(s => s !== slug);
+                        setStudentForm({...studentForm, cursos: updated.join("|")});
+                      }}
+                      className="w-4 h-4 accent-[#00a86b]"
+                    />
+                    <span className={`text-sm transition-colors ${isChecked ? 'text-[#1a5c4a] font-semibold' : 'text-gray-600 group-hover:text-gray-800'}`}>{c.nombre}</span>
+                    {isChecked && <span className="ml-auto text-[10px] font-bold text-[#00a86b] uppercase">Activo</span>}
+                  </label>
+                );
+              })}
+              {courses.filter(c => VIMEO_TO_SLUG[c.id]).length === 0 && (
+                <p className="text-xs text-gray-400 text-center py-2">Cargando cursos...</p>
+              )}
+            </div>
+          </div>
           <div className="flex items-center gap-2"><input type="checkbox" id="student-active" checked={studentForm.activo} onChange={e => setStudentForm({...studentForm, activo: e.target.checked})} /><label htmlFor="student-active" className="text-sm font-medium text-gray-700">Activo</label></div>
           <div className="flex justify-end gap-3 pt-4">
             <button type="button" onClick={() => { setIsStudentModalOpen(false); setEditingStudent(null); }} className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-md transition-colors">Cancelar</button>

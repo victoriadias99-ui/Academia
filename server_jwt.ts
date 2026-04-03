@@ -170,13 +170,14 @@ async function startServer() {
   });
 
   app.post("/api/auth/register", async (req, res) => {
-    const { email, password, nombre, apellido, cursos } = req.body;
-    if (!email || !password || !nombre) return res.status(400).json({ error: "Faltan datos requeridos" });
+    const { email: rawEmail, password, nombre, apellido, cursos } = req.body;
+    if (!rawEmail || !password || !nombre) return res.status(400).json({ error: "Faltan datos requeridos" });
+    const email = rawEmail.toLowerCase().trim();
     try {
       const users = getUsers();
       if (users.find((u: any) => u.email === email)) return res.status(400).json({ error: "El usuario ya existe" });
       const hashedPassword = await bcrypt.hash(password, 10);
-      users.push({ id: Date.now(), email: email.toLowerCase().trim(), password: hashedPassword, nombre, apellido: apellido || "", cursos: cursos || "", activo: 1, fecha_creacion: new Date().toISOString().split("T")[0] });
+      users.push({ id: Date.now(), email, password: hashedPassword, nombre, apellido: apellido || "", cursos: cursos || "", activo: 1, fecha_creacion: new Date().toISOString().split("T")[0] });
       saveUsers(users);
       res.json({ status: "ok", message: "Usuario creado correctamente" });
     } catch { res.status(500).json({ error: "Error al crear usuario" }); }
@@ -193,10 +194,19 @@ async function startServer() {
     res.json({ status: "ok", usuario: updated, token: signToken(updated) });
   });
 
-  app.post("/api/auth/change-password", requireAuth, (req, res) => {
+  app.post("/api/auth/change-password", requireAuth, async (req: any, res) => {
     const { currentPassword, newPassword } = req.body;
     if (!currentPassword || !newPassword) return res.status(400).json({ error: "Todos los campos son requeridos" });
-    res.json({ status: "ok" });
+    try {
+      const users = getUsers();
+      const idx = users.findIndex((u: any) => u.email === req.user.email);
+      if (idx === -1) return res.status(404).json({ error: "Usuario no encontrado" });
+      const match = await bcrypt.compare(currentPassword, users[idx].password);
+      if (!match) return res.status(401).json({ error: "La contraseña actual es incorrecta" });
+      users[idx].password = await bcrypt.hash(newPassword, 10);
+      saveUsers(users);
+      res.json({ status: "ok" });
+    } catch { res.status(500).json({ error: "Error al cambiar contraseña" }); }
   });
 
   app.post("/api/auth/reset-password", (req, res) => {
@@ -206,9 +216,36 @@ async function startServer() {
 
   // ─── ADMIN ROUTES ─────────────────────────────────────────────
   app.get("/api/admin/dashboard", requireAdmin, (req, res) => res.json({ stats: { totalAlumnos: 1250, totalVentas: 850, ingresosUSD: 12450.5, cursosActivos: mockCourses.length }, ultimasCompras: mockSales }));
-  app.get("/api/admin/usuarios", requireAdmin, (req, res) => { const q = (req.query.buscar as string)?.toLowerCase(); res.json({ usuarios: q ? mockStudents.filter(s => s.nombre.toLowerCase().includes(q) || s.email.toLowerCase().includes(q)) : mockStudents }); });
+  app.get("/api/admin/usuarios", requireAdmin, (req, res) => {
+    const q = (req.query.buscar as string)?.toLowerCase();
+    const dbUsers = getUsers();
+    const allStudents = mockStudents.map(s => {
+      const dbUser = dbUsers.find((u: any) => u.email === s.email);
+      return { ...s, cursos_slugs: dbUser?.cursos || "" };
+    });
+    res.json({ usuarios: q ? allStudents.filter(s => s.nombre.toLowerCase().includes(q) || s.email.toLowerCase().includes(q)) : allStudents });
+  });
   app.post("/api/admin/usuarios/suscripcion", requireAdmin, (req, res) => { const { email, meses, activo } = req.body; const idx = mockStudents.findIndex(s => s.email === email); if (idx === -1) return res.status(404).json({ error: "No encontrado" }); if (meses !== undefined) { const d = new Date(); d.setMonth(d.getMonth() + parseInt(meses)); (mockStudents[idx] as any).vencimiento = d.toISOString().split("T")[0]; mockStudents[idx].activo = true; } if (activo !== undefined) mockStudents[idx].activo = activo; res.json({ status: "ok", usuario: mockStudents[idx] }); });
-  app.put("/api/admin/usuarios/:email", requireAdmin, (req, res) => { const idx = mockStudents.findIndex(s => s.email === req.params.email); if (idx !== -1) { mockStudents[idx] = { ...mockStudents[idx], ...req.body, email: req.params.email }; res.json({ status: "ok", usuario: mockStudents[idx] }); } else res.status(404).json({ error: "No encontrado" }); });
+  app.put("/api/admin/usuarios/:email", requireAdmin, (req, res) => {
+    const { email } = req.params;
+    const { nombre, cursos, activo, vencimiento } = req.body;
+    const idx = mockStudents.findIndex(s => s.email === email);
+    if (idx !== -1) mockStudents[idx] = { ...mockStudents[idx], ...req.body, email };
+    const users = getUsers();
+    const userIdx = users.findIndex((u: any) => u.email === email);
+    if (userIdx !== -1) {
+      if (nombre !== undefined) users[userIdx].nombre = nombre;
+      if (cursos !== undefined) users[userIdx].cursos = cursos;
+      if (activo !== undefined) users[userIdx].activo = activo;
+      if (vencimiento !== undefined) users[userIdx].vencimiento = vencimiento;
+      saveUsers(users);
+      res.json({ status: "ok" });
+    } else if (idx !== -1) {
+      res.json({ status: "ok" });
+    } else {
+      res.status(404).json({ error: "No encontrado" });
+    }
+  });
   app.delete("/api/admin/usuarios/:email", requireAdmin, (req, res) => { const idx = mockStudents.findIndex(s => s.email === req.params.email); if (idx !== -1) { mockStudents.splice(idx, 1); res.json({ status: "ok" }); } else res.status(404).json({ error: "No encontrado" }); });
   app.post("/api/admin/cursos", requireAdmin, (req, res) => { const c = { id: mockCourses.length + 1, ...req.body, progreso: 0, total_lecciones: 0, lecciones_completadas: 0 }; mockCourses.push(c); res.json({ status: "ok", curso: c }); });
   app.put("/api/admin/cursos/:id", requireAdmin, (req, res) => { const idx = mockCourses.findIndex(c => c.id === parseInt(req.params.id)); if (idx !== -1) { mockCourses[idx] = { ...mockCourses[idx], ...req.body, id: parseInt(req.params.id) }; res.json({ status: "ok", curso: mockCourses[idx] }); } else res.status(404).json({ error: "No encontrado" }); });
@@ -219,22 +256,74 @@ async function startServer() {
   app.get("/api/admin/ventas", requireAdmin, (req, res) => res.json({ ventas: mockSales }));
 
   // ─── COURSE ROUTES ────────────────────────────────────────────
+  const getUserProgress = (email: string): Record<string, string[]> => {
+    const users = getUsers();
+    const dbUser = users.find((u: any) => u.email === email);
+    return dbUser?.progreso || {};
+  };
+
   app.get("/api/cursos/mis-cursos", requireAuth, (req: any, res) => {
     const user = req.user;
-    if (user.role === "admin") return res.json({ cursos: vimeoCourses });
-    const slugs = (user.cursos || "").split("|").filter(Boolean);
-    const ids = slugs.map((s: string) => COURSE_MAPPING[s]).filter(Boolean);
-    res.json({ cursos: vimeoCourses.filter(c => ids.includes(c.id.toString())) });
+    const progreso = getUserProgress(user.email);
+
+    let cursosBase = user.role === "admin"
+      ? vimeoCourses
+      : (() => {
+          const slugs = (user.cursos || "").split("|").filter(Boolean);
+          const ids = slugs.map((s: string) => COURSE_MAPPING[s]).filter(Boolean);
+          return vimeoCourses.filter(c => ids.includes(c.id.toString()));
+        })();
+
+    const cursos = cursosBase.map(c => {
+      const completadas = (progreso[c.id.toString()] || []).length;
+      const total = c.total_lecciones;
+      return { ...c, lecciones_completadas: completadas, progreso: total > 0 ? Math.round((completadas / total) * 100) : 0 };
+    });
+
+    res.json({ cursos });
   });
 
   app.get("/api/cursos/:id", requireAuth, (req: any, res) => {
     const id = parseInt(req.params.id);
     const curso = vimeoCourses.find(c => c.id === id);
-    if (curso) res.json({ curso, lecciones: vimeoLessons[id] || [] });
-    else res.status(404).json({ error: "Curso no encontrado" });
+    if (!curso) return res.status(404).json({ error: "Curso no encontrado" });
+
+    const completadas: string[] = getUserProgress(req.user.email)[id.toString()] || [];
+    const lecciones = (vimeoLessons[id] || []).map((l: any) => ({ ...l, completada: completadas.includes(l.id) }));
+    const completadasCount = lecciones.filter((l: any) => l.completada).length;
+    const total = lecciones.length;
+    const cursoConProgreso = { ...curso, lecciones_completadas: completadasCount, progreso: total > 0 ? Math.round((completadasCount / total) * 100) : 0 };
+
+    res.json({ curso: cursoConProgreso, lecciones });
   });
 
-  app.post("/api/cursos/progreso/:leccionId", requireAuth, (req, res) => res.json({ status: "ok", leccionId: req.params.leccionId }));
+  app.post("/api/cursos/progreso/:leccionId", requireAuth, async (req: any, res) => {
+    const { leccionId } = req.params;
+    const { completada } = req.body;
+    if (!completada) return res.json({ status: "ok", leccionId });
+
+    // Buscar a qué curso pertenece la lección
+    let courseId: string | null = null;
+    for (const [cid, lessons] of Object.entries(vimeoLessons)) {
+      if ((lessons as any[]).some((l: any) => l.id === leccionId)) { courseId = cid; break; }
+    }
+    if (!courseId) return res.json({ status: "ok", leccionId });
+
+    const users = getUsers();
+    let idx = users.findIndex((u: any) => u.email === req.user.email);
+    if (idx === -1) {
+      users.push({ id: req.user.id, email: req.user.email, nombre: req.user.nombre, progreso: {} });
+      idx = users.length - 1;
+    }
+
+    const progreso = users[idx].progreso || {};
+    if (!progreso[courseId]) progreso[courseId] = [];
+    if (!progreso[courseId].includes(leccionId)) progreso[courseId].push(leccionId);
+    users[idx].progreso = progreso;
+    saveUsers(users);
+
+    res.json({ status: "ok", leccionId });
+  });
 
   // ─── VITE / STATIC ────────────────────────────────────────────
   if (process.env.NODE_ENV !== "production") {

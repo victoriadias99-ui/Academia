@@ -195,9 +195,38 @@ app.post("/api/auth/reset-password", (req, res) => {
 
 // ADMIN
 app.get("/api/admin/dashboard", requireAdmin, (req, res) => res.json({ stats: { totalAlumnos: 1250, totalVentas: 850, ingresosUSD: 12450.5, cursosActivos: mockCourses.length }, ultimasCompras: mockSales }));
-app.get("/api/admin/usuarios", requireAdmin, (req, res) => { const q = (req.query.buscar as string)?.toLowerCase(); res.json({ usuarios: q ? mockStudents.filter(s => s.nombre.toLowerCase().includes(q) || s.email.toLowerCase().includes(q)) : mockStudents }); });
+app.get("/api/admin/usuarios", requireAdmin, (req, res) => {
+  const q = (req.query.buscar as string)?.toLowerCase();
+  const dbUsers = getUsers();
+  const allStudents = mockStudents.map(s => {
+    const dbUser = dbUsers.find((u: any) => u.email === s.email);
+    return { ...s, cursos_slugs: dbUser?.cursos || "" };
+  });
+  res.json({ usuarios: q ? allStudents.filter(s => s.nombre.toLowerCase().includes(q) || s.email.toLowerCase().includes(q)) : allStudents });
+});
 app.post("/api/admin/usuarios/suscripcion", requireAdmin, (req, res) => { const { email, meses, activo } = req.body; const idx = mockStudents.findIndex(s => s.email === email); if (idx === -1) return res.status(404).json({ error: "No encontrado" }); if (meses !== undefined) { const d = new Date(); d.setMonth(d.getMonth() + parseInt(meses)); (mockStudents[idx] as any).vencimiento = d.toISOString().split("T")[0]; mockStudents[idx].activo = true; } if (activo !== undefined) mockStudents[idx].activo = activo; res.json({ status: "ok", usuario: mockStudents[idx] }); });
-app.put("/api/admin/usuarios/:email", requireAdmin, (req, res) => { const idx = mockStudents.findIndex(s => s.email === req.params.email); if (idx !== -1) { mockStudents[idx] = { ...mockStudents[idx], ...req.body, email: req.params.email }; res.json({ status: "ok" }); } else res.status(404).json({ error: "No encontrado" }); });
+app.put("/api/admin/usuarios/:email", requireAdmin, (req, res) => {
+  const { email } = req.params;
+  const { nombre, cursos, activo, vencimiento } = req.body;
+  // Actualizar en mockStudents (en memoria)
+  const idx = mockStudents.findIndex(s => s.email === email);
+  if (idx !== -1) mockStudents[idx] = { ...mockStudents[idx], ...req.body, email };
+  // Actualizar en usuarios.json (persistente)
+  const users = getUsers();
+  const userIdx = users.findIndex((u: any) => u.email === email);
+  if (userIdx !== -1) {
+    if (nombre !== undefined) users[userIdx].nombre = nombre;
+    if (cursos !== undefined) users[userIdx].cursos = cursos;
+    if (activo !== undefined) users[userIdx].activo = activo;
+    if (vencimiento !== undefined) users[userIdx].vencimiento = vencimiento;
+    saveUsers(users);
+    res.json({ status: "ok" });
+  } else if (idx !== -1) {
+    res.json({ status: "ok" });
+  } else {
+    res.status(404).json({ error: "No encontrado" });
+  }
+});
 app.delete("/api/admin/usuarios/:email", requireAdmin, (req, res) => { const idx = mockStudents.findIndex(s => s.email === req.params.email); if (idx !== -1) { mockStudents.splice(idx, 1); res.json({ status: "ok" }); } else res.status(404).json({ error: "No encontrado" }); });
 app.get("/api/admin/ventas", requireAdmin, (req, res) => res.json({ ventas: mockSales }));
 
