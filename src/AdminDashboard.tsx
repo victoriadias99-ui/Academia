@@ -28,6 +28,14 @@ const VIMEO_TO_SLUG: Record<number, string> = {
   12052707: "excel_avanzado",
   12305404: "excel_promo",
 };
+
+// Mapeo de slug → nombre legible
+const SLUG_TO_NAME: Record<string, string> = {
+  excel: "Excel Inicial",
+  excel_intermedio: "Excel Intermedio",
+  excel_avanzado: "Excel Avanzado",
+  excel_promo: "Excel Promo",
+};
 interface Course { id: number; nombre: string; academia: string; stripe_price_id: string; precio_ars: number; precio_usd: number; activo: boolean; descripcion?: string; imagen_url?: string; orden?: number; }
 interface Lesson { id: number; titulo: string; vimeo_id: string; duracion: number; preview: boolean; orden: number; }
 
@@ -75,6 +83,7 @@ export default function AdminDashboard() {
   const [editingStudent, setEditingStudent] = useState<Student | null>(null);
   const [isStudentModalOpen, setIsStudentModalOpen] = useState(false);
   const [toast, setToast] = useState<{ message: string, type: 'success' | 'error' } | null>(null);
+  const [addCourseDropdownEmail, setAddCourseDropdownEmail] = useState<string | null>(null);
 
   const [courseForm, setCourseForm] = useState({ academia: "Aprende Excel", nombre: "", descripcion: "", imagen_url: "", stripe_price_id: "", precio_ars: 0, precio_usd: 0, orden: 0 });
   const [lessonForm, setLessonForm] = useState({ titulo: "", vimeo_id: "", duracion: 0, orden: 0, preview: false });
@@ -163,6 +172,22 @@ export default function AdminDashboard() {
     } catch { setToast({ message: "Error de conexión", type: 'error' }); }
   };
 
+  const handleToggleCourse = async (student: Student, slug: string, add: boolean) => {
+    const currentSlugs = (student.cursos_slugs || "").split("|").filter(Boolean);
+    const updated = add ? [...currentSlugs, slug] : currentSlugs.filter(s => s !== slug);
+    try {
+      const res = await authFetch(`/api/admin/usuarios/${student.email}`, {
+        method: 'PUT',
+        body: JSON.stringify({ cursos: updated.join("|") })
+      });
+      if (res.ok) {
+        setToast({ message: add ? "✓ Curso agregado" : "✓ Curso quitado", type: 'success' });
+        setAddCourseDropdownEmail(null);
+        fetchStudents(searchQuery);
+      } else setToast({ message: "Error al actualizar cursos", type: 'error' });
+    } catch { setToast({ message: "Error de conexión", type: 'error' }); }
+  };
+
   const handleCreateCourse = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
@@ -217,7 +242,7 @@ export default function AdminDashboard() {
   ];
 
   return (
-    <div className="flex h-screen bg-[#f4f5f7] font-sans overflow-hidden">
+    <div className="flex h-screen bg-[#f4f5f7] font-sans overflow-hidden" onClick={() => setAddCourseDropdownEmail(null)}>
       <aside className="w-[240px] bg-[#1a5c4a] flex flex-col flex-shrink-0">
         <div className="p-6">
           <div className="flex flex-col mb-1">
@@ -315,14 +340,49 @@ export default function AdminDashboard() {
                 <div className="overflow-x-auto">
                   <table className="w-full text-left">
                     <thead className="bg-[#1a5c4a] text-white">
-                      <tr><th className="px-6 py-4 font-semibold">Email</th><th className="px-6 py-4 font-semibold">Nombre</th><th className="px-6 py-4 font-semibold">Cursos</th><th className="px-6 py-4 font-semibold">Estado</th><th className="px-6 py-4 font-semibold">Vencimiento</th><th className="px-6 py-4 font-semibold">Acciones</th></tr>
+                      <tr><th className="px-6 py-4 font-semibold">Email</th><th className="px-6 py-4 font-semibold">Nombre</th><th className="px-6 py-4 font-semibold">Cursos asignados</th><th className="px-6 py-4 font-semibold">Estado</th><th className="px-6 py-4 font-semibold">Vencimiento</th><th className="px-6 py-4 font-semibold">Acciones</th></tr>
                     </thead>
                     <tbody className="divide-y divide-[#dee2e6]">
-                      {students.map((student, i) => (
+                      {students.map((student, i) => {
+                        const assignedSlugs = (student.cursos_slugs || "").split("|").filter(Boolean);
+                        const availableSlugs = Object.keys(SLUG_TO_NAME).filter(s => !assignedSlugs.includes(s));
+                        return (
                         <tr key={i} className="hover:bg-gray-50 transition-colors">
-                          <td className="px-6 py-4 text-gray-600">{student.email}</td>
+                          <td className="px-6 py-4 text-gray-600 text-sm">{student.email}</td>
                           <td className="px-6 py-4 font-medium text-[#0d2137]">{student.nombre}</td>
-                          <td className="px-6 py-4 text-center"><span className="bg-gray-100 text-gray-700 px-2 py-1 rounded-full text-xs font-bold">{student.cursos}</span></td>
+                          <td className="px-6 py-4">
+                            <div className="flex flex-wrap gap-1.5 items-center">
+                              {assignedSlugs.length === 0 && <span className="text-xs text-gray-400 italic">Sin cursos</span>}
+                              {assignedSlugs.map(slug => (
+                                <span key={slug} className="flex items-center gap-1 bg-[#eaf4ee] text-[#1a5c4a] text-[11px] font-semibold px-2 py-0.5 rounded-full border border-[#c3e6cb]">
+                                  {SLUG_TO_NAME[slug] || slug}
+                                  <button onClick={() => handleToggleCourse(student, slug, false)} title="Quitar curso" className="hover:text-red-600 transition-colors ml-0.5">
+                                    <X size={10} />
+                                  </button>
+                                </span>
+                              ))}
+                              {availableSlugs.length > 0 && (
+                                <div className="relative">
+                                  <button
+                                    onClick={() => setAddCourseDropdownEmail(addCourseDropdownEmail === student.email ? null : student.email)}
+                                    title="Agregar curso"
+                                    className="w-5 h-5 rounded-full bg-gray-200 hover:bg-[#00a86b] hover:text-white text-gray-500 flex items-center justify-center transition-all text-xs font-bold"
+                                  ><Plus size={11} /></button>
+                                  {addCourseDropdownEmail === student.email && (
+                                    <div className="absolute left-0 top-7 z-30 bg-white border border-[#dee2e6] rounded-lg shadow-xl py-1 min-w-[170px]">
+                                      <p className="px-3 py-1.5 text-[10px] text-gray-400 font-semibold uppercase tracking-wider border-b border-[#dee2e6] mb-1">Agregar curso</p>
+                                      {availableSlugs.map(slug => (
+                                        <button key={slug} onClick={() => handleToggleCourse(student, slug, true)}
+                                          className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-[#eaf4ee] hover:text-[#1a5c4a] transition-colors">
+                                          {SLUG_TO_NAME[slug]}
+                                        </button>
+                                      ))}
+                                    </div>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                          </td>
                           <td className="px-6 py-4"><span className={`px-2 py-1 rounded-full text-[10px] font-bold uppercase ${student.activo ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>{student.activo ? 'Activo' : 'Inactivo'}</span></td>
                           <td className="px-6 py-4"><div className="flex items-center gap-2 text-gray-500 text-sm"><Calendar size={14} className="text-gray-400" />{student.vencimiento || '-'}</div></td>
                           <td className="px-6 py-4">
@@ -336,7 +396,8 @@ export default function AdminDashboard() {
                             </div>
                           </td>
                         </tr>
-                      ))}
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>
@@ -481,36 +542,7 @@ export default function AdminDashboard() {
           <div className="space-y-1"><label className="text-sm font-medium text-gray-700">Nombre</label><input type="text" required className="w-full px-3 py-2 rounded-md border border-[#dee2e6] focus:outline-none" value={studentForm.nombre} onChange={e => setStudentForm({...studentForm, nombre: e.target.value})} /></div>
           <div className="space-y-1"><label className="text-sm font-medium text-gray-700">Email</label><input type="email" disabled className="w-full px-3 py-2 rounded-md border border-[#dee2e6] bg-gray-50" value={studentForm.email} /></div>
           <div className="space-y-1"><label className="text-sm font-medium text-gray-700">Vencimiento</label><input type="date" className="w-full px-3 py-2 rounded-md border border-[#dee2e6] focus:outline-none" value={studentForm.vencimiento} onChange={e => setStudentForm({...studentForm, vencimiento: e.target.value})} /></div>
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-gray-700">Cursos asignados</label>
-            <div className="border border-[#dee2e6] rounded-md p-3 space-y-2 max-h-44 overflow-y-auto bg-gray-50">
-              {courses.filter(c => VIMEO_TO_SLUG[c.id]).map(c => {
-                const slug = VIMEO_TO_SLUG[c.id];
-                const selectedSlugs = studentForm.cursos.split("|").filter(Boolean);
-                const isChecked = selectedSlugs.includes(slug);
-                return (
-                  <label key={c.id} className="flex items-center gap-3 cursor-pointer group">
-                    <input
-                      type="checkbox"
-                      checked={isChecked}
-                      onChange={(e) => {
-                        const current = studentForm.cursos.split("|").filter(Boolean);
-                        const updated = e.target.checked ? [...current, slug] : current.filter(s => s !== slug);
-                        setStudentForm({...studentForm, cursos: updated.join("|")});
-                      }}
-                      className="w-4 h-4 accent-[#00a86b]"
-                    />
-                    <span className={`text-sm transition-colors ${isChecked ? 'text-[#1a5c4a] font-semibold' : 'text-gray-600 group-hover:text-gray-800'}`}>{c.nombre}</span>
-                    {isChecked && <span className="ml-auto text-[10px] font-bold text-[#00a86b] uppercase">Activo</span>}
-                  </label>
-                );
-              })}
-              {courses.filter(c => VIMEO_TO_SLUG[c.id]).length === 0 && (
-                <p className="text-xs text-gray-400 text-center py-2">Cargando cursos...</p>
-              )}
-            </div>
-          </div>
-          <div className="flex items-center gap-2"><input type="checkbox" id="student-active" checked={studentForm.activo} onChange={e => setStudentForm({...studentForm, activo: e.target.checked})} /><label htmlFor="student-active" className="text-sm font-medium text-gray-700">Activo</label></div>
+<div className="flex items-center gap-2"><input type="checkbox" id="student-active" checked={studentForm.activo} onChange={e => setStudentForm({...studentForm, activo: e.target.checked})} /><label htmlFor="student-active" className="text-sm font-medium text-gray-700">Activo</label></div>
           <div className="flex justify-end gap-3 pt-4">
             <button type="button" onClick={() => { setIsStudentModalOpen(false); setEditingStudent(null); }} className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-md transition-colors">Cancelar</button>
             <button type="submit" className="bg-[#00a86b] text-white px-6 py-2 rounded-md font-medium hover:bg-[#008f5a] transition-colors">Guardar Cambios</button>
