@@ -46,6 +46,27 @@ const getUsers = (): any[] => {
 };
 const saveUsers = (users: any[]) => fs.writeFileSync(DB_PATH, JSON.stringify(users, null, 2));
 
+// ─── PROGRESS HELPERS ─────────────────────────────────────────
+const getUserProgress = (email: string): Record<string, string[]> => {
+  const users = getUsers();
+  const dbUser = users.find((u: any) => u.email === email);
+  return dbUser?.progreso || {};
+};
+
+const saveUserProgress = (email: string, courseId: string, leccionId: string) => {
+  const users = getUsers();
+  let idx = users.findIndex((u: any) => u.email === email);
+  if (idx === -1) {
+    users.push({ id: Date.now(), email, progreso: {} });
+    idx = users.length - 1;
+  }
+  const progreso = users[idx].progreso || {};
+  if (!progreso[courseId]) progreso[courseId] = [];
+  if (!progreso[courseId].includes(leccionId)) progreso[courseId].push(leccionId);
+  users[idx].progreso = progreso;
+  saveUsers(users);
+};
+
 const COURSE_MAPPING: Record<string, string> = {
   excel: "12286845", excel_intermedio: "12286854",
   excel_avanzado: "12052707", excel_promo: "12305404",
@@ -179,21 +200,55 @@ app.get("/api/admin/ventas", requireAdmin, (req, res) => res.json({ ventas: mock
 app.get("/api/cursos/mis-cursos", requireAuth, async (req: any, res) => {
   await loadVimeo();
   const user = req.user;
-  if (user.role === "admin") return res.json({ cursos: vimeoCourses });
-  const slugs = (user.cursos || "").split("|").filter(Boolean);
-  const ids = slugs.map((s: string) => COURSE_MAPPING[s]).filter(Boolean);
-  res.json({ cursos: vimeoCourses.filter(c => ids.includes(c.id.toString())) });
+  const progreso = getUserProgress(user.email);
+
+  let cursosBase = user.role === "admin"
+    ? vimeoCourses
+    : (() => {
+        const slugs = (user.cursos || "").split("|").filter(Boolean);
+        const ids = slugs.map((s: string) => COURSE_MAPPING[s]).filter(Boolean);
+        return vimeoCourses.filter(c => ids.includes(c.id.toString()));
+      })();
+
+  const cursos = cursosBase.map(c => {
+    const completadas = (progreso[c.id.toString()] || []).length;
+    const total = c.total_lecciones;
+    return { ...c, lecciones_completadas: completadas, progreso: total > 0 ? Math.round((completadas / total) * 100) : 0 };
+  });
+
+  res.json({ cursos });
 });
 
 app.get("/api/cursos/:id", requireAuth, async (req: any, res) => {
   await loadVimeo();
   const id = parseInt(req.params.id);
   const curso = vimeoCourses.find(c => c.id === id);
-  if (curso) res.json({ curso, lecciones: vimeoLessons[id] || [] });
-  else res.status(404).json({ error: "Curso no encontrado" });
+  if (!curso) return res.status(404).json({ error: "Curso no encontrado" });
+
+  const completadas: string[] = getUserProgress(req.user.email)[id.toString()] || [];
+  const lecciones = (vimeoLessons[id] || []).map((l: any) => ({ ...l, completada: completadas.includes(l.id) }));
+  const completadasCount = lecciones.filter((l: any) => l.completada).length;
+  const total = lecciones.length;
+  const cursoConProgreso = { ...curso, lecciones_completadas: completadasCount, progreso: total > 0 ? Math.round((completadasCount / total) * 100) : 0 };
+
+  res.json({ curso: cursoConProgreso, lecciones });
 });
 
-app.post("/api/cursos/progreso/:leccionId", requireAuth, (req, res) => res.json({ status: "ok" }));
+app.post("/api/cursos/progreso/:leccionId", requireAuth, (req: any, res) => {
+  const { leccionId } = req.params;
+  const { completada } = req.body;
+  if (!completada) return res.json({ status: "ok", leccionId });
+
+  // Buscar a qué curso pertenece la lección
+  let courseId: string | null = null;
+  for (const [cid, lessons] of Object.entries(vimeoLessons)) {
+    if ((lessons as any[]).some((l: any) => l.id === leccionId)) { courseId = cid; break; }
+  }
+  if (!courseId) return res.json({ status: "ok", leccionId });
+
+  saveUserProgress(req.user.email, courseId, leccionId);
+  res.json({ status: "ok", leccionId });
+});
 
 export default function handler(req: any, res: any) {
   return app(req, res);
