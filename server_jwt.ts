@@ -272,10 +272,15 @@ async function startServer() {
     const user = req.user;
     const progreso = getUserProgress(user.email);
 
+    // Leer cursos siempre desde la DB (no del JWT, que puede estar desactualizado)
+    const dbUsers = getUsers();
+    const dbUser = dbUsers.find((u: any) => u.email === user.email);
+    const cursosActualizados = dbUser?.cursos ?? user.cursos ?? "";
+
     let cursosBase = user.role === "admin"
       ? vimeoCourses
       : (() => {
-          const identifiers = (user.cursos || "").split("|").filter(Boolean);
+          const identifiers = cursosActualizados.split("|").filter(Boolean);
           const ids = identifiers.map((s: string) => COURSE_MAPPING[s] || s).filter(Boolean);
           return vimeoCourses.filter(c => ids.includes(c.id.toString()));
         })();
