@@ -21,7 +21,7 @@ interface AdminStats { totalAlumnos: number; totalVentas: number; ingresosUSD: n
 interface Sale { email: string; nombre: string; curso: string; monto: number; fecha: string; }
 interface Student { email: string; nombre: string; academia: string; cursos: number; cursos_slugs?: string; registro: string; ultimo_login: string; activo: boolean; vencimiento: string; }
 
-// Mapeo de Vimeo ID → slug de curso (debe coincidir con el backend)
+// Mapeo de Vimeo ID → slug (para cursos que tienen slug en el backend)
 const VIMEO_TO_SLUG: Record<number, string> = {
   12286845: "excel",
   12286854: "excel_intermedio",
@@ -29,12 +29,16 @@ const VIMEO_TO_SLUG: Record<number, string> = {
   12305404: "excel_promo",
 };
 
-// Mapeo de slug → nombre legible
-const SLUG_TO_NAME: Record<string, string> = {
-  excel: "Excel Inicial",
-  excel_intermedio: "Excel Intermedio",
-  excel_avanzado: "Excel Avanzado",
-  excel_promo: "Excel Promo",
+// Devuelve el identificador a usar para un curso (slug si existe, ID de Vimeo como string si no)
+const getCourseIdentifier = (vimeoId: number): string =>
+  VIMEO_TO_SLUG[vimeoId] || vimeoId.toString();
+
+// Devuelve el nombre legible de un identificador usando la lista de cursos
+const getCourseDisplayName = (identifier: string, courseList: Course[]): string => {
+  const course = courseList.find(c =>
+    getCourseIdentifier(c.id) === identifier || c.id.toString() === identifier
+  );
+  return course?.nombre || identifier;
 };
 interface Course { id: number; nombre: string; academia: string; stripe_price_id: string; precio_ars: number; precio_usd: number; activo: boolean; descripcion?: string; imagen_url?: string; orden?: number; }
 interface Lesson { id: number; titulo: string; vimeo_id: string; duracion: number; preview: boolean; orden: number; }
@@ -344,8 +348,8 @@ export default function AdminDashboard() {
                     </thead>
                     <tbody className="divide-y divide-[#dee2e6]">
                       {students.map((student, i) => {
-                        const assignedSlugs = (student.cursos_slugs || "").split("|").filter(Boolean);
-                        const availableSlugs = Object.keys(SLUG_TO_NAME).filter(s => !assignedSlugs.includes(s));
+                        const assignedIds = (student.cursos_slugs || "").split("|").filter(Boolean);
+                        const availableCourses = courses.filter(c => !assignedIds.includes(getCourseIdentifier(c.id)));
                         return (
                         <tr key={i} className="hover:bg-gray-50 transition-colors">
                           <td className="px-6 py-4 text-gray-600 text-sm">{student.email}</td>
@@ -353,25 +357,25 @@ export default function AdminDashboard() {
                           <td className="px-6 py-4 min-w-[220px]">
                             <div className="flex flex-col gap-2">
                               <div className="flex flex-wrap gap-1.5">
-                                {assignedSlugs.length === 0 && <span className="text-xs text-gray-400 italic">Sin cursos asignados</span>}
-                                {assignedSlugs.map(slug => (
-                                  <span key={slug} className="flex items-center gap-1 bg-[#eaf4ee] text-[#1a5c4a] text-[11px] font-semibold px-2 py-0.5 rounded-full border border-[#c3e6cb]">
-                                    {SLUG_TO_NAME[slug] || slug}
-                                    <button onClick={() => handleToggleCourse(student, slug, false)} title="Quitar curso" className="hover:text-red-600 transition-colors ml-0.5">
+                                {assignedIds.length === 0 && <span className="text-xs text-gray-400 italic">Sin cursos asignados</span>}
+                                {assignedIds.map(id => (
+                                  <span key={id} className="flex items-center gap-1 bg-[#eaf4ee] text-[#1a5c4a] text-[11px] font-semibold px-2 py-0.5 rounded-full border border-[#c3e6cb]">
+                                    {getCourseDisplayName(id, courses)}
+                                    <button onClick={() => handleToggleCourse(student, id, false)} title="Quitar curso" className="hover:text-red-600 transition-colors ml-0.5">
                                       <X size={10} />
                                     </button>
                                   </span>
                                 ))}
                               </div>
-                              {availableSlugs.length > 0 && (
+                              {availableCourses.length > 0 && (
                                 <select
                                   value=""
                                   onChange={(e) => { if (e.target.value) handleToggleCourse(student, e.target.value, true); }}
                                   className="text-xs border border-[#dee2e6] rounded-md px-2 py-1.5 text-gray-500 bg-white focus:outline-none focus:border-[#00a86b] focus:ring-1 focus:ring-[#00a86b]/30 cursor-pointer w-full max-w-[180px]"
                                 >
                                   <option value="">＋ Agregar curso...</option>
-                                  {availableSlugs.map(slug => (
-                                    <option key={slug} value={slug}>{SLUG_TO_NAME[slug]}</option>
+                                  {availableCourses.map(c => (
+                                    <option key={c.id} value={getCourseIdentifier(c.id)}>{c.nombre}</option>
                                   ))}
                                 </select>
                               )}

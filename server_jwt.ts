@@ -275,8 +275,8 @@ async function startServer() {
     let cursosBase = user.role === "admin"
       ? vimeoCourses
       : (() => {
-          const slugs = (user.cursos || "").split("|").filter(Boolean);
-          const ids = slugs.map((s: string) => COURSE_MAPPING[s]).filter(Boolean);
+          const identifiers = (user.cursos || "").split("|").filter(Boolean);
+          const ids = identifiers.map((s: string) => COURSE_MAPPING[s] || s).filter(Boolean);
           return vimeoCourses.filter(c => ids.includes(c.id.toString()));
         })();
 
