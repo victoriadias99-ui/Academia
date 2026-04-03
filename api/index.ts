@@ -280,11 +280,12 @@ app.get("/api/cursos/:id", requireAuth, async (req: any, res) => {
   res.json({ curso: cursoConProgreso, lecciones });
 });
 
-app.post("/api/cursos/progreso/:leccionId", requireAuth, (req: any, res) => {
+app.post("/api/cursos/progreso/:leccionId", requireAuth, async (req: any, res) => {
   const { leccionId } = req.params;
   const { completada } = req.body;
   if (!completada) return res.json({ status: "ok", leccionId });
 
+  await loadVimeo(); // Cargar datos de Vimeo si aún no están cargados
   // Buscar a qué curso pertenece la lección
   let courseId: string | null = null;
   for (const [cid, lessons] of Object.entries(vimeoLessons)) {
