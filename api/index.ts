@@ -84,27 +84,32 @@ const VIMEO_TOKEN = "713ab24da995946cc8ebeaabd1a90880";
 const FOLDER_IDS = ["12286845", "12286854", "12052707", "12305404", "13018504", "12107061", "12305086"];
 let vimeoCourses: any[] = [];
 let vimeoLessons: Record<number, any[]> = {};
-let vimeoLoaded = false;
+let vimeoLoadPromise: Promise<void> | null = null;
 
 async function loadVimeo() {
-  if (vimeoLoaded) return;
-  vimeoLoaded = true;
-  for (const folderId of FOLDER_IDS) {
-    try {
-      const folderRes = await fetch(`https://api.vimeo.com/me/projects/${folderId}`, { headers: { Authorization: `Bearer ${VIMEO_TOKEN}` } });
-      const folderData: any = await folderRes.json();
-      if (!folderRes.ok) continue;
-      const courseId = parseInt(folderId);
-      let videos: any[] = [];
-      const res = await fetch(`https://api.vimeo.com/me/projects/${folderId}/videos?per_page=100&sort=date&direction=asc`, { headers: { Authorization: `Bearer ${VIMEO_TOKEN}` } });
-      const data: any = await res.json();
-      if (res.ok) videos = data.data || [];
-      videos.sort((a: any, b: any) => parseInt(a.name.match(/\d+/)?.[0] || "0") - parseInt(b.name.match(/\d+/)?.[0] || "0"));
-      const lessons = videos.map((v: any) => { const vimeo_id = v.uri.split("/").pop(); return { id: vimeo_id, titulo: v.name, vimeo_id, duracion: v.duration, completada: false }; });
-      vimeoCourses.push({ id: courseId, nombre: folderData.name, descripcion: folderData.description || `Curso de ${folderData.name}`, imagen_url: videos?.[0]?.pictures?.base_link || `https://picsum.photos/seed/${folderId}/400/250`, progreso: 0, total_lecciones: lessons.length, lecciones_completadas: 0 });
-      vimeoLessons[courseId] = lessons;
-    } catch (e) { console.error(`Error curso ${folderId}:`, e); }
-  }
+  if (vimeoLoadPromise) return vimeoLoadPromise;
+  vimeoLoadPromise = (async () => {
+    const results = await Promise.all(FOLDER_IDS.map(async (folderId) => {
+      try {
+        const [folderRes, videosRes] = await Promise.all([
+          fetch(`https://api.vimeo.com/me/projects/${folderId}`, { headers: { Authorization: `Bearer ${VIMEO_TOKEN}` } }),
+          fetch(`https://api.vimeo.com/me/projects/${folderId}/videos?per_page=100&sort=date&direction=asc`, { headers: { Authorization: `Bearer ${VIMEO_TOKEN}` } }),
+        ]);
+        if (!folderRes.ok) return null;
+        const [folderData, videosData]: [any, any] = await Promise.all([folderRes.json(), videosRes.json()]);
+        const courseId = parseInt(folderId);
+        const videos: any[] = (videosRes.ok ? videosData.data : null) || [];
+        videos.sort((a: any, b: any) => parseInt(a.name.match(/\d+/)?.[0] || "0") - parseInt(b.name.match(/\d+/)?.[0] || "0"));
+        const lessons = videos.map((v: any) => { const vimeo_id = v.uri.split("/").pop(); return { id: vimeo_id, titulo: v.name, vimeo_id, duracion: v.duration, completada: false }; });
+        const course = { id: courseId, nombre: folderData.name, descripcion: folderData.description || `Curso de ${folderData.name}`, imagen_url: videos?.[0]?.pictures?.base_link || `https://picsum.photos/seed/${folderId}/400/250`, progreso: 0, total_lecciones: lessons.length, lecciones_completadas: 0 };
+        return { courseId, course, lessons };
+      } catch (e) { console.error(`Error curso ${folderId}:`, e); return null; }
+    }));
+    for (const result of results) {
+      if (result) { vimeoCourses.push(result.course); vimeoLessons[result.courseId] = result.lessons; }
+    }
+  })();
+  return vimeoLoadPromise;
 }
 
 const mockStudents = [
