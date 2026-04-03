@@ -211,7 +211,7 @@ app.put("/api/admin/usuarios/:email", requireAdmin, (req, res) => {
   // Actualizar en mockStudents (en memoria)
   const idx = mockStudents.findIndex(s => s.email === email);
   if (idx !== -1) mockStudents[idx] = { ...mockStudents[idx], ...req.body, email };
-  // Actualizar en usuarios.json (persistente)
+  // Actualizar o crear en usuarios.json (persistente)
   const users = getUsers();
   const userIdx = users.findIndex((u: any) => u.email === email);
   if (userIdx !== -1) {
@@ -219,13 +219,20 @@ app.put("/api/admin/usuarios/:email", requireAdmin, (req, res) => {
     if (cursos !== undefined) users[userIdx].cursos = cursos;
     if (activo !== undefined) users[userIdx].activo = activo;
     if (vencimiento !== undefined) users[userIdx].vencimiento = vencimiento;
-    saveUsers(users);
-    res.json({ status: "ok" });
-  } else if (idx !== -1) {
-    res.json({ status: "ok" });
   } else {
-    res.status(404).json({ error: "No encontrado" });
+    // Si no existe en JSON, lo creamos con los datos recibidos
+    const mockStudent = mockStudents.find(s => s.email === email);
+    users.push({
+      id: Date.now(), email,
+      nombre: nombre || mockStudent?.nombre || "",
+      cursos: cursos || "",
+      activo: activo !== undefined ? activo : true,
+      vencimiento: vencimiento || "",
+      progreso: {}
+    });
   }
+  saveUsers(users);
+  res.json({ status: "ok" });
 });
 app.delete("/api/admin/usuarios/:email", requireAdmin, (req, res) => { const idx = mockStudents.findIndex(s => s.email === req.params.email); if (idx !== -1) { mockStudents.splice(idx, 1); res.json({ status: "ok" }); } else res.status(404).json({ error: "No encontrado" }); });
 app.get("/api/admin/ventas", requireAdmin, (req, res) => res.json({ ventas: mockSales }));

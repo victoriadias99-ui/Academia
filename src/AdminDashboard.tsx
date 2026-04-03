@@ -242,7 +242,7 @@ export default function AdminDashboard() {
   ];
 
   return (
-    <div className="flex h-screen bg-[#f4f5f7] font-sans overflow-hidden" onClick={() => setAddCourseDropdownEmail(null)}>
+    <div className="flex h-screen bg-[#f4f5f7] font-sans overflow-hidden">
       <aside className="w-[240px] bg-[#1a5c4a] flex flex-col flex-shrink-0">
         <div className="p-6">
           <div className="flex flex-col mb-1">
@@ -350,36 +350,30 @@ export default function AdminDashboard() {
                         <tr key={i} className="hover:bg-gray-50 transition-colors">
                           <td className="px-6 py-4 text-gray-600 text-sm">{student.email}</td>
                           <td className="px-6 py-4 font-medium text-[#0d2137]">{student.nombre}</td>
-                          <td className="px-6 py-4">
-                            <div className="flex flex-wrap gap-1.5 items-center">
-                              {assignedSlugs.length === 0 && <span className="text-xs text-gray-400 italic">Sin cursos</span>}
-                              {assignedSlugs.map(slug => (
-                                <span key={slug} className="flex items-center gap-1 bg-[#eaf4ee] text-[#1a5c4a] text-[11px] font-semibold px-2 py-0.5 rounded-full border border-[#c3e6cb]">
-                                  {SLUG_TO_NAME[slug] || slug}
-                                  <button onClick={() => handleToggleCourse(student, slug, false)} title="Quitar curso" className="hover:text-red-600 transition-colors ml-0.5">
-                                    <X size={10} />
-                                  </button>
-                                </span>
-                              ))}
+                          <td className="px-6 py-4 min-w-[220px]">
+                            <div className="flex flex-col gap-2">
+                              <div className="flex flex-wrap gap-1.5">
+                                {assignedSlugs.length === 0 && <span className="text-xs text-gray-400 italic">Sin cursos asignados</span>}
+                                {assignedSlugs.map(slug => (
+                                  <span key={slug} className="flex items-center gap-1 bg-[#eaf4ee] text-[#1a5c4a] text-[11px] font-semibold px-2 py-0.5 rounded-full border border-[#c3e6cb]">
+                                    {SLUG_TO_NAME[slug] || slug}
+                                    <button onClick={() => handleToggleCourse(student, slug, false)} title="Quitar curso" className="hover:text-red-600 transition-colors ml-0.5">
+                                      <X size={10} />
+                                    </button>
+                                  </span>
+                                ))}
+                              </div>
                               {availableSlugs.length > 0 && (
-                                <div className="relative">
-                                  <button
-                                    onClick={(e) => { e.stopPropagation(); setAddCourseDropdownEmail(addCourseDropdownEmail === student.email ? null : student.email); }}
-                                    title="Agregar curso"
-                                    className="w-5 h-5 rounded-full bg-gray-200 hover:bg-[#00a86b] hover:text-white text-gray-500 flex items-center justify-center transition-all text-xs font-bold"
-                                  ><Plus size={11} /></button>
-                                  {addCourseDropdownEmail === student.email && (
-                                    <div onClick={(e) => e.stopPropagation()} className="absolute left-0 top-7 z-30 bg-white border border-[#dee2e6] rounded-lg shadow-xl py-1 min-w-[170px]">
-                                      <p className="px-3 py-1.5 text-[10px] text-gray-400 font-semibold uppercase tracking-wider border-b border-[#dee2e6] mb-1">Agregar curso</p>
-                                      {availableSlugs.map(slug => (
-                                        <button key={slug} onClick={() => handleToggleCourse(student, slug, true)}
-                                          className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-[#eaf4ee] hover:text-[#1a5c4a] transition-colors">
-                                          {SLUG_TO_NAME[slug]}
-                                        </button>
-                                      ))}
-                                    </div>
-                                  )}
-                                </div>
+                                <select
+                                  value=""
+                                  onChange={(e) => { if (e.target.value) handleToggleCourse(student, e.target.value, true); }}
+                                  className="text-xs border border-[#dee2e6] rounded-md px-2 py-1.5 text-gray-500 bg-white focus:outline-none focus:border-[#00a86b] focus:ring-1 focus:ring-[#00a86b]/30 cursor-pointer w-full max-w-[180px]"
+                                >
+                                  <option value="">＋ Agregar curso...</option>
+                                  {availableSlugs.map(slug => (
+                                    <option key={slug} value={slug}>{SLUG_TO_NAME[slug]}</option>
+                                  ))}
+                                </select>
                               )}
                             </div>
                           </td>

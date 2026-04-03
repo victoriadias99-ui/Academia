@@ -238,13 +238,19 @@ async function startServer() {
       if (cursos !== undefined) users[userIdx].cursos = cursos;
       if (activo !== undefined) users[userIdx].activo = activo;
       if (vencimiento !== undefined) users[userIdx].vencimiento = vencimiento;
-      saveUsers(users);
-      res.json({ status: "ok" });
-    } else if (idx !== -1) {
-      res.json({ status: "ok" });
     } else {
-      res.status(404).json({ error: "No encontrado" });
+      const mockStudent = mockStudents.find(s => s.email === email);
+      users.push({
+        id: Date.now(), email,
+        nombre: nombre || mockStudent?.nombre || "",
+        cursos: cursos || "",
+        activo: activo !== undefined ? activo : true,
+        vencimiento: vencimiento || "",
+        progreso: {}
+      });
     }
+    saveUsers(users);
+    res.json({ status: "ok" });
   });
   app.delete("/api/admin/usuarios/:email", requireAdmin, (req, res) => { const idx = mockStudents.findIndex(s => s.email === req.params.email); if (idx !== -1) { mockStudents.splice(idx, 1); res.json({ status: "ok" }); } else res.status(404).json({ error: "No encontrado" }); });
   app.post("/api/admin/cursos", requireAdmin, (req, res) => { const c = { id: mockCourses.length + 1, ...req.body, progreso: 0, total_lecciones: 0, lecciones_completadas: 0 }; mockCourses.push(c); res.json({ status: "ok", curso: c }); });
