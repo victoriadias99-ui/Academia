@@ -179,11 +179,7 @@ async function startServer() {
     const email = rawEmail?.toLowerCase().trim();
     if (!email || !password) return res.status(400).json({ error: "Email y contraseña requeridos" });
 
-    if (ADMIN_EMAILS.includes(email)) {
-      const user = { id: 0, nombre: "Administrador", email, inicial: "A", role: "admin", foto_url: null, cursos: "" };
-      return res.json({ status: "ok", role: "admin", token: signToken(user), usuario: user });
-    }
-
+    // IMPORTANTE: Test users for development only (should be removed in production)
     if (TEST_USERS[email]) {
       const user = TEST_USERS[email];
       return res.json({ status: "ok", role: "user", token: signToken(user), usuario: user });
@@ -192,12 +188,28 @@ async function startServer() {
     try {
       const users = await getUsers();
       const user = users.find((u: any) => u.email === email);
+
       if (!user) return res.status(401).json({ error: "Credenciales incorrectas" });
       if (!user.activo) return res.status(403).json({ error: "Cuenta desactivada. Contactá al administrador." });
+
+      // Validate password for all users (including admin)
       const match = await bcrypt.compare(password, user.password);
       if (!match) return res.status(401).json({ error: "Credenciales incorrectas" });
-      const userData = { id: user.id, nombre: `${user.nombre} ${user.apellido || ""}`.trim(), email: user.email, inicial: user.nombre.charAt(0).toUpperCase(), role: "user", foto_url: null, cursos: user.cursos || "" };
-      return res.json({ status: "ok", role: "user", token: signToken(userData), usuario: userData });
+
+      // Determine role: check if email is admin
+      const role = ADMIN_EMAILS.includes(email) ? "admin" : "user";
+
+      const userData = {
+        id: user.id,
+        nombre: `${user.nombre} ${user.apellido || ""}`.trim(),
+        email: user.email,
+        inicial: user.nombre.charAt(0).toUpperCase(),
+        role: role,
+        foto_url: null,
+        cursos: user.cursos || ""
+      };
+
+      return res.json({ status: "ok", role: role, token: signToken(userData), usuario: userData });
     } catch (e) {
       return res.status(500).json({ error: "Error interno del servidor" });
     }
