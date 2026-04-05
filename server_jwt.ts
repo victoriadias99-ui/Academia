@@ -4,6 +4,7 @@ import { createServer as createViteServer } from "vite";
 import path from "path";
 import fs from "fs";
 import bcrypt from "bcrypt";
+import mysql from "mysql2/promise";
 
 const JWT_SECRET = "academia-excel-jwt-secret-2024";
 
@@ -51,12 +52,34 @@ async function startServer() {
   };
 
   // ─── DATABASE ─────────────────────────────────────────────────
-  const DB_PATH = path.join(process.cwd(), "usuarios.json");
-  const getUsers = (): any[] => {
-    if (!fs.existsSync(DB_PATH)) { fs.writeFileSync(DB_PATH, JSON.stringify([])); return []; }
-    try { return JSON.parse(fs.readFileSync(DB_PATH, "utf-8")); } catch { return []; }
-  };
-  const saveUsers = (users: any[]) => fs.writeFileSync(DB_PATH, JSON.stringify(users, null, 2));
+const pool = mysql.createPool({
+  host: process.env.MYSQL_HOST,
+  port: parseInt(process.env.MYSQL_PORT || "3306"),
+  user: process.env.MYSQL_USER,
+  password: process.env.MYSQL_PASSWORD,
+  database: process.env.MYSQL_DATABASE,
+  waitForConnections: true,
+  connectionLimit: 10,
+});
+
+const getUsers = async (): Promise<any[]> => {
+  const [rows] = await pool.query("SELECT * FROM usuarios");
+  return rows as any[];
+};
+
+const saveUser = async (user: any) => {
+  await pool.query(
+    `INSERT INTO usuarios (id, email, password, nombre, apellido, cursos, activo, vencimiento, progreso, fecha_creacion)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+     ON DUPLICATE KEY UPDATE
+     password=VALUES(password), nombre=VALUES(nombre), apellido=VALUES(apellido),
+     cursos=VALUES(cursos), activo=VALUES(activo), vencimiento=VALUES(vencimiento),
+     progreso=VALUES(progreso)`,
+    [user.id, user.email, user.password, user.nombre, user.apellido || "",
+     user.cursos || "", user.activo ?? 1, user.vencimiento || null,
+     JSON.stringify(user.progreso || {}), user.fecha_creacion || new Date().toISOString().split("T")[0]]
+  );
+};
 
   // ─── COURSE MAPPING ───────────────────────────────────────────
   const COURSE_MAPPING: Record<string, string> = {
