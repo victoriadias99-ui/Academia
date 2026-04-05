@@ -2,7 +2,6 @@ import express from "express";
 import jwt from "jsonwebtoken";
 import { createServer as createViteServer } from "vite";
 import path from "path";
-import fs from "fs";
 import bcrypt from "bcrypt";
 import mysql from "mysql2/promise";
 
@@ -11,7 +10,6 @@ const JWT_SECRET = "academia-excel-jwt-secret-2024";
 async function startServer() {
   const app = express();
   const PORT = 3000;
-
   app.use(express.json({ limit: "10mb" }));
 
   // ─── JWT HELPERS ─────────────────────────────────────────────
@@ -51,35 +49,49 @@ async function startServer() {
     next();
   };
 
-  // ─── DATABASE ─────────────────────────────────────────────────
-const pool = mysql.createPool({
-  host: process.env.MYSQL_HOST,
-  port: parseInt(process.env.MYSQL_PORT || "3306"),
-  user: process.env.MYSQL_USER,
-  password: process.env.MYSQL_PASSWORD,
-  database: process.env.MYSQL_DATABASE,
-  waitForConnections: true,
-  connectionLimit: 10,
-});
+  // ─── DATABASE (MySQL) ─────────────────────────────────────────
+  const pool = mysql.createPool({
+    host: process.env.MYSQL_HOST,
+    port: parseInt(process.env.MYSQL_PORT || "3306"),
+    user: process.env.MYSQL_USER,
+    password: process.env.MYSQL_PASSWORD,
+    database: process.env.MYSQL_DATABASE,
+    waitForConnections: true,
+    connectionLimit: 10,
+  });
 
-const getUsers = async (): Promise<any[]> => {
-  const [rows] = await pool.query("SELECT * FROM usuarios");
-  return rows as any[];
-};
+  const getUsers = async (): Promise<any[]> => {
+    const [rows] = await pool.query("SELECT * FROM usuarios");
+    return (rows as any[]).map((u) => ({
+      ...u,
+      progreso: typeof u.progreso === "string" ? JSON.parse(u.progreso || "{}") : u.progreso || {},
+    }));
+  };
 
-const saveUser = async (user: any) => {
-  await pool.query(
-    `INSERT INTO usuarios (id, email, password, nombre, apellido, cursos, activo, vencimiento, progreso, fecha_creacion)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-     ON DUPLICATE KEY UPDATE
-     password=VALUES(password), nombre=VALUES(nombre), apellido=VALUES(apellido),
-     cursos=VALUES(cursos), activo=VALUES(activo), vencimiento=VALUES(vencimiento),
-     progreso=VALUES(progreso)`,
-    [user.id, user.email, user.password, user.nombre, user.apellido || "",
-     user.cursos || "", user.activo ?? 1, user.vencimiento || null,
-     JSON.stringify(user.progreso || {}), user.fecha_creacion || new Date().toISOString().split("T")[0]]
-  );
-};
+  const saveUser = async (user: any) => {
+    await pool.query(
+      `INSERT INTO usuarios (id, email, password, nombre, apellido, cursos, activo, vencimiento, progreso, fecha_creacion)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+       ON DUPLICATE KEY UPDATE
+       password=VALUES(password), nombre=VALUES(nombre), apellido=VALUES(apellido),
+       cursos=VALUES(cursos), activo=VALUES(activo), vencimiento=VALUES(vencimiento),
+       progreso=VALUES(progreso)`,
+      [
+        user.id, user.email, user.password, user.nombre, user.apellido || "",
+        user.cursos || "", user.activo ?? 1, user.vencimiento || null,
+        JSON.stringify(user.progreso || {}),
+        user.fecha_creacion || new Date().toISOString().split("T")[0],
+      ]
+    );
+  };
+
+  const updateUserField = async (email: string, fields: Record<string, any>) => {
+    const keys = Object.keys(fields);
+    if (keys.length === 0) return;
+    const setClause = keys.map((k) => `${k}=?`).join(", ");
+    const values = keys.map((k) => (k === "progreso" ? JSON.stringify(fields[k]) : fields[k]));
+    await pool.query(`UPDATE usuarios SET ${setClause} WHERE email=?`, [...values, email]);
+  };
 
   // ─── COURSE MAPPING ───────────────────────────────────────────
   const COURSE_MAPPING: Record<string, string> = {
@@ -137,21 +149,18 @@ const saveUser = async (user: any) => {
   await preloadVimeoData();
 
   // ─── MOCK DATA ────────────────────────────────────────────────
-  const mockStudents = [
-    { email: "juan@example.com", nombre: "Juan Pérez", cursos: 2, registro: "2024-01-15", ultimo_login: "2024-03-08", activo: true, vencimiento: "2027-12-31" },
-    { email: "maria@example.com", nombre: "Maria Garcia", cursos: 1, registro: "2024-02-10", ultimo_login: "2024-03-09", activo: true, vencimiento: "2027-06-10" },
-    { email: "pedro@example.com", nombre: "Pedro Lopez", cursos: 3, registro: "2023-12-05", ultimo_login: "2024-03-01", activo: false, vencimiento: "2024-01-01" },
-  ];
   const mockSales = [
     { email: "juan@example.com", nombre: "Juan Pérez", curso: "Excel Nivel Inicial", monto: 25.0, fecha: "2024-03-08" },
     { email: "maria@example.com", nombre: "Maria Garcia", curso: "Excel Nivel Intermedio", monto: 35.0, fecha: "2024-03-07" },
     { email: "ana@example.com", nombre: "Ana Martinez", curso: "Power BI Inicial", monto: 45.0, fecha: "2024-03-06" },
   ];
+
   const mockCourses = [
     { id: 1, nombre: "Excel Nivel Inicial", descripcion: "Aprendé desde cero.", imagen_url: "https://picsum.photos/seed/excel1/400/250", progreso: 45, total_lecciones: 10, lecciones_completadas: 4 },
     { id: 2, nombre: "Excel Nivel Intermedio", descripcion: "Tablas dinámicas y más.", imagen_url: "https://picsum.photos/seed/excel2/400/250", progreso: 0, total_lecciones: 12, lecciones_completadas: 0 },
     { id: 3, nombre: "Power BI Inicial", descripcion: "Tableros interactivos.", imagen_url: "https://picsum.photos/seed/pbi/400/250", progreso: 100, total_lecciones: 8, lecciones_completadas: 8 },
   ];
+
   const mockLessons: Record<number, any[]> = {
     1: [
       { id: 101, titulo: "Introducción a la interfaz", vimeo_id: "76979871", duracion: 320, completada: true },
@@ -174,12 +183,14 @@ const saveUser = async (user: any) => {
       const user = { id: 0, nombre: "Administrador", email, inicial: "A", role: "admin", foto_url: null, cursos: "" };
       return res.json({ status: "ok", role: "admin", token: signToken(user), usuario: user });
     }
+
     if (TEST_USERS[email]) {
       const user = TEST_USERS[email];
       return res.json({ status: "ok", role: "user", token: signToken(user), usuario: user });
     }
+
     try {
-      const users = getUsers();
+      const users = await getUsers();
       const user = users.find((u: any) => u.email === email);
       if (!user) return res.status(401).json({ error: "Credenciales incorrectas" });
       if (!user.activo) return res.status(403).json({ error: "Cuenta desactivada. Contactá al administrador." });
@@ -197,17 +208,15 @@ const saveUser = async (user: any) => {
     if (!rawEmail || !password || !nombre) return res.status(400).json({ error: "Faltan datos requeridos" });
     const email = rawEmail.toLowerCase().trim();
     try {
-      const users = getUsers();
+      const users = await getUsers();
       if (users.find((u: any) => u.email === email)) return res.status(400).json({ error: "El usuario ya existe" });
       const hashedPassword = await bcrypt.hash(password, 10);
-      users.push({ id: Date.now(), email, password: hashedPassword, nombre, apellido: apellido || "", cursos: cursos || "", activo: 1, fecha_creacion: new Date().toISOString().split("T")[0] });
-      saveUsers(users);
+      await saveUser({ id: Date.now(), email, password: hashedPassword, nombre, apellido: apellido || "", cursos: cursos || "", activo: 1, fecha_creacion: new Date().toISOString().split("T")[0], progreso: {} });
       res.json({ status: "ok", message: "Usuario creado correctamente" });
     } catch { res.status(500).json({ error: "Error al crear usuario" }); }
   });
 
   app.get("/api/auth/perfil", requireAuth, (req: any, res) => res.json({ usuario: req.user }));
-
   app.post("/api/auth/logout", (req, res) => res.json({ status: "ok" }));
 
   app.post("/api/auth/update-profile", requireAuth, (req: any, res) => {
@@ -221,13 +230,13 @@ const saveUser = async (user: any) => {
     const { currentPassword, newPassword } = req.body;
     if (!currentPassword || !newPassword) return res.status(400).json({ error: "Todos los campos son requeridos" });
     try {
-      const users = getUsers();
-      const idx = users.findIndex((u: any) => u.email === req.user.email);
-      if (idx === -1) return res.status(404).json({ error: "Usuario no encontrado" });
-      const match = await bcrypt.compare(currentPassword, users[idx].password);
+      const users = await getUsers();
+      const user = users.find((u: any) => u.email === req.user.email);
+      if (!user) return res.status(404).json({ error: "Usuario no encontrado" });
+      const match = await bcrypt.compare(currentPassword, user.password);
       if (!match) return res.status(401).json({ error: "La contraseña actual es incorrecta" });
-      users[idx].password = await bcrypt.hash(newPassword, 10);
-      saveUsers(users);
+      const newHashed = await bcrypt.hash(newPassword, 10);
+      await updateUserField(req.user.email, { password: newHashed });
       res.json({ status: "ok" });
     } catch { res.status(500).json({ error: "Error al cambiar contraseña" }); }
   });
@@ -238,44 +247,70 @@ const saveUser = async (user: any) => {
   });
 
   // ─── ADMIN ROUTES ─────────────────────────────────────────────
-  app.get("/api/admin/dashboard", requireAdmin, (req, res) => res.json({ stats: { totalAlumnos: 1250, totalVentas: 850, ingresosUSD: 12450.5, cursosActivos: mockCourses.length }, ultimasCompras: mockSales }));
-  app.get("/api/admin/usuarios", requireAdmin, (req, res) => {
+  app.get("/api/admin/dashboard", requireAdmin, (req, res) =>
+    res.json({ stats: { totalAlumnos: 1250, totalVentas: 850, ingresosUSD: 12450.5, cursosActivos: mockCourses.length }, ultimasCompras: mockSales })
+  );
+
+  app.get("/api/admin/usuarios", requireAdmin, async (req, res) => {
     const q = (req.query.buscar as string)?.toLowerCase();
-    const dbUsers = getUsers();
-    const allStudents = mockStudents.map(s => {
-      const dbUser = dbUsers.find((u: any) => u.email === s.email);
-      return { ...s, cursos_slugs: dbUser?.cursos || "" };
-    });
-    res.json({ usuarios: q ? allStudents.filter(s => s.nombre.toLowerCase().includes(q) || s.email.toLowerCase().includes(q)) : allStudents });
+    try {
+      const dbUsers = await getUsers();
+      const students = dbUsers.map((u: any) => ({
+        email: u.email,
+        nombre: `${u.nombre} ${u.apellido || ""}`.trim(),
+        cursos: u.cursos,
+        cursos_slugs: u.cursos || "",
+        registro: u.fecha_creacion,
+        ultimo_login: null,
+        activo: !!u.activo,
+        vencimiento: u.vencimiento,
+      }));
+      res.json({ usuarios: q ? students.filter((s: any) => s.nombre.toLowerCase().includes(q) || s.email.toLowerCase().includes(q)) : students });
+    } catch { res.status(500).json({ error: "Error al obtener usuarios" }); }
   });
-  app.post("/api/admin/usuarios/suscripcion", requireAdmin, (req, res) => { const { email, meses, activo } = req.body; const idx = mockStudents.findIndex(s => s.email === email); if (idx === -1) return res.status(404).json({ error: "No encontrado" }); if (meses !== undefined) { const d = new Date(); d.setMonth(d.getMonth() + parseInt(meses)); (mockStudents[idx] as any).vencimiento = d.toISOString().split("T")[0]; mockStudents[idx].activo = true; } if (activo !== undefined) mockStudents[idx].activo = activo; res.json({ status: "ok", usuario: mockStudents[idx] }); });
-  app.put("/api/admin/usuarios/:email", requireAdmin, (req, res) => {
+
+  app.post("/api/admin/usuarios/suscripcion", requireAdmin, async (req, res) => {
+    const { email, meses, activo } = req.body;
+    try {
+      const fields: Record<string, any> = {};
+      if (meses !== undefined) {
+        const d = new Date(); d.setMonth(d.getMonth() + parseInt(meses));
+        fields.vencimiento = d.toISOString().split("T")[0];
+        fields.activo = 1;
+      }
+      if (activo !== undefined) fields.activo = activo ? 1 : 0;
+      await updateUserField(email, fields);
+      res.json({ status: "ok" });
+    } catch { res.status(500).json({ error: "Error al actualizar suscripción" }); }
+  });
+
+  app.put("/api/admin/usuarios/:email", requireAdmin, async (req, res) => {
     const { email } = req.params;
     const { nombre, cursos, activo, vencimiento } = req.body;
-    const idx = mockStudents.findIndex(s => s.email === email);
-    if (idx !== -1) mockStudents[idx] = { ...mockStudents[idx], ...req.body, email };
-    const users = getUsers();
-    const userIdx = users.findIndex((u: any) => u.email === email);
-    if (userIdx !== -1) {
-      if (nombre !== undefined) users[userIdx].nombre = nombre;
-      if (cursos !== undefined) users[userIdx].cursos = cursos;
-      if (activo !== undefined) users[userIdx].activo = activo;
-      if (vencimiento !== undefined) users[userIdx].vencimiento = vencimiento;
-    } else {
-      const mockStudent = mockStudents.find(s => s.email === email);
-      users.push({
-        id: Date.now(), email,
-        nombre: nombre || mockStudent?.nombre || "",
-        cursos: cursos || "",
-        activo: activo !== undefined ? activo : true,
-        vencimiento: vencimiento || "",
-        progreso: {}
-      });
-    }
-    saveUsers(users);
-    res.json({ status: "ok" });
+    try {
+      const users = await getUsers();
+      const exists = users.find((u: any) => u.email === email);
+      if (exists) {
+        const fields: Record<string, any> = {};
+        if (nombre !== undefined) fields.nombre = nombre;
+        if (cursos !== undefined) fields.cursos = cursos;
+        if (activo !== undefined) fields.activo = activo ? 1 : 0;
+        if (vencimiento !== undefined) fields.vencimiento = vencimiento;
+        await updateUserField(email, fields);
+      } else {
+        await saveUser({ id: Date.now(), email, nombre: nombre || "", cursos: cursos || "", activo: activo !== undefined ? (activo ? 1 : 0) : 1, vencimiento: vencimiento || null, progreso: {}, fecha_creacion: new Date().toISOString().split("T")[0] });
+      }
+      res.json({ status: "ok" });
+    } catch { res.status(500).json({ error: "Error al actualizar usuario" }); }
   });
-  app.delete("/api/admin/usuarios/:email", requireAdmin, (req, res) => { const idx = mockStudents.findIndex(s => s.email === req.params.email); if (idx !== -1) { mockStudents.splice(idx, 1); res.json({ status: "ok" }); } else res.status(404).json({ error: "No encontrado" }); });
+
+  app.delete("/api/admin/usuarios/:email", requireAdmin, async (req, res) => {
+    try {
+      await pool.query("DELETE FROM usuarios WHERE email=?", [req.params.email]);
+      res.json({ status: "ok" });
+    } catch { res.status(500).json({ error: "Error al eliminar usuario" }); }
+  });
+
   app.post("/api/admin/cursos", requireAdmin, (req, res) => { const c = { id: mockCourses.length + 1, ...req.body, progreso: 0, total_lecciones: 0, lecciones_completadas: 0 }; mockCourses.push(c); res.json({ status: "ok", curso: c }); });
   app.put("/api/admin/cursos/:id", requireAdmin, (req, res) => { const idx = mockCourses.findIndex(c => c.id === parseInt(req.params.id)); if (idx !== -1) { mockCourses[idx] = { ...mockCourses[idx], ...req.body, id: parseInt(req.params.id) }; res.json({ status: "ok", curso: mockCourses[idx] }); } else res.status(404).json({ error: "No encontrado" }); });
   app.delete("/api/admin/cursos/:id", requireAdmin, (req, res) => { const idx = mockCourses.findIndex(c => c.id === parseInt(req.params.id)); if (idx !== -1) { mockCourses.splice(idx, 1); delete mockLessons[parseInt(req.params.id)]; res.json({ status: "ok" }); } else res.status(404).json({ error: "No encontrado" }); });
@@ -285,50 +320,49 @@ const saveUser = async (user: any) => {
   app.get("/api/admin/ventas", requireAdmin, (req, res) => res.json({ ventas: mockSales }));
 
   // ─── COURSE ROUTES ────────────────────────────────────────────
-  const getUserProgress = (email: string): Record<string, string[]> => {
-    const users = getUsers();
+  const getUserProgress = async (email: string): Promise<Record<string, string[]>> => {
+    const users = await getUsers();
     const dbUser = users.find((u: any) => u.email === email);
     return dbUser?.progreso || {};
   };
 
-  app.get("/api/cursos/mis-cursos", requireAuth, (req: any, res) => {
+  app.get("/api/cursos/mis-cursos", requireAuth, async (req: any, res) => {
     const user = req.user;
-    const progreso = getUserProgress(user.email);
+    try {
+      const progreso = await getUserProgress(user.email);
+      const dbUsers = await getUsers();
+      const dbUser = dbUsers.find((u: any) => u.email === user.email);
+      const cursosActualizados = dbUser?.cursos ?? user.cursos ?? "";
 
-    // Leer cursos siempre desde la DB (no del JWT, que puede estar desactualizado)
-    const dbUsers = getUsers();
-    const dbUser = dbUsers.find((u: any) => u.email === user.email);
-    const cursosActualizados = dbUser?.cursos ?? user.cursos ?? "";
-
-    let cursosBase = user.role === "admin"
-      ? vimeoCourses
-      : (() => {
+      let cursosBase = user.role === "admin"
+        ? vimeoCourses
+        : (() => {
           const identifiers = cursosActualizados.split("|").filter(Boolean);
           const ids = identifiers.map((s: string) => COURSE_MAPPING[s] || s).filter(Boolean);
           return vimeoCourses.filter(c => ids.includes(c.id.toString()));
         })();
 
-    const cursos = cursosBase.map(c => {
-      const completadas = (progreso[c.id.toString()] || []).length;
-      const total = c.total_lecciones;
-      return { ...c, lecciones_completadas: completadas, progreso: total > 0 ? Math.round((completadas / total) * 100) : 0 };
-    });
-
-    res.json({ cursos });
+      const cursos = cursosBase.map(c => {
+        const completadas = (progreso[c.id.toString()] || []).length;
+        const total = c.total_lecciones;
+        return { ...c, lecciones_completadas: completadas, progreso: total > 0 ? Math.round((completadas / total) * 100) : 0 };
+      });
+      res.json({ cursos });
+    } catch { res.status(500).json({ error: "Error al obtener cursos" }); }
   });
 
-  app.get("/api/cursos/:id", requireAuth, (req: any, res) => {
+  app.get("/api/cursos/:id", requireAuth, async (req: any, res) => {
     const id = parseInt(req.params.id);
     const curso = vimeoCourses.find(c => c.id === id);
     if (!curso) return res.status(404).json({ error: "Curso no encontrado" });
-
-    const completadas: string[] = getUserProgress(req.user.email)[id.toString()] || [];
-    const lecciones = (vimeoLessons[id] || []).map((l: any) => ({ ...l, completada: completadas.includes(l.id) }));
-    const completadasCount = lecciones.filter((l: any) => l.completada).length;
-    const total = lecciones.length;
-    const cursoConProgreso = { ...curso, lecciones_completadas: completadasCount, progreso: total > 0 ? Math.round((completadasCount / total) * 100) : 0 };
-
-    res.json({ curso: cursoConProgreso, lecciones });
+    try {
+      const completadas: string[] = (await getUserProgress(req.user.email))[id.toString()] || [];
+      const lecciones = (vimeoLessons[id] || []).map((l: any) => ({ ...l, completada: completadas.includes(l.id) }));
+      const completadasCount = lecciones.filter((l: any) => l.completada).length;
+      const total = lecciones.length;
+      const cursoConProgreso = { ...curso, lecciones_completadas: completadasCount, progreso: total > 0 ? Math.round((completadasCount / total) * 100) : 0 };
+      res.json({ curso: cursoConProgreso, lecciones });
+    } catch { res.status(500).json({ error: "Error al obtener curso" }); }
   });
 
   app.post("/api/cursos/progreso/:leccionId", requireAuth, async (req: any, res) => {
@@ -336,28 +370,25 @@ const saveUser = async (user: any) => {
     const { completada } = req.body;
     if (!completada) return res.json({ status: "ok", leccionId });
 
-    await loadVimeo(); // Cargar datos de Vimeo si aún no están cargados
-    // Buscar a qué curso pertenece la lección
     let courseId: string | null = null;
     for (const [cid, lessons] of Object.entries(vimeoLessons)) {
       if ((lessons as any[]).some((l: any) => l.id === leccionId)) { courseId = cid; break; }
     }
     if (!courseId) return res.json({ status: "ok", leccionId });
 
-    const users = getUsers();
-    let idx = users.findIndex((u: any) => u.email === req.user.email);
-    if (idx === -1) {
-      users.push({ id: req.user.id, email: req.user.email, nombre: req.user.nombre, progreso: {} });
-      idx = users.length - 1;
-    }
-
-    const progreso = users[idx].progreso || {};
-    if (!progreso[courseId]) progreso[courseId] = [];
-    if (!progreso[courseId].includes(leccionId)) progreso[courseId].push(leccionId);
-    users[idx].progreso = progreso;
-    saveUsers(users);
-
-    res.json({ status: "ok", leccionId });
+    try {
+      const users = await getUsers();
+      let user = users.find((u: any) => u.email === req.user.email);
+      if (!user) {
+        await saveUser({ id: req.user.id, email: req.user.email, nombre: req.user.nombre, progreso: {}, cursos: "", activo: 1 });
+        user = { progreso: {} };
+      }
+      const progreso = user.progreso || {};
+      if (!progreso[courseId]) progreso[courseId] = [];
+      if (!progreso[courseId].includes(leccionId)) progreso[courseId].push(leccionId);
+      await updateUserField(req.user.email, { progreso });
+      res.json({ status: "ok", leccionId });
+    } catch { res.status(500).json({ error: "Error al guardar progreso" }); }
   });
 
   // ─── VITE / STATIC ────────────────────────────────────────────
