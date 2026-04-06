@@ -118,7 +118,7 @@ const parseUser = (u: any) => ({
 
 const getUserByEmail = async (email: string): Promise<any | null> => {
   const [rows] = await getPool().query(
-    "SELECT * FROM usuarios WHERE email = ? LIMIT 1",
+    "SELECT * FROM academia_usuarios WHERE email = ? LIMIT 1",
     [email]
   );
   const user = (rows as any[])[0];
@@ -126,13 +126,13 @@ const getUserByEmail = async (email: string): Promise<any | null> => {
 };
 
 const getUsers = async (): Promise<any[]> => {
-  const [rows] = await getPool().query("SELECT * FROM usuarios");
+  const [rows] = await getPool().query("SELECT * FROM academia_usuarios");
   return (rows as any[]).map(parseUser);
 };
 
 const saveUser = async (user: any): Promise<void> => {
   await getPool().query(
-    `INSERT INTO usuarios
+    `INSERT INTO academia_usuarios
        (id, email, password, nombre, apellido, cursos, activo, vencimiento, progreso, fecha_creacion)
      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
      ON DUPLICATE KEY UPDATE
@@ -165,7 +165,7 @@ const updateUserFields = async (
     k === "progreso" ? JSON.stringify(fields[k]) : fields[k]
   );
   await getPool().query(
-    `UPDATE usuarios SET ${setClause} WHERE email=?`,
+    `UPDATE academia_usuarios SET ${setClause} WHERE email=?`,
     [...values, email]
   );
 };
@@ -567,7 +567,7 @@ app.put("/api/admin/usuarios/:email", requireAdmin, async (req, res) => {
 
 app.delete("/api/admin/usuarios/:email", requireAdmin, async (req, res) => {
   try {
-    await getPool().query("DELETE FROM usuarios WHERE email = ?", [
+    await getPool().query("DELETE FROM academia_usuarios WHERE email = ?", [
       req.params.email,
     ]);
     res.json({ status: "ok" });
