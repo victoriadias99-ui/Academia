@@ -403,8 +403,9 @@ app.post("/api/auth/login", async (req, res) => {
     return res.json({
       status: "ok", role, token: signToken(userData), usuario: userData,
     });
-  } catch {
-    return res.status(500).json({ error: "Error interno" });
+  } catch (err: any) {
+    console.error("LOGIN ERROR:", err?.message || err);
+    return res.status(500).json({ error: "Error interno", detalle: err?.message || String(err) });
   }
 });
 
