@@ -58,6 +58,7 @@ async function startServer() {
     database: process.env.MYSQL_DATABASE,
     waitForConnections: true,
     connectionLimit: 10,
+    ssl: { rejectUnauthorized: false },
   });
 
   const getUsers = async (): Promise<any[]> => {
