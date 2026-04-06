@@ -61,7 +61,7 @@ async function startServer() {
   });
 
   const getUsers = async (): Promise<any[]> => {
-    const [rows] = await pool.query("SELECT * FROM usuarios");
+    const [rows] = await pool.query("SELECT * FROM academia_usuarios");
     return (rows as any[]).map((u) => ({
       ...u,
       progreso: typeof u.progreso === "string" ? JSON.parse(u.progreso || "{}") : u.progreso || {},
@@ -70,7 +70,7 @@ async function startServer() {
 
   const saveUser = async (user: any) => {
     await pool.query(
-      `INSERT INTO usuarios (id, email, password, nombre, apellido, cursos, activo, vencimiento, progreso, fecha_creacion)
+      `INSERT INTO academia_usuarios (id, email, password, nombre, apellido, cursos, activo, vencimiento, progreso, fecha_creacion)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
        ON DUPLICATE KEY UPDATE
        password=VALUES(password), nombre=VALUES(nombre), apellido=VALUES(apellido),
@@ -90,7 +90,7 @@ async function startServer() {
     if (keys.length === 0) return;
     const setClause = keys.map((k) => `${k}=?`).join(", ");
     const values = keys.map((k) => (k === "progreso" ? JSON.stringify(fields[k]) : fields[k]));
-    await pool.query(`UPDATE usuarios SET ${setClause} WHERE email=?`, [...values, email]);
+    await pool.query(`UPDATE academia_usuarios SET ${setClause} WHERE email=?`, [...values, email]);
   };
 
   // ─── COURSE MAPPING ───────────────────────────────────────────
@@ -318,7 +318,7 @@ async function startServer() {
 
   app.delete("/api/admin/usuarios/:email", requireAdmin, async (req, res) => {
     try {
-      await pool.query("DELETE FROM usuarios WHERE email=?", [req.params.email]);
+      await pool.query("DELETE FROM academia_usuarios WHERE email=?", [req.params.email]);
       res.json({ status: "ok" });
     } catch { res.status(500).json({ error: "Error al eliminar usuario" }); }
   });
