@@ -500,8 +500,7 @@ async function startServer() {
       });
       res.json({ status: "ok", message: "Admin creado correctamente" });
     } catch (e: any) {
-      console.error("Setup admin error:", e?.message);
-      res.status(500).json({ error: "Error al crear admin" });
+      res.status(500).json({ error: e?.message || "Error al crear admin" });
     }
   });
 
