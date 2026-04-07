@@ -7,7 +7,7 @@ import nodemailer from "nodemailer";
 // ─── CONFIG ──────────────────────────────────────────────────────────────────
 const JWT_SECRET     = process.env.JWT_SECRET     || "academia-excel-jwt-secret-2024";
 const WEBHOOK_SECRET = process.env.WEBHOOK_SECRET || "";
-const ACADEMIA_URL   = process.env.ACADEMIA_URL   || "https://academia-aprende-excel.vercel.app";
+const ACADEMIA_URL   = process.env.ACADEMIA_URL   || "https://academia-wine.vercel.app/";
 const ADMIN_EMAILS   = ["victoria.pdias99@gmail.com", "admin@gmail.com"];
 
 const COURSE_MAPPING: Record<string, string> = {
