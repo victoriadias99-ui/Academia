@@ -225,7 +225,7 @@ async function startServer() {
       const users = await getUsers();
       if (users.find((u: any) => u.email === email)) return res.status(400).json({ error: "El usuario ya existe" });
       const hashedPassword = await bcrypt.hash(password, 10);
-      await saveUser({ id: Date.now(), email, password: hashedPassword, nombre, apellido: apellido || "", cursos: cursos || "", activo: 1, fecha_creacion: new Date().toISOString().split("T")[0], progreso: {} });
+      await saveUser({ id: generateId(), email, password: hashedPassword, nombre, apellido: apellido || "", cursos: cursos || "", activo: 1, fecha_creacion: new Date().toISOString().split("T")[0], progreso: {} });
       res.json({ status: "ok", message: "Usuario creado correctamente" });
     } catch { res.status(500).json({ error: "Error al crear usuario" }); }
   });
@@ -312,7 +312,7 @@ async function startServer() {
         if (vencimiento !== undefined) fields.vencimiento = vencimiento;
         await updateUserField(email, fields);
       } else {
-        await saveUser({ id: Date.now(), email, nombre: nombre || "", cursos: cursos || "", activo: activo !== undefined ? (activo ? 1 : 0) : 1, vencimiento: vencimiento || null, progreso: {}, fecha_creacion: new Date().toISOString().split("T")[0] });
+        await saveUser({ id: generateId(), email, nombre: nombre || "", cursos: cursos || "", activo: activo !== undefined ? (activo ? 1 : 0) : 1, vencimiento: vencimiento || null, progreso: {}, fecha_creacion: new Date().toISOString().split("T")[0] });
       }
       res.json({ status: "ok" });
     } catch { res.status(500).json({ error: "Error al actualizar usuario" }); }
@@ -420,6 +420,8 @@ async function startServer() {
     return pass;
   };
 
+  const generateId = () => Math.floor(Math.random() * 2000000000);
+
   const sendWelcomeEmail = async (email: string, nombre: string, password: string) => {
     const academiaUrl = process.env.ACADEMIA_URL || "https://academia-production-c4cc.up.railway.app";
     try {
@@ -480,7 +482,7 @@ async function startServer() {
         return res.status(400).json({ error: "El usuario ya existe" });
       const hashedPassword = await bcrypt.hash(password, 10);
       await saveUser({
-        id: Date.now(), email: email.toLowerCase().trim(),
+        id: generateId(), email: email.toLowerCase().trim(),
         password: hashedPassword, nombre: "Admin", apellido: "",
         cursos: "", activo: 1,
         fecha_creacion: new Date().toISOString().split("T")[0], progreso: {},
@@ -512,7 +514,7 @@ async function startServer() {
         const hashedPassword = await bcrypt.hash(password, 10);
         const [firstName, ...rest] = nombre.trim().split(" ");
         await saveUser({
-          id: Date.now(), email,
+          id: generateId(), email,
           password: hashedPassword,
           nombre: firstName, apellido: rest.join(" "),
           cursos: cursosArr.join("|"),
