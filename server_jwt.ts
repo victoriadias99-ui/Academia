@@ -4,6 +4,7 @@ import { createServer as createViteServer } from "vite";
 import path from "path";
 import bcrypt from "bcrypt";
 import mysql from "mysql2/promise";
+import nodemailer from "nodemailer";
 
 const JWT_SECRET = "academia-excel-jwt-secret-2024";
 
@@ -402,6 +403,136 @@ async function startServer() {
       await updateUserField(req.user.email, { progreso });
       res.json({ status: "ok", leccionId });
     } catch { res.status(500).json({ error: "Error al guardar progreso" }); }
+  });
+
+  // ─── EMAIL ───────────────────────────────────────────────────
+  const createTransporter = () => nodemailer.createTransport({
+    host: process.env.EMAIL_HOST || "smtp.gmail.com",
+    port: parseInt(process.env.EMAIL_PORT || "587"),
+    secure: process.env.EMAIL_SECURE === "true",
+    auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS },
+  });
+
+  const generatePassword = () => {
+    const chars = "ABCDEFGHJKMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789";
+    let pass = "";
+    for (let i = 0; i < 10; i++) pass += chars[Math.floor(Math.random() * chars.length)];
+    return pass;
+  };
+
+  const sendWelcomeEmail = async (email: string, nombre: string, password: string) => {
+    const academiaUrl = process.env.ACADEMIA_URL || "https://academia-production-c4cc.up.railway.app";
+    try {
+      const transporter = createTransporter();
+      await transporter.sendMail({
+        from: `"Academia Aprende Excel" <${process.env.EMAIL_USER}>`,
+        to: email,
+        subject: "¡Bienvenido/a a la Academia! Tus datos de acceso",
+        html: `
+          <div style="font-family:Arial,sans-serif;max-width:500px;margin:auto;padding:24px;border:1px solid #e0e0e0;border-radius:8px;">
+            <h2 style="color:#008B69;">¡Hola ${nombre}!</h2>
+            <p>Tu compra fue procesada con éxito. Ya tenés acceso a la Academia Aprende Excel.</p>
+            <div style="background:#f5f5f5;padding:16px;border-radius:6px;margin:20px 0;">
+              <p style="margin:0;"><strong>Email:</strong> ${email}</p>
+              <p style="margin:8px 0 0;"><strong>Contraseña:</strong> ${password}</p>
+            </div>
+            <a href="${academiaUrl}" style="display:inline-block;background:#008B69;color:#fff;padding:12px 24px;border-radius:6px;text-decoration:none;font-weight:bold;">Ingresar a la Academia →</a>
+            <p style="margin-top:24px;color:#666;font-size:13px;">Podés cambiar tu contraseña una vez que ingreses.</p>
+          </div>
+        `,
+      });
+    } catch (e) {
+      console.error("Error enviando email:", e);
+    }
+  };
+
+  const sendCourseAddedEmail = async (email: string, nombre: string, cursos: string[]) => {
+    const academiaUrl = process.env.ACADEMIA_URL || "https://academia-production-c4cc.up.railway.app";
+    try {
+      const transporter = createTransporter();
+      await transporter.sendMail({
+        from: `"Academia Aprende Excel" <${process.env.EMAIL_USER}>`,
+        to: email,
+        subject: "Nuevo curso agregado a tu cuenta",
+        html: `
+          <div style="font-family:Arial,sans-serif;max-width:500px;margin:auto;padding:24px;border:1px solid #e0e0e0;border-radius:8px;">
+            <h2 style="color:#008B69;">¡Hola ${nombre}!</h2>
+            <p>Se agregó un nuevo curso a tu cuenta: <strong>${cursos.join(", ")}</strong></p>
+            <a href="${academiaUrl}" style="display:inline-block;background:#008B69;color:#fff;padding:12px 24px;border-radius:6px;text-decoration:none;font-weight:bold;">Ver mis cursos →</a>
+          </div>
+        `,
+      });
+    } catch (e) {
+      console.error("Error enviando email:", e);
+    }
+  };
+
+  // ─── SETUP ADMIN (uso único) ──────────────────────────────────
+  app.post("/api/setup/admin", async (req, res) => {
+    const { secret, email, password } = req.body;
+    if (!process.env.SETUP_SECRET || secret !== process.env.SETUP_SECRET)
+      return res.status(401).json({ error: "No autorizado" });
+    if (!email || !password)
+      return res.status(400).json({ error: "Email y contraseña requeridos" });
+    try {
+      const users = await getUsers();
+      if (users.find((u: any) => u.email === email.toLowerCase().trim()))
+        return res.status(400).json({ error: "El usuario ya existe" });
+      const hashedPassword = await bcrypt.hash(password, 10);
+      await saveUser({
+        id: Date.now(), email: email.toLowerCase().trim(),
+        password: hashedPassword, nombre: "Admin", apellido: "",
+        cursos: "", activo: 1,
+        fecha_creacion: new Date().toISOString().split("T")[0], progreso: {},
+      });
+      res.json({ status: "ok", message: "Admin creado correctamente" });
+    } catch (e) {
+      res.status(500).json({ error: "Error al crear admin" });
+    }
+  });
+
+  // ─── WEBHOOK DE COMPRA ────────────────────────────────────────
+  app.post("/api/webhook/purchase", async (req, res) => {
+    const secret = req.headers["x-webhook-secret"];
+    const webhookSecret = process.env.WEBHOOK_SECRET;
+    if (!webhookSecret || secret !== webhookSecret)
+      return res.status(401).json({ error: "No autorizado" });
+
+    const { email: rawEmail, nombre, cursos } = req.body;
+    if (!rawEmail || !nombre) return res.status(400).json({ error: "Faltan datos" });
+    const email = rawEmail.toLowerCase().trim();
+    const cursosArr: string[] = Array.isArray(cursos) ? cursos : (cursos ? [cursos] : []);
+
+    try {
+      const users = await getUsers();
+      const existing = users.find((u: any) => u.email === email);
+
+      if (!existing) {
+        const password = generatePassword();
+        const hashedPassword = await bcrypt.hash(password, 10);
+        const [firstName, ...rest] = nombre.trim().split(" ");
+        await saveUser({
+          id: Date.now(), email,
+          password: hashedPassword,
+          nombre: firstName, apellido: rest.join(" "),
+          cursos: cursosArr.join("|"),
+          activo: 1,
+          fecha_creacion: new Date().toISOString().split("T")[0],
+          progreso: {},
+        });
+        await sendWelcomeEmail(email, firstName, password);
+      } else {
+        const existingCursos = existing.cursos ? existing.cursos.split("|") : [];
+        const merged = [...new Set([...existingCursos, ...cursosArr])].filter(Boolean);
+        await updateUserField(email, { cursos: merged.join("|") });
+        await sendCourseAddedEmail(email, existing.nombre, cursosArr);
+      }
+
+      res.json({ status: "ok" });
+    } catch (e) {
+      console.error("Webhook error:", e);
+      res.status(500).json({ error: "Error procesando compra" });
+    }
   });
 
   // ─── VITE / STATIC ────────────────────────────────────────────
