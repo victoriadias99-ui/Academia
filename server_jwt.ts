@@ -62,6 +62,17 @@ async function startServer() {
     ssl: { rejectUnauthorized: false },
   });
 
+  // ─── DB MIGRATIONS ───────────────────────────────────────────
+  try {
+    await pool.query(`ALTER TABLE academia_usuarios ADD COLUMN IF NOT EXISTS apellido VARCHAR(100) NOT NULL DEFAULT ''`);
+    await pool.query(`ALTER TABLE academia_usuarios ADD COLUMN IF NOT EXISTS cursos TEXT DEFAULT ''`);
+    await pool.query(`ALTER TABLE academia_usuarios ADD COLUMN IF NOT EXISTS activo TINYINT(1) NOT NULL DEFAULT 1`);
+    await pool.query(`ALTER TABLE academia_usuarios ADD COLUMN IF NOT EXISTS vencimiento DATE DEFAULT NULL`);
+    await pool.query(`ALTER TABLE academia_usuarios ADD COLUMN IF NOT EXISTS progreso TEXT DEFAULT '{}'`);
+    await pool.query(`ALTER TABLE academia_usuarios ADD COLUMN IF NOT EXISTS fecha_creacion DATE DEFAULT NULL`);
+    console.log("Migrations OK");
+  } catch (e: any) { console.error("Migration error:", e?.message); }
+
   const getUsers = async (): Promise<any[]> => {
     const [rows] = await pool.query("SELECT * FROM academia_usuarios");
     return (rows as any[]).map((u) => ({
@@ -489,7 +500,8 @@ async function startServer() {
       });
       res.json({ status: "ok", message: "Admin creado correctamente" });
     } catch (e: any) {
-      res.status(500).json({ error: "Error al crear admin", detail: e?.message, sql: e?.sql });
+      console.error("Setup admin error:", e?.message);
+      res.status(500).json({ error: "Error al crear admin" });
     }
   });
 
