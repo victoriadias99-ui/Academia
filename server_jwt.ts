@@ -63,15 +63,17 @@ async function startServer() {
   });
 
   // ─── DB MIGRATIONS ───────────────────────────────────────────
-  try {
-    await pool.query(`ALTER TABLE academia_usuarios ADD COLUMN IF NOT EXISTS apellido VARCHAR(100) NOT NULL DEFAULT ''`);
-    await pool.query(`ALTER TABLE academia_usuarios ADD COLUMN IF NOT EXISTS cursos TEXT DEFAULT ''`);
-    await pool.query(`ALTER TABLE academia_usuarios ADD COLUMN IF NOT EXISTS activo TINYINT(1) NOT NULL DEFAULT 1`);
-    await pool.query(`ALTER TABLE academia_usuarios ADD COLUMN IF NOT EXISTS vencimiento DATE DEFAULT NULL`);
-    await pool.query(`ALTER TABLE academia_usuarios ADD COLUMN IF NOT EXISTS progreso TEXT DEFAULT '{}'`);
-    await pool.query(`ALTER TABLE academia_usuarios ADD COLUMN IF NOT EXISTS fecha_creacion DATE DEFAULT NULL`);
-    console.log("Migrations OK");
-  } catch (e: any) { console.error("Migration error:", e?.message); }
+  const addCol = async (sql: string) => {
+    try { await pool.query(sql); }
+    catch (e: any) { if (e?.errno !== 1060) console.error("Migration error:", e?.message); }
+  };
+  await addCol(`ALTER TABLE academia_usuarios ADD COLUMN apellido VARCHAR(100) NOT NULL DEFAULT ''`);
+  await addCol(`ALTER TABLE academia_usuarios ADD COLUMN cursos TEXT DEFAULT ''`);
+  await addCol(`ALTER TABLE academia_usuarios ADD COLUMN activo TINYINT(1) NOT NULL DEFAULT 1`);
+  await addCol(`ALTER TABLE academia_usuarios ADD COLUMN vencimiento DATE DEFAULT NULL`);
+  await addCol(`ALTER TABLE academia_usuarios ADD COLUMN progreso TEXT DEFAULT '{}'`);
+  await addCol(`ALTER TABLE academia_usuarios ADD COLUMN fecha_creacion DATE DEFAULT NULL`);
+  console.log("Migrations OK");
 
   const getUsers = async (): Promise<any[]> => {
     const [rows] = await pool.query("SELECT * FROM academia_usuarios");
