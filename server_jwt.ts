@@ -488,8 +488,8 @@ async function startServer() {
         fecha_creacion: new Date().toISOString().split("T")[0], progreso: {},
       });
       res.json({ status: "ok", message: "Admin creado correctamente" });
-    } catch (e) {
-      res.status(500).json({ error: "Error al crear admin" });
+    } catch (e: any) {
+      res.status(500).json({ error: "Error al crear admin", detail: e?.message, sql: e?.sql });
     }
   });
 
