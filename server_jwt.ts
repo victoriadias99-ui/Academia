@@ -52,11 +52,11 @@ async function startServer() {
 
   // ─── DATABASE (MySQL) ─────────────────────────────────────────
   const pool = mysql.createPool({
-    host: process.env.MYSQL_HOST,
-    port: parseInt(process.env.MYSQL_PORT || "3306"),
-    user: process.env.MYSQL_USER,
-    password: process.env.MYSQL_PASSWORD,
-    database: process.env.MYSQL_DATABASE,
+    host:     process.env.MYSQL_HOST     || process.env.MYSQLHOST,
+    port:     parseInt(process.env.MYSQL_PORT || process.env.MYSQLPORT || "3306"),
+    user:     process.env.MYSQL_USER     || process.env.MYSQLUSER,
+    password: process.env.MYSQL_PASSWORD || process.env.MYSQLPASSWORD,
+    database: process.env.MYSQL_DATABASE || process.env.MYSQLDATABASE,
     waitForConnections: true,
     connectionLimit: 10,
     ssl: { rejectUnauthorized: false },
