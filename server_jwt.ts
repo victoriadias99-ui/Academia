@@ -68,10 +68,10 @@ async function startServer() {
     catch (e: any) { if (e?.errno !== 1060) console.error("Migration error:", e?.message); }
   };
   await addCol(`ALTER TABLE academia_usuarios ADD COLUMN apellido VARCHAR(100) NOT NULL DEFAULT ''`);
-  await addCol(`ALTER TABLE academia_usuarios ADD COLUMN cursos TEXT DEFAULT ''`);
+  await addCol(`ALTER TABLE academia_usuarios ADD COLUMN cursos TEXT`);
   await addCol(`ALTER TABLE academia_usuarios ADD COLUMN activo TINYINT(1) NOT NULL DEFAULT 1`);
   await addCol(`ALTER TABLE academia_usuarios ADD COLUMN vencimiento DATE DEFAULT NULL`);
-  await addCol(`ALTER TABLE academia_usuarios ADD COLUMN progreso TEXT DEFAULT '{}'`);
+  await addCol(`ALTER TABLE academia_usuarios ADD COLUMN progreso TEXT`);
   await addCol(`ALTER TABLE academia_usuarios ADD COLUMN fecha_creacion DATE DEFAULT NULL`);
   console.log("Migrations OK");
 
