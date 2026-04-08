@@ -43,67 +43,108 @@ const getPool = (): mysql.Pool => {
 };
 
 // ─── EMAIL ───────────────────────────────────────────────────────────────────
+const buildWelcomeHtml = (
+  nombre: string,
+  email: string,
+  password: string,
+  loginUrl: string
+): string => {
+  const BRAND_COLOR  = "#1a472a";
+  const ACCENT_COLOR = "#4ecdc4";
+  const LIGHT_BG     = "#f8f9fa";
+  return `<!DOCTYPE html>
+<html lang="es">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="font-family:Poppins,Arial,sans-serif;background-color:#ffffff;padding:20px 0;margin:0;">
+  <div style="max-width:600px;margin:0 auto;background-color:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 2px 12px rgba(26,71,42,0.08);">
+
+    <!-- Header -->
+    <div style="background-color:${BRAND_COLOR};padding:40px 20px;text-align:center;border-bottom:4px solid ${ACCENT_COLOR};">
+      <h1 style="font-size:32px;color:#ffffff;margin:0 0 8px 0;font-weight:bold;">📊 Aprende Excel</h1>
+      <p style="font-size:14px;color:#e8f5e9;margin:0;">Tu acceso está listo</p>
+    </div>
+
+    <!-- Welcome -->
+    <div style="padding:40px 30px;">
+      <h2 style="font-size:24px;color:${BRAND_COLOR};margin:0 0 16px 0;font-weight:600;">¡Bienvenido, ${nombre}! 🎉</h2>
+      <p style="font-size:15px;color:#555555;line-height:1.6;margin:0 0 24px 0;">
+        Gracias por confiar en nosotros. Tu cuenta ha sido activada exitosamente y ya puedes acceder a todos nuestros cursos de Excel.
+      </p>
+    </div>
+
+    <!-- Credentials -->
+    <div style="padding:0 30px 30px 30px;">
+      <p style="font-size:14px;font-weight:600;color:${BRAND_COLOR};text-transform:uppercase;letter-spacing:0.5px;margin:0 0 16px 0;">
+        Tus datos de acceso:
+      </p>
+
+      <div style="background-color:${LIGHT_BG};padding:16px;border-radius:8px;border-left:4px solid ${ACCENT_COLOR};margin-bottom:12px;">
+        <p style="font-size:12px;font-weight:600;color:#888888;text-transform:uppercase;margin:0 0 8px 0;letter-spacing:0.3px;">📧 Usuario</p>
+        <p style="font-size:16px;font-family:monospace;color:${BRAND_COLOR};margin:0;font-weight:600;word-break:break-all;">${email}</p>
+      </div>
+
+      <div style="background-color:${LIGHT_BG};padding:16px;border-radius:8px;border-left:4px solid ${ACCENT_COLOR};margin-bottom:16px;">
+        <p style="font-size:12px;font-weight:600;color:#888888;text-transform:uppercase;margin:0 0 8px 0;letter-spacing:0.3px;">🔐 Contraseña</p>
+        <p style="font-size:16px;font-family:monospace;color:${BRAND_COLOR};margin:0;font-weight:600;word-break:break-all;">${password}</p>
+      </div>
+
+      <div style="font-size:13px;color:#d32f2f;background-color:#ffebee;padding:12px 14px;border-radius:6px;margin:0;line-height:1.5;">
+        ⚠️ <strong>Importante:</strong> Por tu seguridad, recomendamos cambiar la contraseña en tu primer acceso. No compartas estos datos con nadie.
+      </div>
+    </div>
+
+    <!-- CTA Button -->
+    <div style="padding:30px;text-align:center;">
+      <a href="${loginUrl}"
+         style="background-color:${ACCENT_COLOR};color:#ffffff;border-radius:8px;font-weight:600;font-size:15px;text-decoration:none;display:inline-block;padding:16px 40px;">
+        Inicia Sesión Aquí
+      </a>
+    </div>
+
+    <!-- Links -->
+    <div style="padding:20px 30px;background-color:${LIGHT_BG};text-align:center;">
+      <a href="${loginUrl}" style="color:${BRAND_COLOR};text-decoration:none;font-size:14px;font-weight:500;margin:0 16px;">Portal de Cursos</a>
+      <a href="https://aprendeexcel.com/ayuda" style="color:${BRAND_COLOR};text-decoration:none;font-size:14px;font-weight:500;margin:0 16px;">Centro de Ayuda</a>
+    </div>
+
+    <!-- Divider -->
+    <div style="height:1px;background-color:#e0e0e0;margin:0 30px;"></div>
+
+    <!-- Footer -->
+    <div style="padding:30px;background-color:#fafafa;text-align:center;">
+      <p style="font-size:12px;color:#999999;margin:8px 0;line-height:1.5;">
+        ¿Necesitas ayuda? Contáctanos en
+        <a href="mailto:soporte@aprendeexcel.com" style="color:${BRAND_COLOR};text-decoration:none;font-weight:500;">soporte@aprendeexcel.com</a>
+      </p>
+      <p style="font-size:12px;color:#999999;margin:8px 0;">© 2024 Aprende Excel. Todos los derechos reservados.</p>
+    </div>
+
+  </div>
+</body>
+</html>`;
+};
+
 const sendWelcomeEmail = async (
   email: string,
   nombre: string,
   password: string,
-  cursos: string[]
 ): Promise<void> => {
+  const loginUrl = process.env.ACADEMIA_URL || "https://academia-production-c4cc.up.railway.app";
   const transporter = nodemailer.createTransport({
-    host:   process.env.SMTP_HOST || "smtp-relay.brevo.com",
-    port:   parseInt(process.env.SMTP_PORT || "587"),
-    secure: false,
+    host:   process.env.EMAIL_HOST || "smtp.resend.com",
+    port:   parseInt(process.env.EMAIL_PORT || "465"),
+    secure: process.env.EMAIL_SECURE === "true",
     auth: {
-      user: process.env.SMTP_USER,
-      pass: process.env.SMTP_PASS,
+      user: process.env.EMAIL_USER || "resend",
+      pass: process.env.EMAIL_PASS,
     },
   });
 
-  const cursoList = cursos
-    .map((c) => `<li style="margin:6px 0;">${COURSE_NAMES[c] || c}</li>`)
-    .join("");
-
   await transporter.sendMail({
-    from:    process.env.EMAIL_FROM || '"Academia Aprende Excel" <academia@aprendeexcel.com>',
+    from:    '"Academia Aprende Excel" <academia@aprendeexcel.com>',
     to:      email,
-    subject: "Bienvenido/a a la Academia Aprende Excel - Tus credenciales de acceso",
-    html: `<!DOCTYPE html>
-<html lang="es">
-<body style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:24px;color:#333;background:#fff;">
-  <div style="text-align:center;margin-bottom:28px;">
-    <h1 style="color:#1a5276;margin:0;font-size:26px;">Academia Aprende Excel</h1>
-  </div>
-  <h2 style="color:#1a5276;">Hola, ${nombre}!</h2>
-  <p>Tu compra fue confirmada. Ya podes acceder a tus cursos:</p>
-  <ul style="background:#eaf4fb;padding:14px 28px;border-radius:8px;margin:16px 0;">
-    ${cursoList}
-  </ul>
-  <h3 style="margin-top:28px;color:#1a5276;">Tus credenciales de acceso</h3>
-  <table style="border-collapse:collapse;width:100%;background:#f8f9fa;border-radius:8px;overflow:hidden;">
-    <tr>
-      <td style="padding:12px 20px;font-weight:bold;border-bottom:1px solid #dee2e6;width:130px;">Usuario</td>
-      <td style="padding:12px 20px;border-bottom:1px solid #dee2e6;">${email}</td>
-    </tr>
-    <tr>
-      <td style="padding:12px 20px;font-weight:bold;">Contrasena</td>
-      <td style="padding:12px 20px;font-family:monospace;font-size:18px;letter-spacing:3px;font-weight:bold;">${password}</td>
-    </tr>
-  </table>
-  <div style="text-align:center;margin:36px 0 24px;">
-    <a href="${ACADEMIA_URL}"
-       style="background:#1a5276;color:#fff;padding:14px 36px;text-decoration:none;border-radius:6px;font-size:16px;font-weight:bold;display:inline-block;">
-      Ingresar a la Academia
-    </a>
-  </div>
-  <p style="color:#777;font-size:13px;">
-    Por seguridad, te recomendamos cambiar tu contrasena desde tu perfil luego del primer ingreso.
-  </p>
-  <hr style="border:none;border-top:1px solid #eee;margin:20px 0;">
-  <p style="color:#aaa;font-size:12px;text-align:center;">
-    Si no realizaste esta compra, ignora este email o contactanos a traves de nuestro sitio.
-  </p>
-</body>
-</html>`,
+    subject: "¡Bienvenido/a a la Academia Aprende Excel! - Tus credenciales de acceso",
+    html:    buildWelcomeHtml(nombre, email, password, loginUrl),
   });
 };
 
@@ -364,7 +405,7 @@ app.post("/api/webhook/purchase", async (req, res) => {
       progreso:       {},
     });
 
-    await sendWelcomeEmail(email, (nombre as string).trim(), password, cursos as string[]);
+    await sendWelcomeEmail(email, (nombre as string).trim(), password);
     return res.json({ status: "ok", created: true });
   } catch (e) {
     console.error("Error en webhook/purchase:", e);
