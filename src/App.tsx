@@ -150,13 +150,13 @@ export default function App() {
   };
 
   if (view === 'login') {
-    return <LoginView onLoginSuccess={async (role) => { 
-      await fetchProfile();
+    return <LoginView onLoginSuccess={(role, usuario) => {
+      setUser(usuario);
       if (role === 'admin') {
         setView('admin');
       } else {
-        setView('dashboard'); 
-        fetchCourses(); 
+        setView('dashboard');
+        fetchCourses();
       }
     }} />;
   }
@@ -679,6 +679,7 @@ function ProfileView({ user, onUpdate }: { user: UserData | null, onUpdate: (u: 
 
       const data = await res.json();
       if (res.ok) {
+        if (data.token) setToken(data.token);
         onUpdate(data.usuario);
         setMessage({ type: 'success', text: 'Perfil actualizado correctamente' });
       } else {
@@ -859,7 +860,7 @@ function ChangePasswordView() {
 }
 
 // --- Login View Component ---
-function LoginView({ onLoginSuccess }: { onLoginSuccess: (role: string) => void }) {
+function LoginView({ onLoginSuccess }: { onLoginSuccess: (role: string, usuario: UserData) => void }) {
   const [isRegistering, setIsRegistering] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -907,7 +908,7 @@ function LoginView({ onLoginSuccess }: { onLoginSuccess: (role: string) => void 
         if (response.ok) {
           const data = await response.json();
           setToken(data.token);
-          onLoginSuccess(data.role);
+          onLoginSuccess(data.role, data.usuario);
         } else {
           const data = await response.json();
           setError(data.error || 'Error al iniciar sesion.');
