@@ -436,25 +436,64 @@ async function startServer() {
   const generateId = () => Math.floor(Math.random() * 2000000000);
 
   const sendWelcomeEmail = async (email: string, nombre: string, password: string) => {
-    const academiaUrl = process.env.ACADEMIA_URL || "https://academia-production-c4cc.up.railway.app";
+    const loginUrl = process.env.ACADEMIA_URL || "https://academia-production-c4cc.up.railway.app";
+    const BRAND  = "#1a472a";
+    const ACCENT = "#4ecdc4";
+    const LIGHT  = "#f8f9fa";
     try {
       const transporter = createTransporter();
       await transporter.sendMail({
-        from: `"Academia Aprende Excel" <${process.env.EMAIL_USER}>`,
+        from: '"Academia Aprende Excel" <academia@aprendeexcel.com>',
         to: email,
-        subject: "¡Bienvenido/a a la Academia! Tus datos de acceso",
-        html: `
-          <div style="font-family:Arial,sans-serif;max-width:500px;margin:auto;padding:24px;border:1px solid #e0e0e0;border-radius:8px;">
-            <h2 style="color:#008B69;">¡Hola ${nombre}!</h2>
-            <p>Tu compra fue procesada con éxito. Ya tenés acceso a la Academia Aprende Excel.</p>
-            <div style="background:#f5f5f5;padding:16px;border-radius:6px;margin:20px 0;">
-              <p style="margin:0;"><strong>Email:</strong> ${email}</p>
-              <p style="margin:8px 0 0;"><strong>Contraseña:</strong> ${password}</p>
-            </div>
-            <a href="${academiaUrl}" style="display:inline-block;background:#008B69;color:#fff;padding:12px 24px;border-radius:6px;text-decoration:none;font-weight:bold;">Ingresar a la Academia →</a>
-            <p style="margin-top:24px;color:#666;font-size:13px;">Podés cambiar tu contraseña una vez que ingreses.</p>
-          </div>
-        `,
+        subject: "¡Bienvenido/a a la Academia Aprende Excel! - Tus credenciales de acceso",
+        html: `<!DOCTYPE html>
+<html lang="es">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="font-family:Arial,sans-serif;background:#ffffff;padding:20px 0;margin:0;">
+  <div style="max-width:600px;margin:0 auto;background:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 2px 12px rgba(26,71,42,0.08);">
+    <div style="background:${BRAND};padding:40px 20px;text-align:center;border-bottom:4px solid ${ACCENT};">
+      <h1 style="font-size:32px;color:#ffffff;margin:0 0 8px 0;font-weight:bold;">📊 Aprende Excel</h1>
+      <p style="font-size:14px;color:#e8f5e9;margin:0;">Tu acceso está listo</p>
+    </div>
+    <div style="padding:40px 30px;">
+      <h2 style="font-size:24px;color:${BRAND};margin:0 0 16px 0;font-weight:600;">¡Bienvenido, ${nombre}! 🎉</h2>
+      <p style="font-size:15px;color:#555555;line-height:1.6;margin:0 0 24px 0;">
+        Gracias por confiar en nosotros. Tu cuenta ha sido activada exitosamente y ya puedes acceder a todos nuestros cursos de Excel.
+      </p>
+    </div>
+    <div style="padding:0 30px 30px 30px;">
+      <p style="font-size:14px;font-weight:600;color:${BRAND};text-transform:uppercase;letter-spacing:0.5px;margin:0 0 16px 0;">Tus datos de acceso:</p>
+      <div style="background:${LIGHT};padding:16px;border-radius:8px;border-left:4px solid ${ACCENT};margin-bottom:12px;">
+        <p style="font-size:12px;font-weight:600;color:#888888;text-transform:uppercase;margin:0 0 8px 0;">📧 Usuario</p>
+        <p style="font-size:16px;font-family:monospace;color:${BRAND};margin:0;font-weight:600;word-break:break-all;">${email}</p>
+      </div>
+      <div style="background:${LIGHT};padding:16px;border-radius:8px;border-left:4px solid ${ACCENT};margin-bottom:16px;">
+        <p style="font-size:12px;font-weight:600;color:#888888;text-transform:uppercase;margin:0 0 8px 0;">🔐 Contraseña</p>
+        <p style="font-size:16px;font-family:monospace;color:${BRAND};margin:0;font-weight:600;word-break:break-all;">${password}</p>
+      </div>
+      <div style="font-size:13px;color:#d32f2f;background:#ffebee;padding:12px 14px;border-radius:6px;margin:0;line-height:1.5;">
+        ⚠️ <strong>Importante:</strong> Por tu seguridad, recomendamos cambiar la contraseña en tu primer acceso. No compartas estos datos con nadie.
+      </div>
+    </div>
+    <div style="padding:30px;text-align:center;">
+      <a href="${loginUrl}" style="background:${ACCENT};color:#ffffff;border-radius:8px;font-weight:600;font-size:15px;text-decoration:none;display:inline-block;padding:16px 40px;">
+        Inicia Sesión Aquí
+      </a>
+    </div>
+    <div style="padding:20px 30px;background:${LIGHT};text-align:center;">
+      <a href="${loginUrl}" style="color:${BRAND};text-decoration:none;font-size:14px;font-weight:500;margin:0 16px;">Portal de Cursos</a>
+      <a href="https://aprendeexcel.com/ayuda" style="color:${BRAND};text-decoration:none;font-size:14px;font-weight:500;margin:0 16px;">Centro de Ayuda</a>
+    </div>
+    <div style="height:1px;background:#e0e0e0;margin:0 30px;"></div>
+    <div style="padding:30px;background:#fafafa;text-align:center;">
+      <p style="font-size:12px;color:#999999;margin:8px 0;line-height:1.5;">
+        ¿Necesitas ayuda? Contáctanos en <a href="mailto:soporte@aprendeexcel.com" style="color:${BRAND};text-decoration:none;font-weight:500;">soporte@aprendeexcel.com</a>
+      </p>
+      <p style="font-size:12px;color:#999999;margin:8px 0;">© 2024 Aprende Excel. Todos los derechos reservados.</p>
+    </div>
+  </div>
+</body>
+</html>`,
       });
     } catch (e) {
       console.error("Error enviando email:", e);
