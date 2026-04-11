@@ -403,19 +403,13 @@ async function startServer() {
 
     try {
       const users = await getUsers();
-      let user = users.find((u: any) => u.email === req.user.email);
-      console.log("[progreso] user found:", !!user);
-      if (!user) {
-        await saveUser({ id: req.user.id, email: req.user.email, nombre: req.user.nombre, progreso: {}, cursos: "", activo: 1 });
-        user = { progreso: {} };
-      }
+      const user = users.find((u: any) => u.email === req.user.email);
+      if (!user) return res.json({ status: "ok", leccionId });
       const progreso = user.progreso || {};
       const cid = courseId.toString();
       if (!progreso[cid]) progreso[cid] = [];
       if (!progreso[cid].includes(leccionId)) progreso[cid].push(leccionId);
-      console.log("[progreso] saving:", JSON.stringify(progreso));
       await updateUserField(req.user.email, { progreso });
-      console.log("[progreso] saved OK");
       res.json({ status: "ok", leccionId });
     } catch (err) {
       console.error("[progreso] error:", err);
