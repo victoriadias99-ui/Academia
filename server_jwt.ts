@@ -163,6 +163,16 @@ async function startServer() {
 
   await preloadVimeoData();
 
+  // Seed test users into DB so progress can be saved
+  for (const [email, u] of Object.entries(TEST_USERS)) {
+    const existing = await getUsers().then(us => us.find((x: any) => x.email === email));
+    if (!existing) {
+      const hashed = await bcrypt.hash("test1234", 10);
+      await saveUser({ id: u.id, email: u.email, password: hashed, nombre: u.nombre, apellido: "", cursos: u.cursos || "", activo: 1, vencimiento: null, progreso: {}, fecha_creacion: new Date().toISOString().split("T")[0] });
+      console.log(`Test user seeded: ${email}`);
+    }
+  }
+
   // ─── MOCK DATA ────────────────────────────────────────────────
   const mockSales = [
     { email: "juan@example.com", nombre: "Juan Pérez", curso: "Excel Nivel Inicial", monto: 25.0, fecha: "2024-03-08" },
