@@ -395,11 +395,16 @@ async function startServer() {
   app.post("/api/cursos/progreso/:leccionId", requireAuth, async (req: any, res) => {
     const { leccionId } = req.params;
     const { completada, courseId } = req.body;
-    if (!completada || !courseId) return res.json({ status: "ok", leccionId });
+    console.log("[progreso] body:", req.body, "leccionId:", leccionId, "user:", req.user?.email);
+    if (!completada || !courseId) {
+      console.log("[progreso] early return - completada:", completada, "courseId:", courseId);
+      return res.json({ status: "ok", leccionId });
+    }
 
     try {
       const users = await getUsers();
       let user = users.find((u: any) => u.email === req.user.email);
+      console.log("[progreso] user found:", !!user);
       if (!user) {
         await saveUser({ id: req.user.id, email: req.user.email, nombre: req.user.nombre, progreso: {}, cursos: "", activo: 1 });
         user = { progreso: {} };
@@ -408,9 +413,14 @@ async function startServer() {
       const cid = courseId.toString();
       if (!progreso[cid]) progreso[cid] = [];
       if (!progreso[cid].includes(leccionId)) progreso[cid].push(leccionId);
+      console.log("[progreso] saving:", JSON.stringify(progreso));
       await updateUserField(req.user.email, { progreso });
+      console.log("[progreso] saved OK");
       res.json({ status: "ok", leccionId });
-    } catch { res.status(500).json({ error: "Error al guardar progreso" }); }
+    } catch (err) {
+      console.error("[progreso] error:", err);
+      res.status(500).json({ error: "Error al guardar progreso" });
+    }
   });
 
   // ─── EMAIL ───────────────────────────────────────────────────
