@@ -394,14 +394,8 @@ async function startServer() {
 
   app.post("/api/cursos/progreso/:leccionId", requireAuth, async (req: any, res) => {
     const { leccionId } = req.params;
-    const { completada } = req.body;
-    if (!completada) return res.json({ status: "ok", leccionId });
-
-    let courseId: string | null = null;
-    for (const [cid, lessons] of Object.entries(vimeoLessons)) {
-      if ((lessons as any[]).some((l: any) => l.id === leccionId)) { courseId = cid; break; }
-    }
-    if (!courseId) return res.json({ status: "ok", leccionId });
+    const { completada, courseId } = req.body;
+    if (!completada || !courseId) return res.json({ status: "ok", leccionId });
 
     try {
       const users = await getUsers();
@@ -411,8 +405,9 @@ async function startServer() {
         user = { progreso: {} };
       }
       const progreso = user.progreso || {};
-      if (!progreso[courseId]) progreso[courseId] = [];
-      if (!progreso[courseId].includes(leccionId)) progreso[courseId].push(leccionId);
+      const cid = courseId.toString();
+      if (!progreso[cid]) progreso[cid] = [];
+      if (!progreso[cid].includes(leccionId)) progreso[cid].push(leccionId);
       await updateUserField(req.user.email, { progreso });
       res.json({ status: "ok", leccionId });
     } catch { res.status(500).json({ error: "Error al guardar progreso" }); }

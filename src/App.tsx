@@ -438,13 +438,15 @@ function PlayerView({ courseId, onBack }: { courseId: number, onBack: () => void
     try {
       const res = await authFetch(`/api/cursos/progreso/${lesson.id}`, {
         method: 'POST',
-        body: JSON.stringify({ completada: true, porcentaje_visto: 100 })
+        body: JSON.stringify({ completada: true, porcentaje_visto: 100, courseId })
       });
 
       if (res.ok) {
         const updatedLessons = [...lessons];
         updatedLessons[currentLessonIndex].completada = true;
         setLessons(updatedLessons);
+      } else {
+        console.error("Failed to mark lesson as completed", res.status);
       }
     } catch (err) {
       console.error("Failed to mark lesson as completed", err);

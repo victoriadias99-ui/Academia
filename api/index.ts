@@ -689,22 +689,17 @@ app.get("/api/cursos/:id", requireAuth, async (req: any, res) => {
 });
 
 app.post("/api/cursos/progreso/:leccionId", requireAuth, async (req: any, res) => {
-  const { leccionId }  = req.params;
-  const { completada } = req.body;
-  if (!completada) return res.json({ status: "ok", leccionId });
+  const { leccionId }        = req.params;
+  const { completada, courseId } = req.body;
+  if (!completada || !courseId) return res.json({ status: "ok", leccionId });
 
-  await loadVimeo();
-  let courseId: string | null = null;
-  for (const [cid, lessons] of Object.entries(vimeoLessons)) {
-    if ((lessons as any[]).some((l: any) => l.id === leccionId)) {
-      courseId = cid;
-      break;
-    }
+  try {
+    await addUserProgress(req.user.email, courseId.toString(), leccionId);
+    res.json({ status: "ok", leccionId });
+  } catch (err) {
+    console.error("Error saving progress:", err);
+    res.status(500).json({ error: "No se pudo guardar el progreso" });
   }
-  if (!courseId) return res.json({ status: "ok", leccionId });
-
-  await addUserProgress(req.user.email, courseId, leccionId);
-  res.json({ status: "ok", leccionId });
 });
 
 // ─── VERCEL SERVERLESS HANDLER ───────────────────────────────────────────────
