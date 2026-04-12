@@ -141,7 +141,7 @@ const sendWelcomeEmail = async (
   });
 
   await transporter.sendMail({
-    from:    '"Academia Aprende Excel" <academia@aprendeexcel.com>',
+    from: '"Academia Aprende Excel" <soporte@aprende-excel.com>',
     to:      email,
     subject: "¡Bienvenido/a a la Academia Aprende Excel! - Tus credenciales de acceso",
     html:    buildWelcomeHtml(nombre, email, password, loginUrl),
