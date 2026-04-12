@@ -14,15 +14,24 @@ const COURSE_MAPPING: Record<string, string> = {
   excel:            "12286845",
   excel_intermedio: "12286854",
   excel_avanzado:   "12052707",
-  excel_promo:      "12305404",
-  sql:              "12305404", 
+  sql:              "12305404",
+  windows_server:   "13018504",
+  pbi_avanzado:     "12107061",
+  powerbi:          "12305086",
+  powerpoint:       "12072965",
+  word:             "12073015",
 };
 
 const COURSE_NAMES: Record<string, string> = {
-  excel:            "Excel Nivel Inicial",
-  excel_intermedio: "Excel Nivel Intermedio",
-  excel_avanzado:   "Excel Nivel Avanzado",
-  excel_promo:      "Pack Excel Completo",
+  excel:            "Excel Inicial",
+  excel_intermedio: "Excel Intermedio",
+  excel_avanzado:   "Excel Avanzado",
+  sql:              "Sql Server - Inicial",
+  windows_server:   "Windows Server",
+  pbi_avanzado:     "Power Bi - Avanzado",
+  powerbi:          "Power Bi - Inicial",
+  powerpoint:       "Power Point",
+  word:             "Word",
 };
 
 // ─── MYSQL POOL ──────────────────────────────────────────────────────────────
@@ -289,8 +298,15 @@ const requireAdmin = (req: any, res: any, next: any) => {
 // ─── VIMEO ───────────────────────────────────────────────────────────────────
 const VIMEO_TOKEN = process.env.VIMEO_TOKEN || "713ab24da995946cc8ebeaabd1a90880";
 const FOLDER_IDS  = [
-  "12286845", "12286854", "12052707",
-  "12305404", "13018504", "12107061", "12305086",
+  "12286845", // excel
+  "12286854", // excel_intermedio
+  "12052707", // excel_avanzado
+  "12305404", // sql
+  "13018504", // windows_server
+  "12107061", // pbi_avanzado
+  "12305086", // powerbi
+  "12072965", // powerpoint
+  "12073015", // word
 ];
 let vimeoCourses: any[]               = [];
 let vimeoLessons: Record<number, any[]> = {};

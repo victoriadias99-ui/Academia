@@ -26,7 +26,12 @@ const VIMEO_TO_SLUG: Record<number, string> = {
   12286845: "excel",
   12286854: "excel_intermedio",
   12052707: "excel_avanzado",
-  12305404: "excel_promo",
+  12305404: "sql",
+  13018504: "windows_server",
+  12107061: "pbi_avanzado",
+  12305086: "powerbi",
+  12072965: "powerpoint",
+  12073015: "word",
 };
 
 // Devuelve el identificador a usar para un curso (slug si existe, ID de Vimeo como string si no)
