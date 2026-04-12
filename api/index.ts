@@ -15,7 +15,7 @@ const COURSE_MAPPING: Record<string, string> = {
   excel_intermedio: "12286854",
   excel_avanzado:   "12052707",
   excel_promo:      "12305404",
-  sql:              "12305404",  // ← agregar
+  sql:              "12305404", 
 };
 
 const COURSE_NAMES: Record<string, string> = {
