@@ -34,6 +34,28 @@ const COURSE_NAMES: Record<string, string> = {
   word:             "Word",
 };
 
+const PACK_MAPPING: Record<string, string[]> = {
+  excel_promo:    ["excel", "excel_intermedio", "excel_avanzado"],
+  office:         ["excel", "powerpoint", "word"],
+  prom_pbi_excel: ["excel", "excel_intermedio", "excel_avanzado", "powerbi"],
+};
+
+const expandSlugsToIds = (slugs: string[]): string[] => {
+  const ids = new Set<string>();
+  for (const slug of slugs) {
+    if (PACK_MAPPING[slug]) {
+      for (const s of PACK_MAPPING[slug]) {
+        const id = COURSE_MAPPING[s];
+        if (id) ids.add(id);
+      }
+    } else {
+      const id = COURSE_MAPPING[slug] || slug;
+      ids.add(id);
+    }
+  }
+  return Array.from(ids);
+};
+
 // ─── MYSQL POOL ──────────────────────────────────────────────────────────────
 let _pool: mysql.Pool | null = null;
 const getPool = (): mysql.Pool => {
@@ -650,10 +672,7 @@ app.get("/api/cursos/mis-cursos", requireAuth, async (req: any, res) => {
     req.user.role === "admin"
       ? vimeoCourses
       : (() => {
-          const ids = slugs
-            .split("|")
-            .filter(Boolean)
-            .map((s: string) => COURSE_MAPPING[s] || s);
+          const ids = expandSlugsToIds(slugs.split("|").filter(Boolean));
           return vimeoCourses.filter((c) => ids.includes(c.id.toString()));
         })();
 
@@ -680,10 +699,7 @@ app.get("/api/cursos/:id", requireAuth, async (req: any, res) => {
   if (req.user.role !== "admin") {
     const dbUser = await getUserByEmail(req.user.email);
     const slugs  = (dbUser?.cursos ?? req.user.cursos ?? "") as string;
-    const ids    = slugs
-      .split("|")
-      .filter(Boolean)
-      .map((s: string) => COURSE_MAPPING[s] || s);
+    const ids    = expandSlugsToIds(slugs.split("|").filter(Boolean));
     if (!ids.includes(id.toString()))
       return res.status(403).json({ error: "No tenes acceso a este curso" });
   }

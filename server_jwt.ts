@@ -121,6 +121,30 @@ async function startServer() {
     word:             "12073015",
   };
 
+  // Paquetes: slug del paquete → array de slugs individuales
+  const PACK_MAPPING: Record<string, string[]> = {
+    excel_promo:    ["excel", "excel_intermedio", "excel_avanzado"],           // Pack Experto
+    office:         ["excel", "powerpoint", "word"],                           // Pack Office
+    prom_pbi_excel: ["excel", "excel_intermedio", "excel_avanzado", "powerbi"], // Pack Excel
+  };
+
+  // Expande slugs (incluyendo paquetes) a Vimeo IDs únicos
+  const expandSlugsToIds = (slugs: string[]): string[] => {
+    const ids = new Set<string>();
+    for (const slug of slugs) {
+      if (PACK_MAPPING[slug]) {
+        for (const s of PACK_MAPPING[slug]) {
+          const id = COURSE_MAPPING[s];
+          if (id) ids.add(id);
+        }
+      } else {
+        const id = COURSE_MAPPING[slug] || slug;
+        ids.add(id);
+      }
+    }
+    return Array.from(ids);
+  };
+
   const ADMIN_EMAILS = ["victoria.pdias99@gmail.com", "admin@gmail.com"];
 
   const TEST_USERS: Record<string, any> = {
@@ -379,8 +403,8 @@ async function startServer() {
       let cursosBase = user.role === "admin"
         ? vimeoCourses
         : (() => {
-          const identifiers = cursosActualizados.split("|").filter(Boolean);
-          const ids = identifiers.map((s: string) => COURSE_MAPPING[s] || s).filter(Boolean);
+          const slugs = cursosActualizados.split("|").filter(Boolean);
+          const ids = expandSlugsToIds(slugs);
           return vimeoCourses.filter(c => ids.includes(c.id.toString()));
         })();
 
