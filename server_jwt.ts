@@ -110,10 +110,15 @@ async function startServer() {
 
   // ─── COURSE MAPPING ───────────────────────────────────────────
   const COURSE_MAPPING: Record<string, string> = {
-    excel: "12286845",
+    excel:            "12286845",
     excel_intermedio: "12286854",
-    excel_avanzado: "12052707",
-    excel_promo: "12305404",
+    excel_avanzado:   "12052707",
+    sql:              "12305404",
+    windows_server:   "13018504",
+    pbi_avanzado:     "12107061",
+    powerbi:          "12305086",
+    powerpoint:       "12072965",
+    word:             "12073015",
   };
 
   const ADMIN_EMAILS = ["victoria.pdias99@gmail.com", "admin@gmail.com"];
@@ -126,7 +131,7 @@ async function startServer() {
 
   // ─── VIMEO ────────────────────────────────────────────────────
   const VIMEO_TOKEN = "713ab24da995946cc8ebeaabd1a90880";
-  const FOLDER_IDS = ["12286845", "12286854", "12052707", "12305404", "13018504", "12107061", "12305086"];
+  const FOLDER_IDS = ["12286845", "12286854", "12052707", "12305404", "13018504", "12107061", "12305086", "12072965", "12073015"];
   let vimeoCourses: any[] = [];
   let vimeoLessons: Record<number, any[]> = {};
 
