@@ -134,8 +134,13 @@ async function startServer() {
           );
           console.log(`Admin creado: ${adminEmail}`);
         } else if (rows.length > 0) {
-          // Si ya existe, asegurar role='admin'
-          await pool.query("UPDATE academia_usuarios SET role='admin' WHERE email=?", [adminEmail]);
+          // Si ya existe, asegurar role='admin' y resetear password si ADMIN_PASSWORD está configurado
+          if (adminPassword) {
+            const hashed = await bcrypt.hash(adminPassword, 10);
+            await pool.query("UPDATE academia_usuarios SET role='admin', password=? WHERE email=?", [hashed, adminEmail]);
+          } else {
+            await pool.query("UPDATE academia_usuarios SET role='admin' WHERE email=?", [adminEmail]);
+          }
         }
       } catch (e: any) { console.error("Error migrando admin:", adminEmail, e?.message); }
     }
