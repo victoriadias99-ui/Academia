@@ -118,14 +118,27 @@ async function startServer() {
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )`);
   } catch (e: any) { console.error("Error creando tabla recursos:", e?.message); }
-  // Migrar admins conocidos: asegura que tengan role='admin' en la BD
+  // Migrar admins conocidos: crea o actualiza con role='admin'
   if (ADMIN_EMAILS.length > 0) {
-    try {
-      await pool.query(
-        `UPDATE academia_usuarios SET role='admin' WHERE email IN (${ADMIN_EMAILS.map(() => '?').join(',')})`,
-        ADMIN_EMAILS
-      );
-    } catch (e: any) { console.error("Error migrando roles admin:", e?.message); }
+    const adminPassword = process.env.ADMIN_PASSWORD;
+    for (const adminEmail of ADMIN_EMAILS) {
+      try {
+        const [rows]: any = await pool.query("SELECT id FROM academia_usuarios WHERE email=?", [adminEmail]);
+        if (rows.length === 0 && adminPassword) {
+          // Crear usuario admin si no existe y hay ADMIN_PASSWORD configurado
+          const hashed = await bcrypt.hash(adminPassword, 10);
+          const adminId = Date.now() + Math.floor(Math.random() * 1000);
+          await pool.query(
+            `INSERT INTO academia_usuarios (id, email, password, nombre, apellido, cursos, activo, fecha_creacion, role) VALUES (?, ?, ?, 'Admin', '', '', 1, CURDATE(), 'admin')`,
+            [adminId, adminEmail, hashed]
+          );
+          console.log(`Admin creado: ${adminEmail}`);
+        } else if (rows.length > 0) {
+          // Si ya existe, asegurar role='admin'
+          await pool.query("UPDATE academia_usuarios SET role='admin' WHERE email=?", [adminEmail]);
+        }
+      } catch (e: any) { console.error("Error migrando admin:", adminEmail, e?.message); }
+    }
   }
   console.log("Migrations OK");
 
