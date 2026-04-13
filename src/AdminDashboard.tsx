@@ -98,7 +98,7 @@ export default function AdminDashboard() {
 
   const [courseForm, setCourseForm] = useState({ academia: "Aprende Excel", nombre: "", descripcion: "", imagen_url: "", stripe_price_id: "", precio_ars: 0, precio_usd: 0, orden: 0 });
   const [lessonForm, setLessonForm] = useState({ titulo: "", vimeo_id: "", duracion: 0, orden: 0, preview: false });
-  const [studentForm, setStudentForm] = useState({ nombre: "", email: "", cursos: "", activo: true, vencimiento: "" });
+  const [studentForm, setStudentForm] = useState({ nombre: "", email: "", nuevoEmail: "", cursos: "", activo: true, vencimiento: "" });
   const [dolarInfo, setDolarInfo] = useState<{ tipo: string; venta: number } | null>(null);
   const [recursos, setRecursos] = useState<Recurso[]>([]);
   const [selectedRecursoCursoId, setSelectedRecursoCursoId] = useState<string>("");
@@ -194,7 +194,9 @@ export default function AdminDashboard() {
     e.preventDefault();
     if (!editingStudent) return;
     try {
-      const res = await authFetch(`/api/admin/usuarios/${editingStudent.email}`, { method: 'PUT', body: JSON.stringify(studentForm) });
+      const payload: any = { nombre: studentForm.nombre, cursos: studentForm.cursos, activo: studentForm.activo, vencimiento: studentForm.vencimiento };
+      if (studentForm.nuevoEmail && studentForm.nuevoEmail !== studentForm.email) payload.nuevoEmail = studentForm.nuevoEmail;
+      const res = await authFetch(`/api/admin/usuarios/${editingStudent.email}`, { method: 'PUT', body: JSON.stringify(payload) });
       if (res.ok) { setToast({ message: "✓ Alumno actualizado", type: 'success' }); setIsStudentModalOpen(false); setEditingStudent(null); fetchStudents(searchQuery); }
       else setToast({ message: "Error al actualizar", type: 'error' });
     } catch { setToast({ message: "Error de conexión", type: 'error' }); }
@@ -495,7 +497,7 @@ export default function AdminDashboard() {
                           <td className="px-6 py-4"><div className="flex items-center gap-2 text-gray-500 text-sm"><Calendar size={14} className="text-gray-400" />{student.vencimiento || '-'}</div></td>
                           <td className="px-6 py-4">
                             <div className="flex items-center gap-3">
-                              <button onClick={() => { setEditingStudent(student); setStudentForm({ nombre: student.nombre, email: student.email, cursos: student.cursos_slugs || "", activo: student.activo, vencimiento: student.vencimiento }); setIsStudentModalOpen(true); }} className="p-1.5 rounded border border-indigo-200 text-indigo-600 hover:bg-indigo-50 transition-all"><Edit2 size={16} /></button>
+                              <button onClick={() => { setEditingStudent(student); setStudentForm({ nombre: student.nombre, email: student.email, nuevoEmail: student.email, cursos: student.cursos_slugs || "", activo: student.activo, vencimiento: student.vencimiento }); setIsStudentModalOpen(true); }} className="p-1.5 rounded border border-indigo-200 text-indigo-600 hover:bg-indigo-50 transition-all"><Edit2 size={16} /></button>
                               <button onClick={() => handleDeleteStudent(student.email)} className="p-1.5 rounded border border-red-200 text-red-600 hover:bg-red-50 transition-all"><Trash2 size={16} /></button>
                               <button onClick={() => handleUpdateSubscription(student.email, undefined, !student.activo)} className={`p-1.5 rounded border transition-all ${student.activo ? 'border-red-200 text-red-600 hover:bg-red-50' : 'border-green-200 text-green-600 hover:bg-green-50'}`}>{student.activo ? <ShieldX size={16} /> : <ShieldCheck size={16} />}</button>
                               <div className="flex bg-gray-100 rounded p-1">
@@ -720,7 +722,11 @@ export default function AdminDashboard() {
       <Modal isOpen={isStudentModalOpen} onClose={() => { setIsStudentModalOpen(false); setEditingStudent(null); }} title="Editar Alumno">
         <form onSubmit={handleUpdateStudent} className="space-y-4">
           <div className="space-y-1"><label className="text-sm font-medium text-gray-700">Nombre</label><input type="text" required className="w-full px-3 py-2 rounded-md border border-[#dee2e6] focus:outline-none" value={studentForm.nombre} onChange={e => setStudentForm({...studentForm, nombre: e.target.value})} /></div>
-          <div className="space-y-1"><label className="text-sm font-medium text-gray-700">Email</label><input type="email" disabled className="w-full px-3 py-2 rounded-md border border-[#dee2e6] bg-gray-50" value={studentForm.email} /></div>
+          <div className="space-y-1">
+            <label className="text-sm font-medium text-gray-700">Email</label>
+            <input type="email" required className="w-full px-3 py-2 rounded-md border border-[#dee2e6] focus:outline-none focus:ring-2 focus:ring-[#00a86b]/50" value={studentForm.nuevoEmail} onChange={e => setStudentForm({...studentForm, nuevoEmail: e.target.value})} />
+            {studentForm.nuevoEmail !== studentForm.email && <p className="text-xs text-amber-600">Se cambiará el email de <span className="font-mono">{studentForm.email}</span></p>}
+          </div>
           <div className="space-y-1"><label className="text-sm font-medium text-gray-700">Vencimiento</label><input type="date" className="w-full px-3 py-2 rounded-md border border-[#dee2e6] focus:outline-none" value={studentForm.vencimiento} onChange={e => setStudentForm({...studentForm, vencimiento: e.target.value})} /></div>
 <div className="flex items-center gap-2"><input type="checkbox" id="student-active" checked={studentForm.activo} onChange={e => setStudentForm({...studentForm, activo: e.target.checked})} /><label htmlFor="student-active" className="text-sm font-medium text-gray-700">Activo</label></div>
           <div className="flex justify-end gap-3 pt-4">

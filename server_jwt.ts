@@ -416,7 +416,7 @@ async function startServer() {
 
   app.put("/api/admin/usuarios/:email", requireAdmin, async (req: any, res) => {
     const { email } = req.params;
-    const { nombre, cursos, activo, vencimiento, role } = req.body;
+    const { nombre, nuevoEmail, cursos, activo, vencimiento, role } = req.body;
     // Prevent demoting yourself
     if (role !== undefined && email === req.user.email && role !== "admin") {
       return res.status(400).json({ error: "No podés quitarte el rol de admin a vos mismo" });
@@ -425,13 +425,20 @@ async function startServer() {
       const users = await getUsers();
       const exists = users.find((u: any) => u.email === email);
       if (exists) {
+        // Check new email not taken by another user
+        if (nuevoEmail && nuevoEmail !== email) {
+          const taken = users.find((u: any) => u.email === nuevoEmail.toLowerCase().trim());
+          if (taken) return res.status(400).json({ error: "Ese email ya está en uso" });
+          await pool.query(`UPDATE academia_usuarios SET email=? WHERE email=?`, [nuevoEmail.toLowerCase().trim(), email]);
+        }
+        const targetEmail = nuevoEmail ? nuevoEmail.toLowerCase().trim() : email;
         const fields: Record<string, any> = {};
         if (nombre !== undefined) fields.nombre = nombre;
         if (cursos !== undefined) fields.cursos = cursos;
         if (activo !== undefined) fields.activo = activo ? 1 : 0;
         if (vencimiento !== undefined) fields.vencimiento = vencimiento;
         if (role !== undefined) fields.role = role;
-        await updateUserField(email, fields);
+        if (Object.keys(fields).length > 0) await updateUserField(targetEmail, fields);
       } else {
         await saveUser({ id: generateId(), email, nombre: nombre || "", cursos: cursos || "", activo: activo !== undefined ? (activo ? 1 : 0) : 1, vencimiento: vencimiento || null, role: role || "user", progreso: {}, fecha_creacion: new Date().toISOString().split("T")[0] });
       }
