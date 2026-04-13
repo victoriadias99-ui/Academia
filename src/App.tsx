@@ -387,15 +387,6 @@ const CourseCard: React.FC<{ course: Course, onClick: () => void }> = ({ course,
   );
 };
 
-// --- (removed mock resources - loaded from API) ---
-const COURSE_RESOURCES: Record<number, { nombre: string; url: string; size: string }[]> = {
-  12286845: [
-  12286854: [
-    { nombre: 'Guia tablas dinamicas.pdf', url: '#', size: '1.4 MB' },
-    { nombre: 'Ejercicios funciones avanzadas.pdf', url: '#', size: '920 KB' },
-  ],
-};
-
 // --- Player View Component ---
 interface Recurso { id: number; tipo: "pdf" | "link" | "comentario"; titulo: string; contenido: string; }
 
