@@ -97,6 +97,26 @@ export default function AdminDashboard() {
   const [courseForm, setCourseForm] = useState({ academia: "Aprende Excel", nombre: "", descripcion: "", imagen_url: "", stripe_price_id: "", precio_ars: 0, precio_usd: 0, orden: 0 });
   const [lessonForm, setLessonForm] = useState({ titulo: "", vimeo_id: "", duracion: 0, orden: 0, preview: false });
   const [studentForm, setStudentForm] = useState({ nombre: "", email: "", cursos: "", activo: true, vencimiento: "" });
+  const [dolarInfo, setDolarInfo] = useState<{ tipo: string; venta: number } | null>(null);
+
+  const fetchDolar = async () => {
+    try {
+      // Intenta blue primero, luego oficial como fallback
+      const res = await fetch("https://dolarapi.com/v1/dolares/blue");
+      if (res.ok) {
+        const data = await res.json();
+        setDolarInfo({ tipo: "Blue", venta: data.venta });
+        return;
+      }
+    } catch {}
+    try {
+      const res = await fetch("https://dolarapi.com/v1/dolares/oficial");
+      if (res.ok) {
+        const data = await res.json();
+        setDolarInfo({ tipo: "Oficial", venta: data.venta });
+      }
+    } catch {}
+  };
 
   useEffect(() => { checkAuth(); }, []);
   useEffect(() => {
@@ -458,7 +478,7 @@ export default function AdminDashboard() {
                           <td className="px-6 py-4"><span className={`px-2 py-1 rounded-full text-[10px] font-bold uppercase ${course.activo !== false ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>{course.activo !== false ? 'Activo' : 'Inactivo'}</span></td>
                           <td className="px-6 py-4">
                             <div className="flex gap-2">
-                              <button onClick={() => { setEditingCourse(course); setCourseForm({ academia: course.academia || "Aprende Excel", nombre: course.nombre, descripcion: course.descripcion || "", imagen_url: course.imagen_url || "", stripe_price_id: course.stripe_price_id, precio_ars: course.precio_ars, precio_usd: course.precio_usd, orden: course.orden || 0 }); setIsCourseModalOpen(true); }} className="p-1 text-gray-400 hover:text-indigo-600 transition-colors"><Edit2 size={16} /></button>
+                              <button onClick={() => { setEditingCourse(course); setCourseForm({ academia: course.academia || "Aprende Excel", nombre: course.nombre, descripcion: course.descripcion || "", imagen_url: course.imagen_url || "", stripe_price_id: course.stripe_price_id, precio_ars: course.precio_ars, precio_usd: course.precio_usd, orden: course.orden || 0 }); fetchDolar(); setIsCourseModalOpen(true); }} className="p-1 text-gray-400 hover:text-indigo-600 transition-colors"><Edit2 size={16} /></button>
                               <button onClick={() => handleDeleteCourse(course.id)} className="p-1 text-gray-400 hover:text-red-600 transition-colors"><Trash2 size={16} /></button>
                             </div>
                           </td>
@@ -550,10 +570,28 @@ export default function AdminDashboard() {
       <Modal isOpen={isCourseModalOpen} onClose={() => { setIsCourseModalOpen(false); setEditingCourse(null); }} title={`Editar precios — ${editingCourse?.nombre || ''}`}>
         <form onSubmit={handleCreateCourse} className="space-y-4">
           <p className="text-sm text-gray-500">El nombre y contenido del curso se gestionan desde Vimeo. Acá podés editar los precios y el ID de Stripe.</p>
+          {dolarInfo && (
+            <div className="flex items-center gap-2 bg-blue-50 border border-blue-200 rounded-md px-3 py-2 text-sm text-blue-700">
+              <span>💵 Dólar {dolarInfo.tipo} (venta):</span>
+              <span className="font-bold">${dolarInfo.venta.toLocaleString("es-AR")} ARS</span>
+            </div>
+          )}
           <div className="space-y-1"><label className="text-sm font-medium text-gray-700">Stripe Price ID</label><input type="text" className="w-full px-3 py-2 rounded-md border border-[#dee2e6] focus:outline-none font-mono text-sm" placeholder="price_..." value={courseForm.stripe_price_id} onChange={e => setCourseForm({...courseForm, stripe_price_id: e.target.value})} /></div>
           <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-1"><label className="text-sm font-medium text-gray-700">Precio ARS</label><input type="number" min="0" className="w-full px-3 py-2 rounded-md border border-[#dee2e6] focus:outline-none" value={courseForm.precio_ars} onChange={e => setCourseForm({...courseForm, precio_ars: Number(e.target.value)})} /></div>
-            <div className="space-y-1"><label className="text-sm font-medium text-gray-700">Precio USD</label><input type="number" min="0" step="0.01" className="w-full px-3 py-2 rounded-md border border-[#dee2e6] focus:outline-none" value={courseForm.precio_usd} onChange={e => setCourseForm({...courseForm, precio_usd: Number(e.target.value)})} /></div>
+            <div className="space-y-1">
+              <label className="text-sm font-medium text-gray-700">Precio ARS</label>
+              <input type="number" min="0" className="w-full px-3 py-2 rounded-md border border-[#dee2e6] focus:outline-none" value={courseForm.precio_ars}
+                onChange={e => {
+                  const ars = Number(e.target.value);
+                  const usd = dolarInfo && dolarInfo.venta > 0 ? Math.round((ars / dolarInfo.venta) * 100) / 100 : courseForm.precio_usd;
+                  setCourseForm({ ...courseForm, precio_ars: ars, precio_usd: usd });
+                }} />
+            </div>
+            <div className="space-y-1">
+              <label className="text-sm font-medium text-gray-700">Precio USD {dolarInfo && <span className="text-gray-400 font-normal">(calculado automático)</span>}</label>
+              <input type="number" min="0" step="0.01" className="w-full px-3 py-2 rounded-md border border-[#dee2e6] focus:outline-none" value={courseForm.precio_usd}
+                onChange={e => setCourseForm({...courseForm, precio_usd: Number(e.target.value)})} />
+            </div>
           </div>
           <div className="flex justify-end gap-3 pt-4">
             <button type="button" onClick={() => setIsCourseModalOpen(false)} className="px-6 py-2 rounded-md font-medium text-gray-500 hover:bg-gray-100 transition-colors">Cancelar</button>
