@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from "react";
-import { 
+import React, { useState, useEffect, useRef } from "react";
+import {
   LayoutDashboard, Users, BookOpen, PlayCircle, DollarSign, LogOut, Search, Plus, X,
-  CheckCircle2, AlertCircle, ShieldCheck, ShieldX, Calendar, Edit2, Trash2
+  CheckCircle2, AlertCircle, ShieldCheck, ShieldX, Calendar, Edit2, Trash2,
+  FileText, Link2, MessageSquare, Upload, FolderOpen
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 
@@ -47,6 +48,7 @@ const getCourseDisplayName = (identifier: string, courseList: Course[]): string 
 };
 interface Course { id: number; nombre: string; academia: string; stripe_price_id: string; precio_ars: number; precio_usd: number; activo: boolean; descripcion?: string; imagen_url?: string; orden?: number; }
 interface Lesson { id: number; titulo: string; vimeo_id: string; duracion: number; preview: boolean; orden: number; }
+interface Recurso { id: number; curso_id: string; tipo: "pdf" | "link" | "comentario"; titulo: string; contenido: string; created_at: string; }
 
 const Toast = ({ message, type, onClose }: { message: string, type: 'success' | 'error', onClose: () => void }) => {
   useEffect(() => { const t = setTimeout(onClose, 3000); return () => clearTimeout(t); }, [onClose]);
@@ -98,6 +100,11 @@ export default function AdminDashboard() {
   const [lessonForm, setLessonForm] = useState({ titulo: "", vimeo_id: "", duracion: 0, orden: 0, preview: false });
   const [studentForm, setStudentForm] = useState({ nombre: "", email: "", cursos: "", activo: true, vencimiento: "" });
   const [dolarInfo, setDolarInfo] = useState<{ tipo: string; venta: number } | null>(null);
+  const [recursos, setRecursos] = useState<Recurso[]>([]);
+  const [selectedRecursoCursoId, setSelectedRecursoCursoId] = useState<string>("");
+  const [isRecursoModalOpen, setIsRecursoModalOpen] = useState(false);
+  const [recursoForm, setRecursoForm] = useState({ tipo: "link" as "pdf" | "link" | "comentario", titulo: "", contenido: "" });
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const fetchDolar = async () => {
     try {
@@ -124,6 +131,7 @@ export default function AdminDashboard() {
     if (activeTab === "alumnos") { fetchStudents(); fetchCourses(); }
     if (activeTab === "cursos") fetchCourses();
     if (activeTab === "lecciones") { fetchCourses(); if (selectedCourseId) fetchLessons(selectedCourseId); }
+    if (activeTab === "recursos") { fetchCourses(); if (selectedRecursoCursoId) fetchRecursos(selectedRecursoCursoId); }
   }, [activeTab, selectedCourseId]);
 
   const checkAuth = async () => {
@@ -199,6 +207,55 @@ export default function AdminDashboard() {
       if (res.ok) { setToast({ message: "✓ Alumno eliminado", type: 'success' }); fetchStudents(searchQuery); }
       else setToast({ message: "Error al eliminar", type: 'error' });
     } catch { setToast({ message: "Error de conexión", type: 'error' }); }
+  };
+
+  const fetchRecursos = async (cursoId: string) => {
+    if (!cursoId) return;
+    try {
+      const res = await authFetch(`/api/admin/recursos?cursoId=${cursoId}`);
+      const data = await res.json();
+      setRecursos(data.recursos || []);
+    } catch { console.error("Error cargando recursos"); }
+  };
+
+  const handleCreateRecurso = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedRecursoCursoId) return;
+    try {
+      const res = await authFetch("/api/admin/recursos", {
+        method: "POST",
+        body: JSON.stringify({ curso_id: selectedRecursoCursoId, ...recursoForm }),
+      });
+      if (res.ok) {
+        setToast({ message: "✓ Recurso agregado", type: "success" });
+        setIsRecursoModalOpen(false);
+        setRecursoForm({ tipo: "link", titulo: "", contenido: "" });
+        fetchRecursos(selectedRecursoCursoId);
+      } else {
+        const data = await res.json();
+        setToast({ message: data.error || "Error al guardar", type: "error" });
+      }
+    } catch { setToast({ message: "Error de conexión", type: "error" }); }
+  };
+
+  const handleDeleteRecurso = async (id: number) => {
+    if (!confirm("¿Eliminar este recurso?")) return;
+    try {
+      const res = await authFetch(`/api/admin/recursos/${id}`, { method: "DELETE" });
+      if (res.ok) { setToast({ message: "✓ Recurso eliminado", type: "success" }); fetchRecursos(selectedRecursoCursoId); }
+      else setToast({ message: "Error al eliminar", type: "error" });
+    } catch { setToast({ message: "Error de conexión", type: "error" }); }
+  };
+
+  const handlePdfUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 10 * 1024 * 1024) { setToast({ message: "El PDF no puede superar 10 MB", type: "error" }); return; }
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setRecursoForm(f => ({ ...f, contenido: reader.result as string, titulo: f.titulo || file.name }));
+    };
+    reader.readAsDataURL(file);
   };
 
   const handleToggleRole = async (student: Student) => {
@@ -287,6 +344,7 @@ export default function AdminDashboard() {
     { id: "alumnos", label: "Alumnos", icon: Users },
     { id: "cursos", label: "Cursos", icon: BookOpen },
     { id: "lecciones", label: "Lecciones", icon: PlayCircle },
+    { id: "recursos", label: "Recursos", icon: FolderOpen },
     { id: "ventas", label: "Ventas", icon: DollarSign },
   ];
 
@@ -539,6 +597,65 @@ export default function AdminDashboard() {
             </motion.div>
           )}
 
+          {activeTab === "recursos" && (
+            <motion.div key="recursos" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="p-8">
+              <header className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+                <div><h1 className="text-3xl font-bold text-[#0d2137]">Recursos</h1><p className="text-gray-500">PDFs, links y comentarios por curso</p></div>
+                <div className="flex gap-2">
+                  <select className="px-4 py-2 rounded-md border border-[#dee2e6] bg-white focus:outline-none focus:ring-2 focus:ring-[#00a86b]/50"
+                    value={selectedRecursoCursoId}
+                    onChange={e => { setSelectedRecursoCursoId(e.target.value); fetchRecursos(e.target.value); }}>
+                    <option value="">Seleccionar curso...</option>
+                    {courses.map(c => <option key={c.id} value={c.id.toString()}>{c.nombre}</option>)}
+                  </select>
+                  <button disabled={!selectedRecursoCursoId}
+                    onClick={() => { setRecursoForm({ tipo: "link", titulo: "", contenido: "" }); setIsRecursoModalOpen(true); }}
+                    className="bg-[#00a86b] text-white px-6 py-2 rounded-md font-medium hover:bg-[#008f5a] transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
+                    <Plus size={20} />Agregar recurso
+                  </button>
+                </div>
+              </header>
+              {!selectedRecursoCursoId ? (
+                <div className="bg-white rounded-lg border border-dashed border-[#dee2e6] p-12 text-center">
+                  <FolderOpen size={48} className="mx-auto text-gray-300 mb-4" />
+                  <p className="text-gray-500">Seleccioná un curso para ver y gestionar sus recursos</p>
+                </div>
+              ) : recursos.length === 0 ? (
+                <div className="bg-white rounded-lg border border-dashed border-[#dee2e6] p-12 text-center">
+                  <FolderOpen size={48} className="mx-auto text-gray-300 mb-4" />
+                  <p className="text-gray-500">No hay recursos para este curso todavía</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                  {recursos.map(r => (
+                    <div key={r.id} className="bg-white rounded-lg border border-[#dee2e6] shadow-sm p-4 flex flex-col gap-3">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex items-center gap-2">
+                          {r.tipo === "pdf" && <div className="w-8 h-8 bg-red-100 rounded-lg flex items-center justify-center shrink-0"><FileText size={16} className="text-red-600" /></div>}
+                          {r.tipo === "link" && <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center shrink-0"><Link2 size={16} className="text-blue-600" /></div>}
+                          {r.tipo === "comentario" && <div className="w-8 h-8 bg-yellow-100 rounded-lg flex items-center justify-center shrink-0"><MessageSquare size={16} className="text-yellow-600" /></div>}
+                          <div>
+                            <p className="font-semibold text-[#0d2137] text-sm">{r.titulo}</p>
+                            <span className={`text-[10px] font-bold uppercase px-1.5 py-0.5 rounded ${r.tipo === "pdf" ? "bg-red-100 text-red-600" : r.tipo === "link" ? "bg-blue-100 text-blue-600" : "bg-yellow-100 text-yellow-600"}`}>{r.tipo}</span>
+                          </div>
+                        </div>
+                        <button onClick={() => handleDeleteRecurso(r.id)} className="p-1 text-gray-400 hover:text-red-600 transition-colors shrink-0"><Trash2 size={15} /></button>
+                      </div>
+                      {r.tipo === "link" && <a href={r.contenido} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-500 hover:underline truncate">{r.contenido}</a>}
+                      {r.tipo === "comentario" && <p className="text-xs text-gray-600 whitespace-pre-wrap">{r.contenido}</p>}
+                      {r.tipo === "pdf" && r.contenido && (
+                        <a href={r.contenido} download={r.titulo} className="inline-flex items-center gap-1.5 text-xs text-[#1a5c4a] font-medium hover:underline">
+                          <FileText size={13} />Descargar PDF
+                        </a>
+                      )}
+                      <p className="text-[10px] text-gray-400 mt-auto">{new Date(r.created_at).toLocaleDateString("es-AR")}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </motion.div>
+          )}
+
           {activeTab === "ventas" && (
             <motion.div key="ventas" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="p-8">
               <header className="mb-8"><h1 className="text-3xl font-bold text-[#0d2137]">Ventas</h1><p className="text-gray-500">Historial de transacciones</p></header>
@@ -627,6 +744,63 @@ export default function AdminDashboard() {
           <div className="flex justify-end gap-3 pt-4">
             <button type="button" onClick={() => setIsLessonModalOpen(false)} className="px-6 py-2 rounded-md font-medium text-gray-500 hover:bg-gray-100 transition-colors">Cancelar</button>
             <button type="submit" className="px-6 py-2 rounded-md font-medium bg-[#1a7a5e] text-white hover:bg-[#00a86b] transition-colors">Guardar</button>
+          </div>
+        </form>
+      </Modal>
+
+      <Modal isOpen={isRecursoModalOpen} onClose={() => setIsRecursoModalOpen(false)} title="Agregar recurso">
+        <form onSubmit={handleCreateRecurso} className="space-y-4">
+          <div className="space-y-1">
+            <label className="text-sm font-medium text-gray-700">Tipo de recurso</label>
+            <div className="grid grid-cols-3 gap-2">
+              {(["pdf", "link", "comentario"] as const).map(t => (
+                <button key={t} type="button"
+                  onClick={() => setRecursoForm(f => ({ ...f, tipo: t, contenido: "" }))}
+                  className={`flex flex-col items-center gap-1.5 py-3 rounded-md border text-sm font-medium transition-all ${recursoForm.tipo === t ? "border-[#00a86b] bg-[#eaf4ee] text-[#1a5c4a]" : "border-[#dee2e6] text-gray-500 hover:border-gray-400"}`}>
+                  {t === "pdf" && <FileText size={18} />}
+                  {t === "link" && <Link2 size={18} />}
+                  {t === "comentario" && <MessageSquare size={18} />}
+                  {t === "pdf" ? "PDF" : t === "link" ? "Link" : "Comentario"}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className="space-y-1">
+            <label className="text-sm font-medium text-gray-700">Título</label>
+            <input type="text" required className="w-full px-3 py-2 rounded-md border border-[#dee2e6] focus:outline-none focus:ring-2 focus:ring-[#00a86b]/50"
+              placeholder={recursoForm.tipo === "pdf" ? "Ej: Ejercicios Módulo 1" : recursoForm.tipo === "link" ? "Ej: Documentación oficial" : "Ej: Nota importante"}
+              value={recursoForm.titulo} onChange={e => setRecursoForm(f => ({ ...f, titulo: e.target.value }))} />
+          </div>
+          {recursoForm.tipo === "pdf" && (
+            <div className="space-y-1">
+              <label className="text-sm font-medium text-gray-700">Archivo PDF</label>
+              <input ref={fileInputRef} type="file" accept="application/pdf" className="hidden" onChange={handlePdfUpload} />
+              <button type="button" onClick={() => fileInputRef.current?.click()}
+                className="w-full flex items-center justify-center gap-2 px-4 py-3 border-2 border-dashed border-[#dee2e6] rounded-md text-gray-500 hover:border-[#00a86b] hover:text-[#1a5c4a] transition-all">
+                <Upload size={18} />
+                {recursoForm.contenido ? "PDF cargado ✓ (click para cambiar)" : "Click para subir PDF (máx. 10 MB)"}
+              </button>
+            </div>
+          )}
+          {recursoForm.tipo === "link" && (
+            <div className="space-y-1">
+              <label className="text-sm font-medium text-gray-700">URL</label>
+              <input type="url" required className="w-full px-3 py-2 rounded-md border border-[#dee2e6] focus:outline-none focus:ring-2 focus:ring-[#00a86b]/50"
+                placeholder="https://..." value={recursoForm.contenido} onChange={e => setRecursoForm(f => ({ ...f, contenido: e.target.value }))} />
+            </div>
+          )}
+          {recursoForm.tipo === "comentario" && (
+            <div className="space-y-1">
+              <label className="text-sm font-medium text-gray-700">Contenido</label>
+              <textarea rows={4} required className="w-full px-3 py-2 rounded-md border border-[#dee2e6] focus:outline-none focus:ring-2 focus:ring-[#00a86b]/50"
+                placeholder="Escribí una nota o comentario para los alumnos..."
+                value={recursoForm.contenido} onChange={e => setRecursoForm(f => ({ ...f, contenido: e.target.value }))} />
+            </div>
+          )}
+          <div className="flex justify-end gap-3 pt-4">
+            <button type="button" onClick={() => setIsRecursoModalOpen(false)} className="px-6 py-2 rounded-md font-medium text-gray-500 hover:bg-gray-100 transition-colors">Cancelar</button>
+            <button type="submit" disabled={recursoForm.tipo === "pdf" && !recursoForm.contenido}
+              className="px-6 py-2 rounded-md font-medium bg-[#1a7a5e] text-white hover:bg-[#00a86b] transition-colors disabled:opacity-50 disabled:cursor-not-allowed">Guardar</button>
           </div>
         </form>
       </Modal>

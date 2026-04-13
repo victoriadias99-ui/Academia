@@ -107,6 +107,17 @@ async function startServer() {
       fecha DATE NOT NULL
     )`);
   } catch (e: any) { console.error("Error creando tabla ventas:", e?.message); }
+  // Tabla de recursos de cursos
+  try {
+    await pool.query(`CREATE TABLE IF NOT EXISTS academia_recursos (
+      id BIGINT PRIMARY KEY AUTO_INCREMENT,
+      curso_id VARCHAR(20) NOT NULL,
+      tipo ENUM('pdf','link','comentario') NOT NULL DEFAULT 'link',
+      titulo VARCHAR(255) NOT NULL,
+      contenido LONGTEXT,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )`);
+  } catch (e: any) { console.error("Error creando tabla recursos:", e?.message); }
   // Migrar admins conocidos: asegura que tengan role='admin' en la BD
   if (ADMIN_EMAILS.length > 0) {
     try {
@@ -452,6 +463,52 @@ async function startServer() {
     } catch { res.status(500).json({ error: "Error al actualizar curso" }); }
   });
   app.delete("/api/admin/cursos/:id", requireAdmin, (req, res) => res.status(400).json({ error: "Los cursos se gestionan desde Vimeo" }));
+
+  // ─── RECURSOS ─────────────────────────────────────────────────
+  app.get("/api/admin/recursos", requireAdmin, async (req, res) => {
+    const cursoId = req.query.cursoId as string;
+    try {
+      const [rows] = cursoId
+        ? await pool.query(`SELECT id, curso_id, tipo, titulo, contenido, created_at FROM academia_recursos WHERE curso_id=? ORDER BY created_at DESC`, [cursoId])
+        : await pool.query(`SELECT id, curso_id, tipo, titulo, contenido, created_at FROM academia_recursos ORDER BY created_at DESC`);
+      res.json({ recursos: rows });
+    } catch { res.status(500).json({ error: "Error al obtener recursos" }); }
+  });
+
+  app.post("/api/admin/recursos", requireAdmin, async (req, res) => {
+    const { curso_id, tipo, titulo, contenido } = req.body;
+    if (!curso_id || !tipo || !titulo) return res.status(400).json({ error: "Faltan datos requeridos" });
+    if (!["pdf", "link", "comentario"].includes(tipo)) return res.status(400).json({ error: "Tipo inválido" });
+    // Limit base64 PDF size (~10MB encoded)
+    if (tipo === "pdf" && contenido && contenido.length > 14_000_000)
+      return res.status(413).json({ error: "El PDF no puede superar 10 MB" });
+    try {
+      const [result]: any = await pool.query(
+        `INSERT INTO academia_recursos (curso_id, tipo, titulo, contenido) VALUES (?, ?, ?, ?)`,
+        [curso_id, tipo, titulo, contenido || ""]
+      );
+      res.json({ status: "ok", id: result.insertId });
+    } catch { res.status(500).json({ error: "Error al guardar recurso" }); }
+  });
+
+  app.delete("/api/admin/recursos/:id", requireAdmin, async (req, res) => {
+    try {
+      await pool.query(`DELETE FROM academia_recursos WHERE id=?`, [req.params.id]);
+      res.json({ status: "ok" });
+    } catch { res.status(500).json({ error: "Error al eliminar recurso" }); }
+  });
+
+  // GET público (con auth) para alumnos
+  app.get("/api/cursos/:id/recursos", requireAuth, async (req, res) => {
+    try {
+      const [rows] = await pool.query(
+        `SELECT id, tipo, titulo, contenido, created_at FROM academia_recursos WHERE curso_id=? ORDER BY created_at DESC`,
+        [req.params.id]
+      );
+      res.json({ recursos: rows });
+    } catch { res.status(500).json({ error: "Error al obtener recursos" }); }
+  });
+
   app.post("/api/admin/lecciones", requireAdmin, (req, res) => { const { cursoId, ...d } = req.body; if (!mockLessons[cursoId]) mockLessons[cursoId] = []; const l = { id: Date.now(), ...d, completada: false }; mockLessons[cursoId].push(l); res.json({ status: "ok", leccion: l }); });
   app.put("/api/admin/lecciones/:id", requireAdmin, (req, res) => { const id = parseInt(req.params.id); const { cursoId, ...d } = req.body; if (!mockLessons[cursoId]) return res.status(404).json({ error: "Curso no encontrado" }); const idx = mockLessons[cursoId].findIndex((l: any) => l.id === id); if (idx !== -1) { mockLessons[cursoId][idx] = { ...mockLessons[cursoId][idx], ...d, id }; res.json({ status: "ok", leccion: mockLessons[cursoId][idx] }); } else res.status(404).json({ error: "No encontrada" }); });
   app.delete("/api/admin/lecciones/:id", requireAdmin, (req, res) => { const id = parseInt(req.params.id); for (const k in mockLessons) { const idx = mockLessons[k].findIndex((l: any) => l.id === id); if (idx !== -1) { mockLessons[k].splice(idx, 1); return res.json({ status: "ok" }); } } res.status(404).json({ error: "No encontrada" }); });

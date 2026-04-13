@@ -387,13 +387,9 @@ const CourseCard: React.FC<{ course: Course, onClick: () => void }> = ({ course,
   );
 };
 
-// --- Mock PDF resources per course ---
+// --- (removed mock resources - loaded from API) ---
 const COURSE_RESOURCES: Record<number, { nombre: string; url: string; size: string }[]> = {
   12286845: [
-    { nombre: 'Modulo 1 - Estructuras basicas.pdf', url: '#', size: '1.2 MB' },
-    { nombre: 'Ejercicios practicos clase 3.pdf', url: '#', size: '840 KB' },
-    { nombre: 'Resumen formulas esenciales.pdf', url: '#', size: '560 KB' },
-  ],
   12286854: [
     { nombre: 'Guia tablas dinamicas.pdf', url: '#', size: '1.4 MB' },
     { nombre: 'Ejercicios funciones avanzadas.pdf', url: '#', size: '920 KB' },
@@ -401,26 +397,34 @@ const COURSE_RESOURCES: Record<number, { nombre: string; url: string; size: stri
 };
 
 // --- Player View Component ---
+interface Recurso { id: number; tipo: "pdf" | "link" | "comentario"; titulo: string; contenido: string; }
+
 function PlayerView({ courseId, onBack }: { courseId: number, onBack: () => void }) {
   const [course, setCourse] = useState<Course | null>(null);
   const [lessons, setLessons] = useState<Lesson[]>([]);
   const [currentLessonIndex, setCurrentLessonIndex] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [panelOpen, setPanelOpen] = useState(false);
+  const [recursos, setRecursos] = useState<Recurso[]>([]);
 
   useEffect(() => {
     const fetchCourseData = async () => {
       setIsLoading(true);
       try {
-        const res = await authFetch(`/api/cursos/${courseId}`);
-        if (res.ok) {
-          const data = await res.json();
+        const [courseRes, recursosRes] = await Promise.all([
+          authFetch(`/api/cursos/${courseId}`),
+          authFetch(`/api/cursos/${courseId}/recursos`),
+        ]);
+        if (courseRes.ok) {
+          const data = await courseRes.json();
           setCourse(data.curso);
           setLessons(data.lecciones);
-          
-          // Find first incomplete lesson
           const firstIncomplete = data.lecciones.findIndex((l: Lesson) => !l.completada);
           setCurrentLessonIndex(firstIncomplete !== -1 ? firstIncomplete : 0);
+        }
+        if (recursosRes.ok) {
+          const rData = await recursosRes.json();
+          setRecursos(rData.recursos || []);
         }
       } catch (err) {
         console.error("Failed to fetch course details", err);
@@ -604,23 +608,40 @@ function PlayerView({ courseId, onBack }: { courseId: number, onBack: () => void
               </button>
             </div>
             <div className="flex-1 overflow-y-auto p-4">
-              {(COURSE_RESOURCES[courseId] || []).length > 0 ? (
+              {recursos.length > 0 ? (
                 <div className="space-y-2">
-                  {(COURSE_RESOURCES[courseId] || []).map((pdf, i) => (
-                    <a
-                      key={i}
-                      href={pdf.url}
-                      className="flex items-center gap-3 p-3 border border-dee2e6 rounded-lg hover:bg-[#f0faf5] hover:border-verde-brillante transition-all group"
-                    >
-                      <div className="w-9 h-9 bg-[#eaf4ee] rounded-lg flex items-center justify-center shrink-0 group-hover:bg-verde-brillante/20 transition-colors">
-                        <BookOpen size={16} className="text-verde-boton" />
+                  {recursos.map(r => (
+                    r.tipo === "link" ? (
+                      <a key={r.id} href={r.contenido} target="_blank" rel="noopener noreferrer"
+                        className="flex items-center gap-3 p-3 border border-dee2e6 rounded-lg hover:bg-[#f0faf5] hover:border-verde-brillante transition-all group">
+                        <div className="w-9 h-9 bg-blue-100 rounded-lg flex items-center justify-center shrink-0">
+                          <BookOpen size={16} className="text-blue-600" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-azul-marino truncate">{r.titulo}</p>
+                          <p className="text-xs text-texto-gris mt-0.5">Link externo</p>
+                        </div>
+                        <ChevronRight size={14} className="text-texto-gris group-hover:text-verde-brillante shrink-0" />
+                      </a>
+                    ) : r.tipo === "pdf" ? (
+                      <a key={r.id} href={r.contenido} download={r.titulo}
+                        className="flex items-center gap-3 p-3 border border-dee2e6 rounded-lg hover:bg-[#f0faf5] hover:border-verde-brillante transition-all group">
+                        <div className="w-9 h-9 bg-red-100 rounded-lg flex items-center justify-center shrink-0">
+                          <BookOpen size={16} className="text-red-600" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-azul-marino truncate">{r.titulo}</p>
+                          <p className="text-xs text-texto-gris mt-0.5">PDF · Descargar</p>
+                        </div>
+                        <ChevronRight size={14} className="text-texto-gris group-hover:text-verde-brillante shrink-0" />
+                      </a>
+                    ) : (
+                      <div key={r.id} className="p-3 border border-dee2e6 rounded-lg bg-yellow-50">
+                        <p className="text-xs font-bold text-yellow-700 uppercase mb-1">Nota</p>
+                        <p className="text-sm text-azul-marino whitespace-pre-wrap">{r.titulo}</p>
+                        {r.contenido && <p className="text-xs text-texto-gris mt-1 whitespace-pre-wrap">{r.contenido}</p>}
                       </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-azul-marino truncate">{pdf.nombre}</p>
-                        <p className="text-xs text-texto-gris mt-0.5">{pdf.size}</p>
-                      </div>
-                      <ChevronRight size={14} className="text-texto-gris group-hover:text-verde-brillante transition-colors shrink-0" />
-                    </a>
+                    )
                   ))}
                 </div>
               ) : (
@@ -629,7 +650,7 @@ function PlayerView({ courseId, onBack }: { courseId: number, onBack: () => void
                     <BookOpen size={20} className="text-texto-gris" />
                   </div>
                   <p className="text-sm font-medium text-azul-marino mb-1">Sin materiales por ahora</p>
-                  <p className="text-xs text-texto-gris">Los PDFs de este curso se agregaran pronto</p>
+                  <p className="text-xs text-texto-gris">Los recursos de este curso se agregarán pronto</p>
                 </div>
               )}
             </div>
