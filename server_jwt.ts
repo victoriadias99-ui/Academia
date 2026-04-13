@@ -299,8 +299,17 @@ async function startServer() {
       if (!user) return res.status(401).json({ error: "Credenciales incorrectas" });
       if (!user.activo) return res.status(403).json({ error: "Cuenta desactivada. Contactá al administrador." });
 
-      // Validate password for all users (including admin)
-      const match = await bcrypt.compare(password, user.password);
+      // Validate password: try bcrypt first, then plain-text fallback (legacy)
+      let match = await bcrypt.compare(password, user.password);
+      if (!match) {
+        // Plain-text fallback for users created before hashing was enforced
+        if (password === user.password) {
+          match = true;
+          // Rehash and save so next login uses bcrypt
+          const hashed = await bcrypt.hash(password, 10);
+          await updateUserField(email, { password: hashed });
+        }
+      }
       if (!match) return res.status(401).json({ error: "Credenciales incorrectas" });
 
       // Determine role: use DB role (ADMIN_EMAILS are auto-migrated to 'admin' on startup)
