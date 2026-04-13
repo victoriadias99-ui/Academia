@@ -452,6 +452,22 @@ app.post("/api/webhook/purchase", async (req, res) => {
   }
 });
 
+// ─── GET /api/test/email ──────────────────────────────────────────────────────
+// Uso: /api/test/email?secret=<WEBHOOK_SECRET>&email=tucorreo@gmail.com
+app.get("/api/test/email", async (req, res) => {
+  const { secret, email } = req.query as { secret: string; email: string };
+  if (!WEBHOOK_SECRET || secret !== WEBHOOK_SECRET)
+    return res.status(401).json({ error: "No autorizado" });
+  if (!email) return res.status(400).json({ error: "Falta el parámetro email" });
+  try {
+    const password = generatePassword();
+    await sendWelcomeEmail(email, "Test", password);
+    return res.json({ status: "ok", message: `Email de prueba enviado a ${email}`, password });
+  } catch (e: any) {
+    return res.status(500).json({ error: "Error al enviar email", detail: e?.message });
+  }
+});
+
 // ─── POST /api/auth/login ─────────────────────────────────────────────────────
 app.post("/api/auth/login", async (req, res) => {
   const { email: rawEmail, password } = req.body;
