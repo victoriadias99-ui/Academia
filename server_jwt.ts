@@ -76,6 +76,17 @@ async function startServer() {
   await addCol(`ALTER TABLE academia_usuarios ADD COLUMN progreso TEXT`);
   await addCol(`ALTER TABLE academia_usuarios ADD COLUMN fecha_creacion DATE DEFAULT NULL`);
   await addCol(`ALTER TABLE academia_usuarios ADD COLUMN role VARCHAR(20) NOT NULL DEFAULT 'user'`);
+  // Tabla de ventas
+  try {
+    await pool.query(`CREATE TABLE IF NOT EXISTS academia_ventas (
+      id BIGINT PRIMARY KEY AUTO_INCREMENT,
+      email VARCHAR(255) NOT NULL,
+      nombre VARCHAR(255),
+      curso VARCHAR(255),
+      monto DECIMAL(10,2) DEFAULT 0,
+      fecha DATE NOT NULL
+    )`);
+  } catch (e: any) { console.error("Error creando tabla ventas:", e?.message); }
   // Migrar admins conocidos: asegura que tengan role='admin' en la BD
   if (ADMIN_EMAILS.length > 0) {
     try {
@@ -333,7 +344,8 @@ async function startServer() {
       const dbUsers = await getUsers();
       const totalAlumnos = dbUsers.length;
       const activos = dbUsers.filter((u: any) => u.activo).length;
-      res.json({ stats: { totalAlumnos, alumnosActivos: activos, cursosActivos: vimeoCourses.length }, ultimasCompras: [] });
+      const [ventas] = await pool.query(`SELECT * FROM academia_ventas ORDER BY fecha DESC, id DESC LIMIT 20`);
+      res.json({ stats: { totalAlumnos, alumnosActivos: activos, cursosActivos: vimeoCourses.length }, ultimasCompras: ventas });
     } catch { res.status(500).json({ error: "Error al obtener estadísticas" }); }
   });
 
@@ -409,7 +421,12 @@ async function startServer() {
   app.post("/api/admin/lecciones", requireAdmin, (req, res) => { const { cursoId, ...d } = req.body; if (!mockLessons[cursoId]) mockLessons[cursoId] = []; const l = { id: Date.now(), ...d, completada: false }; mockLessons[cursoId].push(l); res.json({ status: "ok", leccion: l }); });
   app.put("/api/admin/lecciones/:id", requireAdmin, (req, res) => { const id = parseInt(req.params.id); const { cursoId, ...d } = req.body; if (!mockLessons[cursoId]) return res.status(404).json({ error: "Curso no encontrado" }); const idx = mockLessons[cursoId].findIndex((l: any) => l.id === id); if (idx !== -1) { mockLessons[cursoId][idx] = { ...mockLessons[cursoId][idx], ...d, id }; res.json({ status: "ok", leccion: mockLessons[cursoId][idx] }); } else res.status(404).json({ error: "No encontrada" }); });
   app.delete("/api/admin/lecciones/:id", requireAdmin, (req, res) => { const id = parseInt(req.params.id); for (const k in mockLessons) { const idx = mockLessons[k].findIndex((l: any) => l.id === id); if (idx !== -1) { mockLessons[k].splice(idx, 1); return res.json({ status: "ok" }); } } res.status(404).json({ error: "No encontrada" }); });
-  app.get("/api/admin/ventas", requireAdmin, (req, res) => res.json({ ventas: mockSales }));
+  app.get("/api/admin/ventas", requireAdmin, async (req, res) => {
+    try {
+      const [ventas] = await pool.query(`SELECT * FROM academia_ventas ORDER BY fecha DESC, id DESC`);
+      res.json({ ventas });
+    } catch { res.status(500).json({ error: "Error al obtener ventas" }); }
+  });
 
   // ─── COURSE ROUTES ────────────────────────────────────────────
   const getUserProgress = async (email: string): Promise<Record<string, string[]>> => {
@@ -617,7 +634,7 @@ async function startServer() {
     if (!webhookSecret || secret !== webhookSecret)
       return res.status(401).json({ error: "No autorizado" });
 
-    const { email: rawEmail, nombre, cursos } = req.body;
+    const { email: rawEmail, nombre, cursos, monto } = req.body;
     if (!rawEmail || !nombre) return res.status(400).json({ error: "Faltan datos" });
     const email = rawEmail.toLowerCase().trim();
     const cursosArr: string[] = Array.isArray(cursos) ? cursos : (cursos ? [cursos] : []);
@@ -645,6 +662,14 @@ async function startServer() {
         const merged = [...new Set([...existingCursos, ...cursosArr])].filter(Boolean);
         await updateUserField(email, { cursos: merged.join("|") });
         await sendCourseAddedEmail(email, existing.nombre, cursosArr);
+      }
+      // Registrar venta
+      const today = new Date().toISOString().split("T")[0];
+      for (const curso of cursosArr) {
+        await pool.query(
+          `INSERT INTO academia_ventas (email, nombre, curso, monto, fecha) VALUES (?, ?, ?, ?, ?)`,
+          [email, nombre, curso, monto || 0, today]
+        );
       }
 
       res.json({ status: "ok" });
