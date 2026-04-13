@@ -46,7 +46,29 @@ const getCourseDisplayName = (identifier: string, courseList: Course[]): string 
   );
   return course?.nombre || identifier;
 };
-interface Course { id: number; nombre: string; academia: string; stripe_price_id: string; precio_ars: number; precio_usd: number; activo: boolean; descripcion?: string; imagen_url?: string; orden?: number; }
+interface PrecioPais { precio: number; stripe_price_id: string; }
+interface Course { id: number; nombre: string; academia: string; stripe_price_id: string; precio_ars: number; precio_usd: number; precios_paises?: Record<string, PrecioPais>; activo: boolean; descripcion?: string; imagen_url?: string; orden?: number; }
+
+const LATAM_PAISES = [
+  { codigo: "AR", nombre: "Argentina",            bandera: "🇦🇷", moneda: "ARS" },
+  { codigo: "MX", nombre: "México",               bandera: "🇲🇽", moneda: "MXN" },
+  { codigo: "CO", nombre: "Colombia",             bandera: "🇨🇴", moneda: "COP" },
+  { codigo: "CL", nombre: "Chile",                bandera: "🇨🇱", moneda: "CLP" },
+  { codigo: "PE", nombre: "Perú",                 bandera: "🇵🇪", moneda: "PEN" },
+  { codigo: "UY", nombre: "Uruguay",              bandera: "🇺🇾", moneda: "UYU" },
+  { codigo: "PY", nombre: "Paraguay",             bandera: "🇵🇾", moneda: "PYG" },
+  { codigo: "BO", nombre: "Bolivia",              bandera: "🇧🇴", moneda: "BOB" },
+  { codigo: "EC", nombre: "Ecuador",              bandera: "🇪🇨", moneda: "USD" },
+  { codigo: "VE", nombre: "Venezuela",            bandera: "🇻🇪", moneda: "USD" },
+  { codigo: "PA", nombre: "Panamá",               bandera: "🇵🇦", moneda: "USD" },
+  { codigo: "SV", nombre: "El Salvador",          bandera: "🇸🇻", moneda: "USD" },
+  { codigo: "BR", nombre: "Brasil",               bandera: "🇧🇷", moneda: "BRL" },
+  { codigo: "CR", nombre: "Costa Rica",           bandera: "🇨🇷", moneda: "CRC" },
+  { codigo: "GT", nombre: "Guatemala",            bandera: "🇬🇹", moneda: "GTQ" },
+  { codigo: "DO", nombre: "Rep. Dominicana",      bandera: "🇩🇴", moneda: "DOP" },
+  { codigo: "HN", nombre: "Honduras",             bandera: "🇭🇳", moneda: "HNL" },
+  { codigo: "NI", nombre: "Nicaragua",            bandera: "🇳🇮", moneda: "NIO" },
+];
 interface Lesson { id: number; titulo: string; vimeo_id: string; duracion: number; preview: boolean; orden: number; }
 interface Recurso { id: number; curso_id: string; tipo: "pdf" | "link" | "comentario"; titulo: string; contenido: string; created_at: string; }
 
@@ -61,12 +83,12 @@ const Toast = ({ message, type, onClose }: { message: string, type: 'success' | 
   );
 };
 
-const Modal = ({ isOpen, onClose, title, children }: { isOpen: boolean, onClose: () => void, title: string, children: React.ReactNode }) => {
+const Modal = ({ isOpen, onClose, title, children, maxWidth = "max-w-2xl" }: { isOpen: boolean, onClose: () => void, title: string, children: React.ReactNode, maxWidth?: string }) => {
   if (!isOpen) return null;
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 overflow-y-auto">
       <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} transition={{ duration: 0.2 }}
-        className="bg-white rounded-lg shadow-xl w-full max-w-2xl relative" onClick={(e) => e.stopPropagation()}>
+        className={`bg-white rounded-lg shadow-xl w-full ${maxWidth} relative`} onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between p-6 border-b border-[#dee2e6]">
           <h2 className="text-xl font-bold text-[#0d2137]">{title}</h2>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600 transition-colors"><X size={24} /></button>
@@ -96,7 +118,7 @@ export default function AdminDashboard() {
   const [toast, setToast] = useState<{ message: string, type: 'success' | 'error' } | null>(null);
   const [addCourseDropdownEmail, setAddCourseDropdownEmail] = useState<string | null>(null);
 
-  const [courseForm, setCourseForm] = useState({ academia: "Aprende Excel", nombre: "", descripcion: "", imagen_url: "", stripe_price_id: "", precio_ars: 0, precio_usd: 0, orden: 0 });
+  const [courseForm, setCourseForm] = useState<{ academia: string; nombre: string; descripcion: string; imagen_url: string; stripe_price_id: string; precio_ars: number; precio_usd: number; orden: number; precios_paises: Record<string, PrecioPais> }>({ academia: "Aprende Excel", nombre: "", descripcion: "", imagen_url: "", stripe_price_id: "", precio_ars: 0, precio_usd: 0, orden: 0, precios_paises: {} });
   const [lessonForm, setLessonForm] = useState({ titulo: "", vimeo_id: "", duracion: 0, orden: 0, preview: false });
   const [studentForm, setStudentForm] = useState({ nombre: "", email: "", nuevoEmail: "", cursos: "", activo: true, vencimiento: "" });
   const [dolarInfo, setDolarInfo] = useState<{ tipo: string; venta: number } | null>(null);
@@ -304,7 +326,7 @@ export default function AdminDashboard() {
       if (res.ok) {
         setToast({ message: editingCourse ? "✓ Actualizado" : "✓ Guardado", type: 'success' });
         setIsCourseModalOpen(false); setEditingCourse(null); fetchCourses();
-        setCourseForm({ academia: "Aprende Excel", nombre: "", descripcion: "", imagen_url: "", stripe_price_id: "", precio_ars: 0, precio_usd: 0, orden: 0 });
+        setCourseForm({ academia: "Aprende Excel", nombre: "", descripcion: "", imagen_url: "", stripe_price_id: "", precio_ars: 0, precio_usd: 0, orden: 0, precios_paises: {} });
       } else setToast({ message: "Error al guardar", type: 'error' });
     } catch { setToast({ message: "Error de conexión", type: 'error' }); }
   };
@@ -519,7 +541,7 @@ export default function AdminDashboard() {
             <motion.div key="cursos" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="p-8">
               <header className="flex items-center justify-between mb-8">
                 <div><h1 className="text-3xl font-bold text-[#0d2137]">Cursos</h1><p className="text-gray-500">Administración de la oferta académica</p></div>
-                <button onClick={() => { setEditingCourse(null); setCourseForm({ academia: "Aprende Excel", nombre: "", descripcion: "", imagen_url: "", stripe_price_id: "", precio_ars: 0, precio_usd: 0, orden: 0 }); setIsCourseModalOpen(true); }} className="bg-[#1a7a5e] text-white px-6 py-2 rounded-md font-medium hover:bg-[#00a86b] transition-colors flex items-center gap-2"><Plus size={20} />Agregar curso</button>
+                <button onClick={() => { setEditingCourse(null); setCourseForm({ academia: "Aprende Excel", nombre: "", descripcion: "", imagen_url: "", stripe_price_id: "", precio_ars: 0, precio_usd: 0, orden: 0, precios_paises: {} }); setIsCourseModalOpen(true); }} className="bg-[#1a7a5e] text-white px-6 py-2 rounded-md font-medium hover:bg-[#00a86b] transition-colors flex items-center gap-2"><Plus size={20} />Agregar curso</button>
               </header>
               <div className="bg-white rounded-lg border border-[#dee2e6] shadow-sm overflow-hidden">
                 <div className="overflow-x-auto">
@@ -538,7 +560,7 @@ export default function AdminDashboard() {
                           <td className="px-6 py-4"><span className={`px-2 py-1 rounded-full text-[10px] font-bold uppercase ${course.activo !== false ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>{course.activo !== false ? 'Activo' : 'Inactivo'}</span></td>
                           <td className="px-6 py-4">
                             <div className="flex gap-2">
-                              <button onClick={() => { setEditingCourse(course); setCourseForm({ academia: course.academia || "Aprende Excel", nombre: course.nombre, descripcion: course.descripcion || "", imagen_url: course.imagen_url || "", stripe_price_id: course.stripe_price_id, precio_ars: course.precio_ars, precio_usd: course.precio_usd, orden: course.orden || 0 }); fetchDolar(); setIsCourseModalOpen(true); }} className="p-1 text-gray-400 hover:text-indigo-600 transition-colors"><Edit2 size={16} /></button>
+                              <button onClick={() => { setEditingCourse(course); setCourseForm({ academia: course.academia || "Aprende Excel", nombre: course.nombre, descripcion: course.descripcion || "", imagen_url: course.imagen_url || "", stripe_price_id: course.stripe_price_id, precio_ars: course.precio_ars, precio_usd: course.precio_usd, orden: course.orden || 0, precios_paises: course.precios_paises || {} }); fetchDolar(); setIsCourseModalOpen(true); }} className="p-1 text-gray-400 hover:text-indigo-600 transition-colors"><Edit2 size={16} /></button>
                               <button onClick={() => handleDeleteCourse(course.id)} className="p-1 text-gray-400 hover:text-red-600 transition-colors"><Trash2 size={16} /></button>
                             </div>
                           </td>
@@ -686,32 +708,76 @@ export default function AdminDashboard() {
         </AnimatePresence>
       </main>
 
-      <Modal isOpen={isCourseModalOpen} onClose={() => { setIsCourseModalOpen(false); setEditingCourse(null); }} title={`Editar precios — ${editingCourse?.nombre || ''}`}>
+      <Modal isOpen={isCourseModalOpen} onClose={() => { setIsCourseModalOpen(false); setEditingCourse(null); }} title={`Editar precios — ${editingCourse?.nombre || ''}`} maxWidth="max-w-3xl">
         <form onSubmit={handleCreateCourse} className="space-y-4">
-          <p className="text-sm text-gray-500">El nombre y contenido del curso se gestionan desde Vimeo. Acá podés editar los precios y el ID de Stripe.</p>
+          <p className="text-sm text-gray-500">El nombre y contenido del curso se gestionan desde Vimeo. Acá podés editar los precios por país y los IDs de Stripe.</p>
           {dolarInfo && (
             <div className="flex items-center gap-2 bg-blue-50 border border-blue-200 rounded-md px-3 py-2 text-sm text-blue-700">
               <span>💵 Dólar {dolarInfo.tipo} (venta):</span>
               <span className="font-bold">${dolarInfo.venta.toLocaleString("es-AR")} ARS</span>
             </div>
           )}
-          <div className="space-y-1"><label className="text-sm font-medium text-gray-700">Stripe Price ID</label><input type="text" className="w-full px-3 py-2 rounded-md border border-[#dee2e6] focus:outline-none font-mono text-sm" placeholder="price_..." value={courseForm.stripe_price_id} onChange={e => setCourseForm({...courseForm, stripe_price_id: e.target.value})} /></div>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-1">
-              <label className="text-sm font-medium text-gray-700">Precio ARS</label>
-              <input type="number" min="0" className="w-full px-3 py-2 rounded-md border border-[#dee2e6] focus:outline-none" value={courseForm.precio_ars}
-                onChange={e => {
-                  const ars = Number(e.target.value);
-                  const usd = dolarInfo && dolarInfo.venta > 0 ? Math.round((ars / dolarInfo.venta) * 100) / 100 : courseForm.precio_usd;
-                  setCourseForm({ ...courseForm, precio_ars: ars, precio_usd: usd });
-                }} />
-            </div>
-            <div className="space-y-1">
-              <label className="text-sm font-medium text-gray-700">Precio USD {dolarInfo && <span className="text-gray-400 font-normal">(calculado automático)</span>}</label>
-              <input type="number" min="0" step="0.01" className="w-full px-3 py-2 rounded-md border border-[#dee2e6] focus:outline-none" value={courseForm.precio_usd}
-                onChange={e => setCourseForm({...courseForm, precio_usd: Number(e.target.value)})} />
+          <div className="space-y-1">
+            <label className="text-sm font-medium text-gray-700">Stripe Price ID global (USD)</label>
+            <input type="text" className="w-full px-3 py-2 rounded-md border border-[#dee2e6] focus:outline-none font-mono text-sm" placeholder="price_..." value={courseForm.stripe_price_id} onChange={e => setCourseForm({...courseForm, stripe_price_id: e.target.value})} />
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-gray-700">Precios por país (LATAM)</label>
+            <div className="rounded-md border border-[#dee2e6] overflow-hidden">
+              <div className="grid grid-cols-[2fr_1fr_2fr] bg-[#1a5c4a] text-white text-xs font-semibold px-3 py-2 gap-2">
+                <span>País</span>
+                <span>Precio</span>
+                <span>Stripe Price ID</span>
+              </div>
+              <div className="divide-y divide-[#dee2e6] max-h-72 overflow-y-auto">
+                {LATAM_PAISES.map(({ codigo, nombre, bandera, moneda }) => {
+                  const entry = courseForm.precios_paises[codigo] || { precio: 0, stripe_price_id: "" };
+                  return (
+                    <div key={codigo} className="grid grid-cols-[2fr_1fr_2fr] items-center gap-2 px-3 py-2 hover:bg-gray-50">
+                      <div className="flex items-center gap-2 text-sm">
+                        <span className="text-lg leading-none">{bandera}</span>
+                        <span className="font-medium text-[#0d2137]">{nombre}</span>
+                        <span className="text-xs text-gray-400">{moneda}</span>
+                      </div>
+                      <input
+                        type="number" min="0"
+                        className="w-full px-2 py-1 rounded border border-[#dee2e6] focus:outline-none text-sm"
+                        placeholder="0"
+                        value={entry.precio || ""}
+                        onChange={e => {
+                          const precio = Number(e.target.value);
+                          setCourseForm({
+                            ...courseForm,
+                            precios_paises: {
+                              ...courseForm.precios_paises,
+                              [codigo]: { ...entry, precio },
+                            },
+                          });
+                        }}
+                      />
+                      <input
+                        type="text"
+                        className="w-full px-2 py-1 rounded border border-[#dee2e6] focus:outline-none font-mono text-xs"
+                        placeholder="price_..."
+                        value={entry.stripe_price_id || ""}
+                        onChange={e => {
+                          setCourseForm({
+                            ...courseForm,
+                            precios_paises: {
+                              ...courseForm.precios_paises,
+                              [codigo]: { ...entry, stripe_price_id: e.target.value },
+                            },
+                          });
+                        }}
+                      />
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           </div>
+
           <div className="flex justify-end gap-3 pt-4">
             <button type="button" onClick={() => setIsCourseModalOpen(false)} className="px-6 py-2 rounded-md font-medium text-gray-500 hover:bg-gray-100 transition-colors">Cancelar</button>
             <button type="submit" className="px-6 py-2 rounded-md font-medium bg-[#1a7a5e] text-white hover:bg-[#00a86b] transition-colors">Guardar</button>

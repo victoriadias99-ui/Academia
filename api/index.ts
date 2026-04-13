@@ -262,6 +262,62 @@ const addUserProgress = async (
   await updateUserFields(email, { progreso });
 };
 
+const getCourseDb = async (id: number): Promise<any | null> => {
+  const [rows] = await getPool().query(
+    "SELECT * FROM academia_cursos WHERE id = ? LIMIT 1",
+    [id]
+  );
+  const row = (rows as any[])[0];
+  if (!row) return null;
+  return {
+    ...row,
+    precios_paises: typeof row.precios_paises === "string"
+      ? JSON.parse(row.precios_paises || "{}")
+      : row.precios_paises || {},
+  };
+};
+
+const getAllCoursesDb = async (): Promise<Record<number, any>> => {
+  const [rows] = await getPool().query("SELECT * FROM academia_cursos");
+  const map: Record<number, any> = {};
+  for (const row of rows as any[]) {
+    map[row.id] = {
+      ...row,
+      precios_paises: typeof row.precios_paises === "string"
+        ? JSON.parse(row.precios_paises || "{}")
+        : row.precios_paises || {},
+    };
+  }
+  return map;
+};
+
+const upsertCourseDb = async (id: number, fields: {
+  stripe_price_id?: string;
+  precio_ars?: number;
+  precio_usd?: number;
+  precios_paises?: Record<string, any>;
+  activo?: number;
+}): Promise<void> => {
+  await getPool().query(
+    `INSERT INTO academia_cursos (id, stripe_price_id, precio_ars, precio_usd, precios_paises, activo)
+     VALUES (?, ?, ?, ?, ?, ?)
+     ON DUPLICATE KEY UPDATE
+       stripe_price_id=VALUES(stripe_price_id),
+       precio_ars=VALUES(precio_ars),
+       precio_usd=VALUES(precio_usd),
+       precios_paises=VALUES(precios_paises),
+       activo=VALUES(activo)`,
+    [
+      id,
+      fields.stripe_price_id ?? "",
+      fields.precio_ars ?? 0,
+      fields.precio_usd ?? 0,
+      JSON.stringify(fields.precios_paises ?? {}),
+      fields.activo ?? 1,
+    ]
+  );
+};
+
 // ─── UTILS ───────────────────────────────────────────────────────────────────
 const generatePassword = (len = 12): string => {
   const chars =
@@ -680,9 +736,12 @@ app.get("/api/admin/ventas", requireAdmin, (_, res) =>
 // ─── CURSOS ───────────────────────────────────────────────────────────────────
 app.get("/api/cursos/mis-cursos", requireAuth, async (req: any, res) => {
   await loadVimeo();
-  const progreso = await getUserProgress(req.user.email);
-  const dbUser   = await getUserByEmail(req.user.email);
-  const slugs    = (dbUser?.cursos ?? req.user.cursos ?? "") as string;
+  const [progreso, dbUser, dbCourses] = await Promise.all([
+    getUserProgress(req.user.email),
+    getUserByEmail(req.user.email),
+    getAllCoursesDb(),
+  ]);
+  const slugs = (dbUser?.cursos ?? req.user.cursos ?? "") as string;
 
   const cursosBase =
     req.user.role === "admin"
@@ -694,15 +753,35 @@ app.get("/api/cursos/mis-cursos", requireAuth, async (req: any, res) => {
 
   res.json({
     cursos: cursosBase.map((c) => {
-      const done  = (progreso[c.id.toString()] || []).length;
-      const total = c.total_lecciones;
+      const done    = (progreso[c.id.toString()] || []).length;
+      const total   = c.total_lecciones;
+      const dbExtra = dbCourses[c.id] || {};
       return {
         ...c,
+        stripe_price_id: dbExtra.stripe_price_id ?? "",
+        precio_ars:      dbExtra.precio_ars ?? 0,
+        precio_usd:      dbExtra.precio_usd ?? 0,
+        precios_paises:  dbExtra.precios_paises ?? {},
+        activo:          dbExtra.activo !== undefined ? !!dbExtra.activo : true,
         lecciones_completadas: done,
         progreso: total > 0 ? Math.round((done / total) * 100) : 0,
       };
     }),
   });
+});
+
+// ─── ADMIN CURSOS ─────────────────────────────────────────────────────────────
+app.put("/api/admin/cursos/:id", requireAdmin, async (req, res) => {
+  const id = parseInt(req.params.id);
+  if (isNaN(id)) return res.status(400).json({ error: "ID inválido" });
+  const { stripe_price_id, precio_ars, precio_usd, precios_paises, activo } = req.body;
+  try {
+    await upsertCourseDb(id, { stripe_price_id, precio_ars, precio_usd, precios_paises, activo });
+    res.json({ status: "ok" });
+  } catch (e) {
+    console.error("Error updating course:", e);
+    res.status(500).json({ error: "No se pudo guardar" });
+  }
 });
 
 app.get("/api/cursos/:id", requireAuth, async (req: any, res) => {
