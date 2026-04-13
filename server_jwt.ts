@@ -50,6 +50,8 @@ async function startServer() {
     next();
   };
 
+  const ADMIN_EMAILS = ["victoria.pdias99@gmail.com", "admin@gmail.com"];
+
   // ─── DATABASE (MySQL) ─────────────────────────────────────────
   const pool = mysql.createPool({
     host:     process.env.MYSQL_HOST     || process.env.MYSQLHOST,
@@ -73,6 +75,16 @@ async function startServer() {
   await addCol(`ALTER TABLE academia_usuarios ADD COLUMN vencimiento DATE DEFAULT NULL`);
   await addCol(`ALTER TABLE academia_usuarios ADD COLUMN progreso TEXT`);
   await addCol(`ALTER TABLE academia_usuarios ADD COLUMN fecha_creacion DATE DEFAULT NULL`);
+  await addCol(`ALTER TABLE academia_usuarios ADD COLUMN role VARCHAR(20) NOT NULL DEFAULT 'user'`);
+  // Migrar admins conocidos: asegura que tengan role='admin' en la BD
+  if (ADMIN_EMAILS.length > 0) {
+    try {
+      await pool.query(
+        `UPDATE academia_usuarios SET role='admin' WHERE email IN (${ADMIN_EMAILS.map(() => '?').join(',')})`,
+        ADMIN_EMAILS
+      );
+    } catch (e: any) { console.error("Error migrando roles admin:", e?.message); }
+  }
   console.log("Migrations OK");
 
   const getUsers = async (): Promise<any[]> => {
@@ -85,17 +97,18 @@ async function startServer() {
 
   const saveUser = async (user: any) => {
     await pool.query(
-      `INSERT INTO academia_usuarios (id, email, password, nombre, apellido, cursos, activo, vencimiento, progreso, fecha_creacion)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `INSERT INTO academia_usuarios (id, email, password, nombre, apellido, cursos, activo, vencimiento, progreso, fecha_creacion, role)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
        ON DUPLICATE KEY UPDATE
        password=VALUES(password), nombre=VALUES(nombre), apellido=VALUES(apellido),
        cursos=VALUES(cursos), activo=VALUES(activo), vencimiento=VALUES(vencimiento),
-       progreso=VALUES(progreso)`,
+       progreso=VALUES(progreso), role=VALUES(role)`,
       [
         user.id, user.email, user.password, user.nombre, user.apellido || "",
         user.cursos || "", user.activo ?? 1, user.vencimiento || null,
         JSON.stringify(user.progreso || {}),
         user.fecha_creacion || new Date().toISOString().split("T")[0],
+        user.role || "user",
       ]
     );
   };
@@ -144,8 +157,6 @@ async function startServer() {
     }
     return Array.from(ids);
   };
-
-  const ADMIN_EMAILS = ["victoria.pdias99@gmail.com", "admin@gmail.com"];
 
   const TEST_USERS: Record<string, any> = {
     "juan@example.com": { id: 2, nombre: "Juan Pérez", email: "juan@example.com", inicial: "J", role: "user", foto_url: null, cursos: "excel" },
@@ -250,8 +261,12 @@ async function startServer() {
       const match = await bcrypt.compare(password, user.password);
       if (!match) return res.status(401).json({ error: "Credenciales incorrectas" });
 
-      // Determine role: check if email is admin
-      const role = ADMIN_EMAILS.includes(email) ? "admin" : "user";
+      // Determine role: use DB role (ADMIN_EMAILS are auto-migrated to 'admin' on startup)
+      const role = user.role === "admin" || ADMIN_EMAILS.includes(email) ? "admin" : "user";
+      // Sync role to DB if mismatch (e.g. first login after migration)
+      if (role === "admin" && user.role !== "admin") {
+        await updateUserField(email, { role: "admin" });
+      }
 
       const userData = {
         id: user.id,
@@ -313,9 +328,14 @@ async function startServer() {
   });
 
   // ─── ADMIN ROUTES ─────────────────────────────────────────────
-  app.get("/api/admin/dashboard", requireAdmin, (req, res) =>
-    res.json({ stats: { totalAlumnos: 1250, totalVentas: 850, ingresosUSD: 12450.5, cursosActivos: mockCourses.length }, ultimasCompras: mockSales })
-  );
+  app.get("/api/admin/dashboard", requireAdmin, async (req, res) => {
+    try {
+      const dbUsers = await getUsers();
+      const totalAlumnos = dbUsers.length;
+      const activos = dbUsers.filter((u: any) => u.activo).length;
+      res.json({ stats: { totalAlumnos, alumnosActivos: activos, cursosActivos: vimeoCourses.length }, ultimasCompras: [] });
+    } catch { res.status(500).json({ error: "Error al obtener estadísticas" }); }
+  });
 
   app.get("/api/admin/usuarios", requireAdmin, async (req, res) => {
     const q = (req.query.buscar as string)?.toLowerCase();
@@ -330,6 +350,7 @@ async function startServer() {
         ultimo_login: null,
         activo: !!u.activo,
         vencimiento: u.vencimiento,
+        role: u.role || "user",
       }));
       res.json({ usuarios: q ? students.filter((s: any) => s.nombre.toLowerCase().includes(q) || s.email.toLowerCase().includes(q)) : students });
     } catch { res.status(500).json({ error: "Error al obtener usuarios" }); }
@@ -350,9 +371,13 @@ async function startServer() {
     } catch { res.status(500).json({ error: "Error al actualizar suscripción" }); }
   });
 
-  app.put("/api/admin/usuarios/:email", requireAdmin, async (req, res) => {
+  app.put("/api/admin/usuarios/:email", requireAdmin, async (req: any, res) => {
     const { email } = req.params;
-    const { nombre, cursos, activo, vencimiento } = req.body;
+    const { nombre, cursos, activo, vencimiento, role } = req.body;
+    // Prevent demoting yourself
+    if (role !== undefined && email === req.user.email && role !== "admin") {
+      return res.status(400).json({ error: "No podés quitarte el rol de admin a vos mismo" });
+    }
     try {
       const users = await getUsers();
       const exists = users.find((u: any) => u.email === email);
@@ -362,9 +387,10 @@ async function startServer() {
         if (cursos !== undefined) fields.cursos = cursos;
         if (activo !== undefined) fields.activo = activo ? 1 : 0;
         if (vencimiento !== undefined) fields.vencimiento = vencimiento;
+        if (role !== undefined) fields.role = role;
         await updateUserField(email, fields);
       } else {
-        await saveUser({ id: generateId(), email, nombre: nombre || "", cursos: cursos || "", activo: activo !== undefined ? (activo ? 1 : 0) : 1, vencimiento: vencimiento || null, progreso: {}, fecha_creacion: new Date().toISOString().split("T")[0] });
+        await saveUser({ id: generateId(), email, nombre: nombre || "", cursos: cursos || "", activo: activo !== undefined ? (activo ? 1 : 0) : 1, vencimiento: vencimiento || null, role: role || "user", progreso: {}, fecha_creacion: new Date().toISOString().split("T")[0] });
       }
       res.json({ status: "ok" });
     } catch { res.status(500).json({ error: "Error al actualizar usuario" }); }
