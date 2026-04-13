@@ -76,6 +76,26 @@ async function startServer() {
   await addCol(`ALTER TABLE academia_usuarios ADD COLUMN progreso TEXT`);
   await addCol(`ALTER TABLE academia_usuarios ADD COLUMN fecha_creacion DATE DEFAULT NULL`);
   await addCol(`ALTER TABLE academia_usuarios ADD COLUMN role VARCHAR(20) NOT NULL DEFAULT 'user'`);
+  // Tabla de info de cursos (precios, stripe, etc.)
+  try {
+    await pool.query(`CREATE TABLE IF NOT EXISTS academia_cursos_info (
+      vimeo_id VARCHAR(20) PRIMARY KEY,
+      stripe_price_id VARCHAR(100) DEFAULT '',
+      precio_ars DECIMAL(10,2) DEFAULT 0,
+      precio_usd DECIMAL(10,2) DEFAULT 0,
+      activo TINYINT(1) DEFAULT 1
+    )`);
+    // Insertar cursos conocidos si no existen
+    const knownCourses = [
+      "12286845","12286854","12052707","12305404",
+      "13018504","12107061","12305086","12072965","12073015"
+    ];
+    for (const id of knownCourses) {
+      await pool.query(
+        `INSERT IGNORE INTO academia_cursos_info (vimeo_id) VALUES (?)`, [id]
+      );
+    }
+  } catch (e: any) { console.error("Error creando tabla cursos_info:", e?.message); }
   // Tabla de ventas
   try {
     await pool.query(`CREATE TABLE IF NOT EXISTS academia_ventas (
@@ -415,9 +435,23 @@ async function startServer() {
     } catch { res.status(500).json({ error: "Error al eliminar usuario" }); }
   });
 
-  app.post("/api/admin/cursos", requireAdmin, (req, res) => { const c = { id: mockCourses.length + 1, ...req.body, progreso: 0, total_lecciones: 0, lecciones_completadas: 0 }; mockCourses.push(c); res.json({ status: "ok", curso: c }); });
-  app.put("/api/admin/cursos/:id", requireAdmin, (req, res) => { const idx = mockCourses.findIndex(c => c.id === parseInt(req.params.id)); if (idx !== -1) { mockCourses[idx] = { ...mockCourses[idx], ...req.body, id: parseInt(req.params.id) }; res.json({ status: "ok", curso: mockCourses[idx] }); } else res.status(404).json({ error: "No encontrado" }); });
-  app.delete("/api/admin/cursos/:id", requireAdmin, (req, res) => { const idx = mockCourses.findIndex(c => c.id === parseInt(req.params.id)); if (idx !== -1) { mockCourses.splice(idx, 1); delete mockLessons[parseInt(req.params.id)]; res.json({ status: "ok" }); } else res.status(404).json({ error: "No encontrado" }); });
+  app.post("/api/admin/cursos", requireAdmin, (req, res) => res.status(400).json({ error: "Los cursos se gestionan desde Vimeo" }));
+  app.put("/api/admin/cursos/:id", requireAdmin, async (req, res) => {
+    const vimeoId = req.params.id;
+    const { stripe_price_id, precio_ars, precio_usd, activo } = req.body;
+    try {
+      await pool.query(
+        `INSERT INTO academia_cursos_info (vimeo_id, stripe_price_id, precio_ars, precio_usd, activo)
+         VALUES (?, ?, ?, ?, ?)
+         ON DUPLICATE KEY UPDATE
+         stripe_price_id=VALUES(stripe_price_id), precio_ars=VALUES(precio_ars),
+         precio_usd=VALUES(precio_usd), activo=VALUES(activo)`,
+        [vimeoId, stripe_price_id || "", precio_ars || 0, precio_usd || 0, activo !== false ? 1 : 0]
+      );
+      res.json({ status: "ok" });
+    } catch { res.status(500).json({ error: "Error al actualizar curso" }); }
+  });
+  app.delete("/api/admin/cursos/:id", requireAdmin, (req, res) => res.status(400).json({ error: "Los cursos se gestionan desde Vimeo" }));
   app.post("/api/admin/lecciones", requireAdmin, (req, res) => { const { cursoId, ...d } = req.body; if (!mockLessons[cursoId]) mockLessons[cursoId] = []; const l = { id: Date.now(), ...d, completada: false }; mockLessons[cursoId].push(l); res.json({ status: "ok", leccion: l }); });
   app.put("/api/admin/lecciones/:id", requireAdmin, (req, res) => { const id = parseInt(req.params.id); const { cursoId, ...d } = req.body; if (!mockLessons[cursoId]) return res.status(404).json({ error: "Curso no encontrado" }); const idx = mockLessons[cursoId].findIndex((l: any) => l.id === id); if (idx !== -1) { mockLessons[cursoId][idx] = { ...mockLessons[cursoId][idx], ...d, id }; res.json({ status: "ok", leccion: mockLessons[cursoId][idx] }); } else res.status(404).json({ error: "No encontrada" }); });
   app.delete("/api/admin/lecciones/:id", requireAdmin, (req, res) => { const id = parseInt(req.params.id); for (const k in mockLessons) { const idx = mockLessons[k].findIndex((l: any) => l.id === id); if (idx !== -1) { mockLessons[k].splice(idx, 1); return res.json({ status: "ok" }); } } res.status(404).json({ error: "No encontrada" }); });
@@ -435,6 +469,13 @@ async function startServer() {
     return dbUser?.progreso || {};
   };
 
+  const getCursosInfo = async (): Promise<Record<string, any>> => {
+    const [rows] = await pool.query(`SELECT * FROM academia_cursos_info`);
+    const map: Record<string, any> = {};
+    for (const r of rows as any[]) map[r.vimeo_id] = r;
+    return map;
+  };
+
   app.get("/api/cursos/mis-cursos", requireAuth, async (req: any, res) => {
     const user = req.user;
     try {
@@ -442,6 +483,7 @@ async function startServer() {
       const dbUsers = await getUsers();
       const dbUser = dbUsers.find((u: any) => u.email === user.email);
       const cursosActualizados = dbUser?.cursos ?? user.cursos ?? "";
+      const cursosInfo = await getCursosInfo();
 
       let cursosBase = user.role === "admin"
         ? vimeoCourses
@@ -454,7 +496,16 @@ async function startServer() {
       const cursos = cursosBase.map(c => {
         const completadas = (progreso[c.id.toString()] || []).length;
         const total = c.total_lecciones;
-        return { ...c, lecciones_completadas: completadas, progreso: total > 0 ? Math.round((completadas / total) * 100) : 0 };
+        const info = cursosInfo[c.id.toString()] || {};
+        return {
+          ...c,
+          stripe_price_id: info.stripe_price_id || "",
+          precio_ars: info.precio_ars || 0,
+          precio_usd: info.precio_usd || 0,
+          activo: info.activo !== undefined ? !!info.activo : true,
+          lecciones_completadas: completadas,
+          progreso: total > 0 ? Math.round((completadas / total) * 100) : 0,
+        };
       });
       res.json({ cursos });
     } catch { res.status(500).json({ error: "Error al obtener cursos" }); }

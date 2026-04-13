@@ -219,8 +219,9 @@ export default function AdminDashboard() {
   const handleCreateCourse = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const url = editingCourse ? `/api/admin/cursos/${editingCourse.id}` : '/api/admin/cursos';
-      const res = await authFetch(url, { method: editingCourse ? 'PUT' : 'POST', body: JSON.stringify(courseForm) });
+      if (!editingCourse) { setToast({ message: "Los cursos se gestionan desde Vimeo", type: 'error' }); return; }
+      const url = `/api/admin/cursos/${editingCourse.id}`;
+      const res = await authFetch(url, { method: 'PUT', body: JSON.stringify(courseForm) });
       if (res.ok) {
         setToast({ message: editingCourse ? "✓ Actualizado" : "✓ Guardado", type: 'success' });
         setIsCourseModalOpen(false); setEditingCourse(null); fetchCourses();
@@ -546,18 +547,13 @@ export default function AdminDashboard() {
         </AnimatePresence>
       </main>
 
-      <Modal isOpen={isCourseModalOpen} onClose={() => { setIsCourseModalOpen(false); setEditingCourse(null); }} title={editingCourse ? "Editar Curso" : "Nuevo Curso"}>
+      <Modal isOpen={isCourseModalOpen} onClose={() => { setIsCourseModalOpen(false); setEditingCourse(null); }} title={`Editar precios — ${editingCourse?.nombre || ''}`}>
         <form onSubmit={handleCreateCourse} className="space-y-4">
+          <p className="text-sm text-gray-500">El nombre y contenido del curso se gestionan desde Vimeo. Acá podés editar los precios y el ID de Stripe.</p>
+          <div className="space-y-1"><label className="text-sm font-medium text-gray-700">Stripe Price ID</label><input type="text" className="w-full px-3 py-2 rounded-md border border-[#dee2e6] focus:outline-none font-mono text-sm" placeholder="price_..." value={courseForm.stripe_price_id} onChange={e => setCourseForm({...courseForm, stripe_price_id: e.target.value})} /></div>
           <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-1"><label className="text-sm font-medium text-gray-700">Academia</label><select className="w-full px-3 py-2 rounded-md border border-[#dee2e6] focus:outline-none focus:ring-2 focus:ring-[#00a86b]/50" value={courseForm.academia} onChange={e => setCourseForm({...courseForm, academia: e.target.value})}><option value="Aprende Excel">Aprende Excel</option><option value="Otra">Otra</option></select></div>
-            <div className="space-y-1"><label className="text-sm font-medium text-gray-700">Nombre</label><input type="text" required className="w-full px-3 py-2 rounded-md border border-[#dee2e6] focus:outline-none" value={courseForm.nombre} onChange={e => setCourseForm({...courseForm, nombre: e.target.value})} /></div>
-          </div>
-          <div className="space-y-1"><label className="text-sm font-medium text-gray-700">Descripción</label><textarea rows={3} className="w-full px-3 py-2 rounded-md border border-[#dee2e6] focus:outline-none" value={courseForm.descripcion} onChange={e => setCourseForm({...courseForm, descripcion: e.target.value})} /></div>
-          <div className="space-y-1"><label className="text-sm font-medium text-gray-700">URL Imagen</label><input type="url" className="w-full px-3 py-2 rounded-md border border-[#dee2e6] focus:outline-none" value={courseForm.imagen_url} onChange={e => setCourseForm({...courseForm, imagen_url: e.target.value})} /></div>
-          <div className="grid grid-cols-3 gap-4">
-            <div className="space-y-1"><label className="text-sm font-medium text-gray-700">Stripe Price ID</label><input type="text" className="w-full px-3 py-2 rounded-md border border-[#dee2e6] focus:outline-none" value={courseForm.stripe_price_id} onChange={e => setCourseForm({...courseForm, stripe_price_id: e.target.value})} /></div>
-            <div className="space-y-1"><label className="text-sm font-medium text-gray-700">Precio ARS</label><input type="number" className="w-full px-3 py-2 rounded-md border border-[#dee2e6] focus:outline-none" value={courseForm.precio_ars} onChange={e => setCourseForm({...courseForm, precio_ars: Number(e.target.value)})} /></div>
-            <div className="space-y-1"><label className="text-sm font-medium text-gray-700">Precio USD</label><input type="number" className="w-full px-3 py-2 rounded-md border border-[#dee2e6] focus:outline-none" value={courseForm.precio_usd} onChange={e => setCourseForm({...courseForm, precio_usd: Number(e.target.value)})} /></div>
+            <div className="space-y-1"><label className="text-sm font-medium text-gray-700">Precio ARS</label><input type="number" min="0" className="w-full px-3 py-2 rounded-md border border-[#dee2e6] focus:outline-none" value={courseForm.precio_ars} onChange={e => setCourseForm({...courseForm, precio_ars: Number(e.target.value)})} /></div>
+            <div className="space-y-1"><label className="text-sm font-medium text-gray-700">Precio USD</label><input type="number" min="0" step="0.01" className="w-full px-3 py-2 rounded-md border border-[#dee2e6] focus:outline-none" value={courseForm.precio_usd} onChange={e => setCourseForm({...courseForm, precio_usd: Number(e.target.value)})} /></div>
           </div>
           <div className="flex justify-end gap-3 pt-4">
             <button type="button" onClick={() => setIsCourseModalOpen(false)} className="px-6 py-2 rounded-md font-medium text-gray-500 hover:bg-gray-100 transition-colors">Cancelar</button>
