@@ -101,7 +101,7 @@ export default function AdminDashboard() {
   useEffect(() => { checkAuth(); }, []);
   useEffect(() => {
     if (activeTab === "dashboard") fetchDashboard();
-    if (activeTab === "alumnos") fetchStudents();
+    if (activeTab === "alumnos") { fetchStudents(); fetchCourses(); }
     if (activeTab === "cursos") fetchCourses();
     if (activeTab === "lecciones") { fetchCourses(); if (selectedCourseId) fetchLessons(selectedCourseId); }
   }, [activeTab, selectedCourseId]);
