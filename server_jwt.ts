@@ -587,7 +587,7 @@ async function startServer() {
 
   // Importar precios desde la landing (cursos_detalle → academia_cursos_info)
   app.post("/api/admin/importar-precios-landing", requireAdmin, async (_req, res) => {
-    const LANDING_URL = process.env.LANDING_URL || "https://excel-facil.com";
+    const LANDING_URL = process.env.LANDING_URL || "https://aprende-excel.com";
     try {
       const response = await fetch(`${LANDING_URL}/api-precios.php`);
       if (!response.ok) throw new Error(`Landing respondió ${response.status}`);
