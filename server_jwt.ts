@@ -555,6 +555,36 @@ async function startServer() {
     } catch { res.status(500).json({ error: "Error al obtener ventas" }); }
   });
 
+  // ─── PRECIOS PÚBLICOS (sin auth, para la landing) ────────────────
+  // Mapeo inverso Vimeo ID → slug
+  const VIMEO_TO_SLUG: Record<string, string> = Object.fromEntries(
+    Object.entries(COURSE_MAPPING).map(([slug, id]) => [id, slug])
+  );
+
+  app.get("/api/precios", async (_req, res) => {
+    try {
+      const [rows] = await pool.query(`SELECT * FROM academia_cursos_info`);
+      const precios: Record<string, any> = {};
+      for (const r of rows as any[]) {
+        const slug = VIMEO_TO_SLUG[r.vimeo_id] || r.vimeo_id;
+        precios[slug] = {
+          vimeo_id:       r.vimeo_id,
+          precio_ars:     Number(r.precio_ars) || 0,
+          precio_usd:     Number(r.precio_usd) || 0,
+          stripe_price_id: r.stripe_price_id || "",
+          precios_paises: typeof r.precios_paises === "string"
+            ? JSON.parse(r.precios_paises || "{}")
+            : r.precios_paises || {},
+        };
+      }
+      res.setHeader("Access-Control-Allow-Origin", "*");
+      res.json({ precios });
+    } catch (e) {
+      console.error("Error fetching precios:", e);
+      res.status(500).json({ error: "Error al obtener precios" });
+    }
+  });
+
   // ─── COURSE ROUTES ────────────────────────────────────────────
   const getUserProgress = async (email: string): Promise<Record<string, string[]>> => {
     const users = await getUsers();

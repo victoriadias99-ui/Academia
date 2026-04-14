@@ -49,6 +49,18 @@ const getCourseDisplayName = (identifier: string, courseList: Course[]): string 
 interface PrecioPais { precio: number; stripe_price_id: string; }
 interface Course { id: number; nombre: string; academia: string; stripe_price_id: string; precio_ars: number; precio_usd: number; precios_paises?: Record<string, PrecioPais>; activo: boolean; descripcion?: string; imagen_url?: string; orden?: number; }
 
+// Tasas de conversión USD → moneda local (mismas que logicprecios.php en la landing)
+const TASAS_DESDE_USD: Record<string, number> = {
+  ARS: 1100, MXN: 17.5, COP: 4000, CLP: 950, PEN: 3.7,
+  UYU: 39,   PYG: 7300, BOB: 6.9,  BRL: 5.0, CRC: 530,
+  GTQ: 7.8,  DOP: 57,   HNL: 24.5, NIO: 36.5,
+  USD: 1,
+};
+const precioALocalAUSD = (precio: number, moneda: string): number => {
+  const tasa = TASAS_DESDE_USD[moneda] || 1;
+  return moneda === "USD" ? precio : Math.round((precio / tasa) * 100) / 100;
+};
+
 const LATAM_PAISES = [
   { codigo: "AR", nombre: "Argentina",            bandera: "🇦🇷", moneda: "ARS" },
   { codigo: "MX", nombre: "México",               bandera: "🇲🇽", moneda: "MXN" },
@@ -731,16 +743,21 @@ export default function AdminDashboard() {
           <div className="space-y-2">
             <label className="text-sm font-medium text-gray-700">Precios por país (LATAM)</label>
             <div className="rounded-md border border-[#dee2e6] overflow-hidden">
-              <div className="grid grid-cols-[2fr_1fr_2fr] bg-[#1a5c4a] text-white text-xs font-semibold px-3 py-2 gap-2">
+              <div className="grid grid-cols-[2fr_1fr_1fr_2fr] bg-[#1a5c4a] text-white text-xs font-semibold px-3 py-2 gap-2">
                 <span>País</span>
-                <span>Precio</span>
+                <span>Precio local</span>
+                <span>≈ USD</span>
                 <span>Stripe Price ID</span>
               </div>
               <div className="divide-y divide-[#dee2e6] max-h-72 overflow-y-auto">
                 {LATAM_PAISES.map(({ codigo, nombre, bandera, moneda }) => {
                   const entry = courseForm.precios_paises[codigo] || { precio: 0, stripe_price_id: "" };
+                  // Para AR usamos el dolar blue en tiempo real, para el resto tasas fijas
+                  const usdEq = moneda === "ARS" && dolarInfo
+                    ? Math.round((entry.precio / dolarInfo.venta) * 100) / 100
+                    : precioALocalAUSD(entry.precio, moneda);
                   return (
-                    <div key={codigo} className="grid grid-cols-[2fr_1fr_2fr] items-center gap-2 px-3 py-2 hover:bg-gray-50">
+                    <div key={codigo} className="grid grid-cols-[2fr_1fr_1fr_2fr] items-center gap-2 px-3 py-2 hover:bg-gray-50">
                       <div className="flex items-center gap-2 text-sm">
                         <span className="text-lg leading-none">{bandera}</span>
                         <span className="font-medium text-[#0d2137]">{nombre}</span>
@@ -762,6 +779,9 @@ export default function AdminDashboard() {
                           });
                         }}
                       />
+                      <div className="text-sm text-gray-500 font-medium">
+                        {entry.precio > 0 ? `$${usdEq.toFixed(2)}` : <span className="text-gray-300">—</span>}
+                      </div>
                       <input
                         type="text"
                         className="w-full px-2 py-1 rounded border border-[#dee2e6] focus:outline-none font-mono text-xs"
