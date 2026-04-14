@@ -585,6 +585,35 @@ async function startServer() {
     }
   });
 
+  // Importar precios desde la landing (cursos_detalle → academia_cursos_info)
+  app.post("/api/admin/importar-precios-landing", requireAdmin, async (_req, res) => {
+    const LANDING_URL = process.env.LANDING_URL || "https://excel-facil.com";
+    try {
+      const response = await fetch(`${LANDING_URL}/api-precios.php`);
+      if (!response.ok) throw new Error(`Landing respondió ${response.status}`);
+      const data: any = await response.json();
+      if (!data.ok || !data.precios) throw new Error("Respuesta inválida de la landing");
+
+      let importados = 0;
+      for (const [slug, info] of Object.entries(data.precios as Record<string, any>)) {
+        const vimeoId = COURSE_MAPPING[slug];
+        if (!vimeoId) continue; // slug no reconocido, omitir
+        const precioArs = info.precio_unitario || 0;
+        await pool.query(
+          `INSERT INTO academia_cursos_info (vimeo_id, precio_ars)
+           VALUES (?, ?)
+           ON DUPLICATE KEY UPDATE precio_ars = VALUES(precio_ars)`,
+          [vimeoId, precioArs]
+        );
+        importados++;
+      }
+      res.json({ ok: true, importados, total: Object.keys(data.precios).length });
+    } catch (e: any) {
+      console.error("Error importando precios:", e);
+      res.status(500).json({ error: e.message || "Error al importar" });
+    }
+  });
+
   // ─── COURSE ROUTES ────────────────────────────────────────────
   const getUserProgress = async (email: string): Promise<Record<string, string[]>> => {
     const users = await getUsers();

@@ -123,6 +123,7 @@ export default function AdminDashboard() {
   const [selectedCourseId, setSelectedCourseId] = useState<number | null>(null);
   const [isCourseModalOpen, setIsCourseModalOpen] = useState(false);
   const [selectedPaisCode, setSelectedPaisCode] = useState<string | null>("AR");
+  const [importandoPrecios, setImportandoPrecios] = useState(false);
   const [isLessonModalOpen, setIsLessonModalOpen] = useState(false);
   const [editingCourse, setEditingCourse] = useState<Course | null>(null);
   const [editingLesson, setEditingLesson] = useState<Lesson | null>(null);
@@ -344,6 +345,22 @@ export default function AdminDashboard() {
     } catch { setToast({ message: "Error de conexión", type: 'error' }); }
   };
 
+  const handleImportarPreciosLanding = async () => {
+    if (!confirm("¿Importar precios actuales de la landing? Esto sobreescribirá el Precio ARS de cada curso en Railway.")) return;
+    setImportandoPrecios(true);
+    try {
+      const res = await authFetch('/api/admin/importar-precios-landing', { method: 'POST' });
+      const data = await res.json();
+      if (res.ok) {
+        setToast({ message: `✓ ${data.importados} precios importados desde la landing`, type: 'success' });
+        fetchCourses();
+      } else {
+        setToast({ message: data.error || "Error al importar", type: 'error' });
+      }
+    } catch { setToast({ message: "Error de conexión", type: 'error' }); }
+    finally { setImportandoPrecios(false); }
+  };
+
   const handleDeleteCourse = async (id: number) => {
     if (!confirm("¿Estás seguro de eliminar este curso?")) return;
     try {
@@ -554,7 +571,12 @@ export default function AdminDashboard() {
             <motion.div key="cursos" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="p-8">
               <header className="flex items-center justify-between mb-8">
                 <div><h1 className="text-3xl font-bold text-[#0d2137]">Cursos</h1><p className="text-gray-500">Administración de la oferta académica</p></div>
-                <button onClick={() => { setEditingCourse(null); setCourseForm({ academia: "Aprende Excel", nombre: "", descripcion: "", imagen_url: "", stripe_price_id: "", precio_ars: 0, precio_usd: 0, orden: 0, precios_paises: {} }); setIsCourseModalOpen(true); }} className="bg-[#1a7a5e] text-white px-6 py-2 rounded-md font-medium hover:bg-[#00a86b] transition-colors flex items-center gap-2"><Plus size={20} />Agregar curso</button>
+                <div className="flex gap-2">
+                  <button onClick={handleImportarPreciosLanding} disabled={importandoPrecios} className="border border-[#1a7a5e] text-[#1a7a5e] px-4 py-2 rounded-md font-medium hover:bg-[#f0faf6] transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed text-sm">
+                    {importandoPrecios ? "Importando..." : "↓ Importar precios de la landing"}
+                  </button>
+                  <button onClick={() => { setEditingCourse(null); setCourseForm({ academia: "Aprende Excel", nombre: "", descripcion: "", imagen_url: "", stripe_price_id: "", precio_ars: 0, precio_usd: 0, orden: 0, precios_paises: {} }); setIsCourseModalOpen(true); }} className="bg-[#1a7a5e] text-white px-6 py-2 rounded-md font-medium hover:bg-[#00a86b] transition-colors flex items-center gap-2"><Plus size={20} />Agregar curso</button>
+                </div>
               </header>
               <div className="bg-white rounded-lg border border-[#dee2e6] shadow-sm overflow-hidden">
                 <div className="overflow-x-auto">
