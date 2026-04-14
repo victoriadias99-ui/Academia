@@ -336,7 +336,10 @@ export default function AdminDashboard() {
     try {
       if (!editingCourse) { setToast({ message: "Los cursos se gestionan desde Vimeo", type: 'error' }); return; }
       const url = `/api/admin/cursos/${editingCourse.id}`;
-      const res = await authFetch(url, { method: 'PUT', body: JSON.stringify(courseForm) });
+      // Garantizar que precio_ars siempre refleje el precio de Argentina si está seteado
+      const precioArFinal = courseForm.precios_paises["AR"]?.precio || courseForm.precio_ars;
+      const body = { ...courseForm, precio_ars: precioArFinal };
+      const res = await authFetch(url, { method: 'PUT', body: JSON.stringify(body) });
       if (res.ok) {
         setToast({ message: editingCourse ? "✓ Actualizado" : "✓ Guardado", type: 'success' });
         setIsCourseModalOpen(false); setEditingCourse(null); fetchCourses();
@@ -825,7 +828,12 @@ export default function AdminDashboard() {
                         value={entry.precio || ""}
                         onChange={e => {
                           const precio = Number(e.target.value);
-                          setCourseForm({ ...courseForm, precios_paises: { ...courseForm.precios_paises, [selectedPaisCode]: { ...entry, precio } } });
+                          setCourseForm({
+                            ...courseForm,
+                            // Si se edita Argentina, también actualizamos precio_ars global
+                            precio_ars: selectedPaisCode === "AR" ? precio : courseForm.precio_ars,
+                            precios_paises: { ...courseForm.precios_paises, [selectedPaisCode]: { ...entry, precio } }
+                          });
                         }}
                       />
                     </div>
