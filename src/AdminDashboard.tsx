@@ -837,10 +837,14 @@ export default function AdminDashboard() {
                         value={entry.precio || ""}
                         onChange={e => {
                           const precio = Number(e.target.value);
+                          const esAR = selectedPaisCode === "AR";
+                          const usdAuto = esAR && dolarInfo && dolarInfo.venta > 0
+                            ? Math.round((precio / dolarInfo.venta) * 100) / 100
+                            : courseForm.precio_usd;
                           setCourseForm({
                             ...courseForm,
-                            // Si se edita Argentina, también actualizamos precio_ars global
-                            precio_ars: selectedPaisCode === "AR" ? precio : courseForm.precio_ars,
+                            precio_ars: esAR ? precio : courseForm.precio_ars,
+                            precio_usd: esAR ? usdAuto : courseForm.precio_usd,
                             precios_paises: { ...courseForm.precios_paises, [selectedPaisCode]: { ...entry, precio } }
                           });
                         }}
