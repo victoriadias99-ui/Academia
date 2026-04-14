@@ -122,6 +122,7 @@ export default function AdminDashboard() {
   const [lessons, setLessons] = useState<Lesson[]>([]);
   const [selectedCourseId, setSelectedCourseId] = useState<number | null>(null);
   const [isCourseModalOpen, setIsCourseModalOpen] = useState(false);
+  const [selectedPaisCode, setSelectedPaisCode] = useState<string | null>("AR");
   const [isLessonModalOpen, setIsLessonModalOpen] = useState(false);
   const [editingCourse, setEditingCourse] = useState<Course | null>(null);
   const [editingLesson, setEditingLesson] = useState<Lesson | null>(null);
@@ -742,66 +743,86 @@ export default function AdminDashboard() {
 
           <div className="space-y-2">
             <label className="text-sm font-medium text-gray-700">Precios por país (LATAM)</label>
-            <div className="rounded-md border border-[#dee2e6] overflow-hidden">
-              <div className="grid grid-cols-[2fr_1fr_1fr_2fr] bg-[#1a5c4a] text-white text-xs font-semibold px-3 py-2 gap-2">
-                <span>País</span>
-                <span>Precio local</span>
-                <span>≈ USD</span>
-                <span>Stripe Price ID</span>
-              </div>
-              <div className="divide-y divide-[#dee2e6] max-h-72 overflow-y-auto">
-                {LATAM_PAISES.map(({ codigo, nombre, bandera, moneda }) => {
-                  const entry = courseForm.precios_paises[codigo] || { precio: 0, stripe_price_id: "" };
-                  // Para AR usamos el dolar blue en tiempo real, para el resto tasas fijas
-                  const usdEq = moneda === "ARS" && dolarInfo
-                    ? Math.round((entry.precio / dolarInfo.venta) * 100) / 100
-                    : precioALocalAUSD(entry.precio, moneda);
-                  return (
-                    <div key={codigo} className="grid grid-cols-[2fr_1fr_1fr_2fr] items-center gap-2 px-3 py-2 hover:bg-gray-50">
-                      <div className="flex items-center gap-2 text-sm">
-                        <span className="text-lg leading-none">{bandera}</span>
-                        <span className="font-medium text-[#0d2137]">{nombre}</span>
-                        <span className="text-xs text-gray-400">{moneda}</span>
+
+            {/* Fila scrollable de banderas */}
+            <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-thin">
+              {LATAM_PAISES.map(({ codigo, bandera, nombre }) => {
+                const tieneP = (courseForm.precios_paises[codigo]?.precio || 0) > 0;
+                const activo = selectedPaisCode === codigo;
+                return (
+                  <button
+                    key={codigo}
+                    type="button"
+                    title={nombre}
+                    onClick={() => setSelectedPaisCode(codigo)}
+                    className={`relative flex-shrink-0 flex flex-col items-center gap-1 px-3 py-2 rounded-xl border-2 transition-all
+                      ${activo
+                        ? "border-[#1a7a5e] bg-[#f0faf6] shadow-sm"
+                        : "border-transparent hover:border-[#dee2e6] hover:bg-gray-50"
+                      }`}
+                  >
+                    <span className="text-2xl leading-none">{bandera}</span>
+                    <span className="text-[10px] font-semibold text-gray-500">{codigo}</span>
+                    {tieneP && (
+                      <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-[#00a86b]" />
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Panel del país seleccionado */}
+            {selectedPaisCode && (() => {
+              const pais = LATAM_PAISES.find(p => p.codigo === selectedPaisCode)!;
+              const entry = courseForm.precios_paises[selectedPaisCode] || { precio: 0, stripe_price_id: "" };
+              const usdEq = pais.moneda === "ARS" && dolarInfo
+                ? Math.round((entry.precio / dolarInfo.venta) * 100) / 100
+                : precioALocalAUSD(entry.precio, pais.moneda);
+              return (
+                <div className="rounded-xl border-2 border-[#1a7a5e] bg-[#f0faf6] p-4 space-y-3">
+                  <div className="flex items-center gap-3">
+                    <span className="text-4xl leading-none">{pais.bandera}</span>
+                    <div>
+                      <p className="font-bold text-[#0d2137]">{pais.nombre}</p>
+                      <p className="text-xs text-gray-500">Moneda local: <span className="font-semibold">{pais.moneda}</span></p>
+                    </div>
+                    {entry.precio > 0 && (
+                      <div className="ml-auto text-right">
+                        <p className="text-xs text-gray-400">Equivale a</p>
+                        <p className="text-lg font-bold text-[#1a7a5e]">≈ USD {usdEq.toFixed(2)}</p>
                       </div>
+                    )}
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1">
+                      <label className="text-xs font-medium text-gray-600">Precio en {pais.moneda}</label>
                       <input
                         type="number" min="0"
-                        className="w-full px-2 py-1 rounded border border-[#dee2e6] focus:outline-none text-sm"
+                        className="w-full px-3 py-2 rounded-lg border border-[#dee2e6] focus:outline-none focus:ring-2 focus:ring-[#00a86b]/40 bg-white text-sm"
                         placeholder="0"
                         value={entry.precio || ""}
                         onChange={e => {
                           const precio = Number(e.target.value);
-                          setCourseForm({
-                            ...courseForm,
-                            precios_paises: {
-                              ...courseForm.precios_paises,
-                              [codigo]: { ...entry, precio },
-                            },
-                          });
-                        }}
-                      />
-                      <div className="text-sm text-gray-500 font-medium">
-                        {entry.precio > 0 ? `$${usdEq.toFixed(2)}` : <span className="text-gray-300">—</span>}
-                      </div>
-                      <input
-                        type="text"
-                        className="w-full px-2 py-1 rounded border border-[#dee2e6] focus:outline-none font-mono text-xs"
-                        placeholder="price_..."
-                        value={entry.stripe_price_id || ""}
-                        onChange={e => {
-                          setCourseForm({
-                            ...courseForm,
-                            precios_paises: {
-                              ...courseForm.precios_paises,
-                              [codigo]: { ...entry, stripe_price_id: e.target.value },
-                            },
-                          });
+                          setCourseForm({ ...courseForm, precios_paises: { ...courseForm.precios_paises, [selectedPaisCode]: { ...entry, precio } } });
                         }}
                       />
                     </div>
-                  );
-                })}
-              </div>
-            </div>
+                    <div className="space-y-1">
+                      <label className="text-xs font-medium text-gray-600">Stripe Price ID</label>
+                      <input
+                        type="text"
+                        className="w-full px-3 py-2 rounded-lg border border-[#dee2e6] focus:outline-none focus:ring-2 focus:ring-[#00a86b]/40 bg-white font-mono text-xs"
+                        placeholder="price_..."
+                        value={entry.stripe_price_id || ""}
+                        onChange={e => {
+                          setCourseForm({ ...courseForm, precios_paises: { ...courseForm.precios_paises, [selectedPaisCode]: { ...entry, stripe_price_id: e.target.value } } });
+                        }}
+                      />
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
           </div>
 
           <div className="flex justify-end gap-3 pt-4">
