@@ -717,9 +717,15 @@ export default function AdminDashboard() {
               <span className="font-bold">${dolarInfo.venta.toLocaleString("es-AR")} ARS</span>
             </div>
           )}
-          <div className="space-y-1">
-            <label className="text-sm font-medium text-gray-700">Stripe Price ID global (USD)</label>
-            <input type="text" className="w-full px-3 py-2 rounded-md border border-[#dee2e6] focus:outline-none font-mono text-sm" placeholder="price_..." value={courseForm.stripe_price_id} onChange={e => setCourseForm({...courseForm, stripe_price_id: e.target.value})} />
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-1">
+              <label className="text-sm font-medium text-gray-700">Stripe Price ID global (USD)</label>
+              <input type="text" className="w-full px-3 py-2 rounded-md border border-[#dee2e6] focus:outline-none font-mono text-sm" placeholder="price_..." value={courseForm.stripe_price_id} onChange={e => setCourseForm({...courseForm, stripe_price_id: e.target.value})} />
+            </div>
+            <div className="space-y-1">
+              <label className="text-sm font-medium text-gray-700">Precio USD {dolarInfo && <span className="text-gray-400 font-normal">(referencia)</span>}</label>
+              <input type="number" min="0" step="0.01" className="w-full px-3 py-2 rounded-md border border-[#dee2e6] focus:outline-none" placeholder="0.00" value={courseForm.precio_usd || ""} onChange={e => setCourseForm({...courseForm, precio_usd: Number(e.target.value)})} />
+            </div>
           </div>
 
           <div className="space-y-2">

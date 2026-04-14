@@ -83,8 +83,10 @@ async function startServer() {
       stripe_price_id VARCHAR(100) DEFAULT '',
       precio_ars DECIMAL(10,2) DEFAULT 0,
       precio_usd DECIMAL(10,2) DEFAULT 0,
+      precios_paises JSON DEFAULT NULL,
       activo TINYINT(1) DEFAULT 1
     )`);
+    await addCol(`ALTER TABLE academia_cursos_info ADD COLUMN precios_paises JSON DEFAULT NULL`);
     // Insertar cursos conocidos si no existen
     const knownCourses = [
       "12286845","12286854","12052707","12305404",
@@ -483,15 +485,15 @@ async function startServer() {
   app.post("/api/admin/cursos", requireAdmin, (req, res) => res.status(400).json({ error: "Los cursos se gestionan desde Vimeo" }));
   app.put("/api/admin/cursos/:id", requireAdmin, async (req, res) => {
     const vimeoId = req.params.id;
-    const { stripe_price_id, precio_ars, precio_usd, activo } = req.body;
+    const { stripe_price_id, precio_ars, precio_usd, precios_paises, activo } = req.body;
     try {
       await pool.query(
-        `INSERT INTO academia_cursos_info (vimeo_id, stripe_price_id, precio_ars, precio_usd, activo)
-         VALUES (?, ?, ?, ?, ?)
+        `INSERT INTO academia_cursos_info (vimeo_id, stripe_price_id, precio_ars, precio_usd, precios_paises, activo)
+         VALUES (?, ?, ?, ?, ?, ?)
          ON DUPLICATE KEY UPDATE
          stripe_price_id=VALUES(stripe_price_id), precio_ars=VALUES(precio_ars),
-         precio_usd=VALUES(precio_usd), activo=VALUES(activo)`,
-        [vimeoId, stripe_price_id || "", precio_ars || 0, precio_usd || 0, activo !== false ? 1 : 0]
+         precio_usd=VALUES(precio_usd), precios_paises=VALUES(precios_paises), activo=VALUES(activo)`,
+        [vimeoId, stripe_price_id || "", precio_ars || 0, precio_usd || 0, JSON.stringify(precios_paises || {}), activo !== false ? 1 : 0]
       );
       res.json({ status: "ok" });
     } catch { res.status(500).json({ error: "Error al actualizar curso" }); }
@@ -563,7 +565,14 @@ async function startServer() {
   const getCursosInfo = async (): Promise<Record<string, any>> => {
     const [rows] = await pool.query(`SELECT * FROM academia_cursos_info`);
     const map: Record<string, any> = {};
-    for (const r of rows as any[]) map[r.vimeo_id] = r;
+    for (const r of rows as any[]) {
+      map[r.vimeo_id] = {
+        ...r,
+        precios_paises: typeof r.precios_paises === "string"
+          ? JSON.parse(r.precios_paises || "{}")
+          : r.precios_paises || {},
+      };
+    }
     return map;
   };
 
@@ -593,6 +602,7 @@ async function startServer() {
           stripe_price_id: info.stripe_price_id || "",
           precio_ars: info.precio_ars || 0,
           precio_usd: info.precio_usd || 0,
+          precios_paises: info.precios_paises || {},
           activo: info.activo !== undefined ? !!info.activo : true,
           lecciones_completadas: completadas,
           progreso: total > 0 ? Math.round((completadas / total) * 100) : 0,
