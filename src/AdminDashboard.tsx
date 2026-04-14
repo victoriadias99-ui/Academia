@@ -598,7 +598,16 @@ export default function AdminDashboard() {
                           <td className="px-6 py-4"><span className={`px-2 py-1 rounded-full text-[10px] font-bold uppercase ${course.activo !== false ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>{course.activo !== false ? 'Activo' : 'Inactivo'}</span></td>
                           <td className="px-6 py-4">
                             <div className="flex gap-2">
-                              <button onClick={() => { setEditingCourse(course); setCourseForm({ academia: course.academia || "Aprende Excel", nombre: course.nombre, descripcion: course.descripcion || "", imagen_url: course.imagen_url || "", stripe_price_id: course.stripe_price_id, precio_ars: course.precio_ars, precio_usd: course.precio_usd, orden: course.orden || 0, precios_paises: course.precios_paises || {} }); fetchDolar(); setIsCourseModalOpen(true); }} className="p-1 text-gray-400 hover:text-indigo-600 transition-colors"><Edit2 size={16} /></button>
+                              <button onClick={() => {
+                                setEditingCourse(course);
+                                const pp = { ...(course.precios_paises || {}) };
+                                // Si hay precio_ars pero AR no tiene precio en precios_paises, pre-popularlo
+                                if (course.precio_ars > 0 && !pp["AR"]) pp["AR"] = { precio: course.precio_ars, stripe_price_id: "" };
+                                setCourseForm({ academia: course.academia || "Aprende Excel", nombre: course.nombre, descripcion: course.descripcion || "", imagen_url: course.imagen_url || "", stripe_price_id: course.stripe_price_id, precio_ars: course.precio_ars, precio_usd: course.precio_usd, orden: course.orden || 0, precios_paises: pp });
+                                setSelectedPaisCode("AR");
+                                fetchDolar();
+                                setIsCourseModalOpen(true);
+                              }} className="p-1 text-gray-400 hover:text-indigo-600 transition-colors"><Edit2 size={16} /></button>
                               <button onClick={() => handleDeleteCourse(course.id)} className="p-1 text-gray-400 hover:text-red-600 transition-colors"><Trash2 size={16} /></button>
                             </div>
                           </td>
