@@ -165,7 +165,7 @@ export default function AdminDashboard() {
   useEffect(() => {
     if (activeTab === "dashboard") fetchDashboard();
     if (activeTab === "alumnos") { fetchStudents(); fetchCourses(); }
-    if (activeTab === "cursos") fetchCourses();
+    if (activeTab === "cursos") { fetchCourses(); fetchDolar(); }
     if (activeTab === "lecciones") { fetchCourses(); if (selectedCourseId) fetchLessons(selectedCourseId); }
     if (activeTab === "recursos") { fetchCourses(); if (selectedRecursoCursoId) fetchRecursos(selectedRecursoCursoId); }
   }, [activeTab, selectedCourseId]);
@@ -593,8 +593,17 @@ export default function AdminDashboard() {
                           <td className="px-6 py-4 font-medium text-[#0d2137]">{course.nombre}</td>
                           <td className="px-6 py-4 text-gray-600">{course.academia || "Aprende Excel"}</td>
                           <td className="px-6 py-4 text-xs font-mono text-gray-500">{course.stripe_price_id || "price_..."}</td>
-                          <td className="px-6 py-4 text-gray-600">${course.precio_ars || "0"}</td>
-                          <td className="px-6 py-4 text-gray-600">${course.precio_usd || "0"}</td>
+                          <td className="px-6 py-4 text-gray-600">${course.precio_ars?.toLocaleString("es-AR") || "0"}</td>
+                          <td className="px-6 py-4 text-gray-600">
+                            {(() => {
+                              const usd = course.precio_usd && course.precio_usd > 0
+                                ? course.precio_usd
+                                : (course.precio_ars > 0 && dolarInfo ? Math.round((course.precio_ars / dolarInfo.venta) * 100) / 100 : 0);
+                              return usd > 0
+                                ? <span>${usd.toFixed(2)}</span>
+                                : <span className="text-gray-300">$0.00</span>;
+                            })()}
+                          </td>
                           <td className="px-6 py-4"><span className={`px-2 py-1 rounded-full text-[10px] font-bold uppercase ${course.activo !== false ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>{course.activo !== false ? 'Activo' : 'Inactivo'}</span></td>
                           <td className="px-6 py-4">
                             <div className="flex gap-2">
