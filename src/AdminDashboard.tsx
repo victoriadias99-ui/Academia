@@ -111,9 +111,10 @@ const Modal = ({ isOpen, onClose, title, children, maxWidth = "max-w-2xl" }: { i
   );
 };
 
-export default function AdminDashboard() {
+export default function AdminDashboard({ onLogout }: { onLogout: () => void }) {
   const [activeTab, setActiveTab] = useState("dashboard");
   const [user, setUser] = useState<any>(null);
+  const [authChecked, setAuthChecked] = useState(false);
   const [stats, setStats] = useState<AdminStats | null>(null);
   const [recentSales, setRecentSales] = useState<Sale[]>([]);
   const [students, setStudents] = useState<Student[]>([]);
@@ -173,11 +174,24 @@ export default function AdminDashboard() {
   const checkAuth = async () => {
     try {
       const res = await authFetch('/api/auth/perfil');
-      if (res.status === 401) return;
+      if (!res.ok) {
+        localStorage.removeItem("token");
+        onLogout();
+        return;
+      }
       const data = await res.json();
-      if (data.usuario?.role !== "admin") return;
+      if (data.usuario?.role !== "admin") {
+        localStorage.removeItem("token");
+        onLogout();
+        return;
+      }
       setUser(data.usuario);
-    } catch (err) { console.error("Auth check failed", err); }
+    } catch (err) {
+      console.error("Auth check failed", err);
+      onLogout();
+    } finally {
+      setAuthChecked(true);
+    }
   };
 
   const fetchDashboard = async () => {
@@ -404,6 +418,14 @@ export default function AdminDashboard() {
     { id: "recursos", label: "Recursos", icon: FolderOpen },
     { id: "ventas", label: "Ventas", icon: DollarSign },
   ];
+
+  if (!authChecked) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-[#f4f5f7]">
+        <div className="w-8 h-8 border-4 border-[#00a86b] border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <div className="flex h-screen bg-[#f4f5f7] font-sans overflow-hidden">

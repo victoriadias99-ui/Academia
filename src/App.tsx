@@ -162,7 +162,7 @@ export default function App() {
   }
 
   if (view === 'admin') {
-    return <AdminDashboard />;
+    return <AdminDashboard onLogout={handleLogout} />;
   }
 
   if (view === 'player' && selectedCourseId) {

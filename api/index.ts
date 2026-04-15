@@ -5,7 +5,8 @@ import mysql from "mysql2/promise";
 import nodemailer from "nodemailer";
 
 // ─── CONFIG ──────────────────────────────────────────────────────────────────
-const JWT_SECRET     = process.env.JWT_SECRET     || "academia-excel-jwt-secret-2024";
+const JWT_SECRET = process.env.JWT_SECRET;
+if (!JWT_SECRET) throw new Error("JWT_SECRET env var is required");
 const WEBHOOK_SECRET = process.env.WEBHOOK_SECRET || "";
 const ACADEMIA_URL   = process.env.ACADEMIA_URL   || "https://academia-wine.vercel.app/";
 const ADMIN_EMAILS   = ["victoria.pdias99@gmail.com", "admin@gmail.com"];
