@@ -181,6 +181,93 @@ const sendWelcomeEmail = async (
   });
 };
 
+const buildResetPasswordHtml = (
+  nombre: string,
+  email: string,
+  password: string,
+  loginUrl: string
+): string => {
+  const BRAND_COLOR  = "#1a472a";
+  const ACCENT_COLOR = "#4ecdc4";
+  const LIGHT_BG     = "#f8f9fa";
+  return `<!DOCTYPE html>
+<html lang="es">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="font-family:Poppins,Arial,sans-serif;background-color:#ffffff;padding:20px 0;margin:0;">
+  <div style="max-width:600px;margin:0 auto;background-color:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 2px 12px rgba(26,71,42,0.08);">
+    <div style="background-color:${BRAND_COLOR};padding:40px 20px;text-align:center;border-bottom:4px solid ${ACCENT_COLOR};">
+      <h1 style="font-size:32px;color:#ffffff;margin:0 0 8px 0;font-weight:bold;">🔐 Aprende Excel</h1>
+      <p style="font-size:14px;color:#e8f5e9;margin:0;">Restablecimiento de contraseña</p>
+    </div>
+    <div style="padding:40px 30px;">
+      <h2 style="font-size:24px;color:${BRAND_COLOR};margin:0 0 16px 0;font-weight:600;">Hola, ${nombre}</h2>
+      <p style="font-size:15px;color:#555555;line-height:1.6;margin:0 0 24px 0;">
+        Recibimos tu solicitud de restablecimiento de contraseña. Generamos una nueva contraseña provisoria para que puedas volver a acceder a tu cuenta.
+      </p>
+    </div>
+    <div style="padding:0 30px 30px 30px;">
+      <p style="font-size:14px;font-weight:600;color:${BRAND_COLOR};text-transform:uppercase;letter-spacing:0.5px;margin:0 0 16px 0;">
+        Tus nuevos datos de acceso:
+      </p>
+      <div style="background-color:${LIGHT_BG};padding:16px;border-radius:8px;border-left:4px solid ${ACCENT_COLOR};margin-bottom:12px;">
+        <p style="font-size:12px;font-weight:600;color:#888888;text-transform:uppercase;margin:0 0 8px 0;letter-spacing:0.3px;">📧 Usuario</p>
+        <p style="font-size:16px;font-family:monospace;color:${BRAND_COLOR};margin:0;font-weight:600;word-break:break-all;">${email}</p>
+      </div>
+      <div style="background-color:${LIGHT_BG};padding:16px;border-radius:8px;border-left:4px solid ${ACCENT_COLOR};margin-bottom:16px;">
+        <p style="font-size:12px;font-weight:600;color:#888888;text-transform:uppercase;margin:0 0 8px 0;letter-spacing:0.3px;">🔐 Nueva contraseña</p>
+        <p style="font-size:16px;font-family:monospace;color:${BRAND_COLOR};margin:0;font-weight:600;word-break:break-all;">${password}</p>
+      </div>
+      <div style="font-size:13px;color:#d32f2f;background-color:#ffebee;padding:12px 14px;border-radius:6px;margin:0;line-height:1.5;">
+        ⚠️ <strong>Importante:</strong> Por tu seguridad, cambia esta contraseña desde tu perfil apenas ingreses. Si vos no solicitaste este cambio, contáctanos de inmediato.
+      </div>
+    </div>
+    <div style="padding:30px;text-align:center;">
+      <a href="${loginUrl}"
+         style="background-color:${ACCENT_COLOR};color:#ffffff;border-radius:8px;font-weight:600;font-size:15px;text-decoration:none;display:inline-block;padding:16px 40px;">
+        Inicia Sesión
+      </a>
+    </div>
+    <div style="padding:20px 30px;background-color:${LIGHT_BG};text-align:center;">
+      <a href="${loginUrl}" style="color:${BRAND_COLOR};text-decoration:none;font-size:14px;font-weight:500;margin:0 16px;">Portal de Cursos</a>
+      <a href="mailto:soporte@aprende-excel.com" style="color:${BRAND_COLOR};text-decoration:none;font-size:14px;font-weight:500;margin:0 16px;">Soporte</a>
+    </div>
+    <div style="height:1px;background-color:#e0e0e0;margin:0 30px;"></div>
+    <div style="padding:30px;background-color:#fafafa;text-align:center;">
+      <p style="font-size:12px;color:#999999;margin:8px 0;line-height:1.5;">
+        ¿Necesitas ayuda? Contáctanos en
+        <a href="mailto:soporte@aprende-excel.com" style="color:${BRAND_COLOR};text-decoration:none;font-weight:500;">soporte@aprende-excel.com</a>
+      </p>
+      <p style="font-size:12px;color:#999999;margin:8px 0;">© 2024 Aprende Excel. Todos los derechos reservados.</p>
+    </div>
+  </div>
+</body>
+</html>`;
+};
+
+const sendResetPasswordEmail = async (
+  email: string,
+  nombre: string,
+  password: string,
+): Promise<void> => {
+  const loginUrl = process.env.ACADEMIA_URL || "https://academia-production-c4cc.up.railway.app";
+  const transporter = nodemailer.createTransport({
+    host:   process.env.EMAIL_HOST || "smtp.resend.com",
+    port:   parseInt(process.env.EMAIL_PORT || "465"),
+    secure: process.env.EMAIL_SECURE === "true",
+    auth: {
+      user: process.env.EMAIL_USER || "resend",
+      pass: process.env.EMAIL_PASS,
+    },
+  });
+
+  await transporter.sendMail({
+    from: '"Academia Aprende Excel" <soporte@aprende-excel.com>',
+    to:      email,
+    subject: "Restablecimiento de contraseña - Academia Aprende Excel",
+    html:    buildResetPasswordHtml(nombre, email, password, loginUrl),
+  });
+};
+
 // ─── DB HELPERS ──────────────────────────────────────────────────────────────
 const parseUser = (u: any) => ({
   ...u,
@@ -621,10 +708,27 @@ app.post("/api/auth/change-password", requireAuth, async (req: any, res) => {
   }
 });
 
-app.post("/api/auth/reset-password", (req, res) => {
-  if (!req.body.email)
+app.post("/api/auth/reset-password", async (req, res) => {
+  const rawEmail = req.body?.email;
+  if (!rawEmail)
     return res.status(400).json({ error: "Email requerido" });
-  res.json({ status: "ok" });
+  const email = String(rawEmail).toLowerCase().trim();
+  try {
+    const user = await getUserByEmail(email);
+    // Respuesta neutra: no confirmamos existencia del email para prevenir enumeración.
+    if (!user) return res.json({ status: "ok" });
+    if (!user.activo)
+      return res.status(403).json({ error: "Cuenta desactivada. Contacta a soporte." });
+
+    const newPassword = generatePassword();
+    const hashed      = await bcrypt.hash(newPassword, 10);
+    await updateUserFields(email, { password: hashed });
+    await sendResetPasswordEmail(email, user.nombre || "", newPassword);
+    return res.json({ status: "ok" });
+  } catch (e: any) {
+    console.error("RESET-PASSWORD ERROR:", e?.message || e);
+    return res.status(500).json({ error: "No se pudo restablecer la contraseña" });
+  }
 });
 
 // ─── ADMIN ───────────────────────────────────────────────────────────────────

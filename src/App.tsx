@@ -884,6 +884,40 @@ function LoginView({ onLoginSuccess }: { onLoginSuccess: (role: string, usuario:
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [showForgotModal, setShowForgotModal] = useState(false);
+  const [forgotEmail, setForgotEmail] = useState('');
+  const [forgotLoading, setForgotLoading] = useState(false);
+  const [forgotMessage, setForgotMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
+
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const target = (forgotEmail || '').trim();
+    if (!target) {
+      setForgotMessage({ type: 'error', text: 'Ingresa tu email.' });
+      return;
+    }
+    setForgotLoading(true);
+    setForgotMessage(null);
+    try {
+      const res = await authFetch('/api/auth/reset-password', {
+        method: 'POST',
+        body: JSON.stringify({ email: target }),
+      });
+      if (res.ok) {
+        setForgotMessage({
+          type: 'success',
+          text: 'Si el email esta registrado, te enviamos una nueva contrasena a tu casilla. Revisa tambien spam/promociones.',
+        });
+      } else {
+        const data = await res.json().catch(() => ({}));
+        setForgotMessage({ type: 'error', text: data.error || 'No se pudo procesar la solicitud.' });
+      }
+    } catch {
+      setForgotMessage({ type: 'error', text: 'Error de conexion con el servidor.' });
+    } finally {
+      setForgotLoading(false);
+    }
+  };
 
   useEffect(() => {
     const link = document.createElement('link');
@@ -1012,7 +1046,19 @@ function LoginView({ onLoginSuccess }: { onLoginSuccess: (role: string, usuario:
             <div style={{ marginBottom: 6 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 5 }}>
                 <label style={{ fontSize: 10, fontWeight: 600, color: '#aaa', textTransform: 'uppercase', letterSpacing: '0.07em' }}>Contrasena</label>
-                {!isRegistering && <a href="#" style={{ fontSize: 11, color: '#1a6e3c', fontWeight: 600, textDecoration: 'none' }}>Olvidaste?</a>}
+                {!isRegistering && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setForgotEmail(email);
+                      setForgotMessage(null);
+                      setShowForgotModal(true);
+                    }}
+                    style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, fontSize: 11, color: '#1a6e3c', fontWeight: 600, fontFamily: 'Roboto, Arial, sans-serif' }}
+                  >
+                    Olvidaste?
+                  </button>
+                )}
               </div>
               <div style={{ position: 'relative' }}>
                 <input type={showPassword ? 'text' : 'password'} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••"
@@ -1040,6 +1086,80 @@ function LoginView({ onLoginSuccess }: { onLoginSuccess: (role: string, usuario:
           </div>
         </div>
       </main>
+
+      {showForgotModal && (
+        <div
+          onClick={() => { if (!forgotLoading) { setShowForgotModal(false); setForgotMessage(null); } }}
+          style={{ position: 'fixed', inset: 0, background: 'rgba(14,35,24,0.55)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 20, fontFamily: 'Roboto, Arial, sans-serif' }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{ background: '#fff', width: '100%', maxWidth: 380, borderRadius: 12, padding: 28, boxShadow: '0 10px 40px rgba(0,0,0,0.2)' }}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10 }}>
+              <h3 style={{ fontSize: 18, fontWeight: 800, color: '#0e1a13', margin: 0, letterSpacing: '-0.3px' }}>
+                Recuperar contrasena
+              </h3>
+              <button
+                type="button"
+                onClick={() => { if (!forgotLoading) { setShowForgotModal(false); setForgotMessage(null); } }}
+                style={{ background: 'none', border: 'none', fontSize: 20, color: '#aaa', cursor: 'pointer', lineHeight: 1, padding: 0 }}
+                aria-label="Cerrar"
+              >
+                ×
+              </button>
+            </div>
+            <p style={{ fontSize: 12, color: '#777', margin: '0 0 18px 0', lineHeight: 1.5 }}>
+              Ingresa tu email y te enviaremos una nueva contrasena provisoria. Podras cambiarla desde tu perfil al ingresar.
+            </p>
+
+            {forgotMessage && (
+              <div style={{
+                marginBottom: 14, padding: '10px 12px', borderRadius: 7, fontSize: 12,
+                background: forgotMessage.type === 'success' ? '#f0fdf4' : '#fef2f2',
+                color:      forgotMessage.type === 'success' ? '#166534' : '#991b1b',
+                border:     forgotMessage.type === 'success' ? '1px solid #bbf7d0' : '1px solid #fecaca',
+              }}>
+                {forgotMessage.text}
+              </div>
+            )}
+
+            <form onSubmit={handleForgotPassword}>
+              <label style={{ display: 'block', fontSize: 10, fontWeight: 600, color: '#aaa', marginBottom: 5, textTransform: 'uppercase', letterSpacing: '0.07em' }}>
+                Email
+              </label>
+              <input
+                type="email"
+                value={forgotEmail}
+                onChange={(e) => setForgotEmail(e.target.value)}
+                placeholder="tu@email.com"
+                autoFocus
+                required
+                disabled={forgotLoading}
+                style={{ width: '100%', padding: '10px 12px', border: '1.5px solid #ebebeb', borderRadius: 7, fontSize: 13, outline: 'none', background: '#fafafa', fontFamily: 'Roboto, Arial, sans-serif' }}
+              />
+
+              <div style={{ display: 'flex', gap: 8, marginTop: 18 }}>
+                <button
+                  type="button"
+                  onClick={() => { setShowForgotModal(false); setForgotMessage(null); }}
+                  disabled={forgotLoading}
+                  style={{ flex: 1, padding: '11px', background: '#fff', color: '#555', border: '1.5px solid #ebebeb', borderRadius: 7, fontSize: 12, fontWeight: 600, cursor: forgotLoading ? 'not-allowed' : 'pointer', fontFamily: 'Roboto, Arial, sans-serif' }}
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  disabled={forgotLoading}
+                  style={{ flex: 1, padding: '11px', background: '#0e2318', color: '#fff', border: 'none', borderRadius: 7, fontSize: 12, fontWeight: 700, cursor: forgotLoading ? 'not-allowed' : 'pointer', fontFamily: 'Roboto, Arial, sans-serif', letterSpacing: '0.01em', opacity: forgotLoading ? 0.7 : 1 }}
+                >
+                  {forgotLoading ? 'Enviando...' : 'Enviar'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
