@@ -737,12 +737,17 @@ async function startServer() {
   });
 
   // ─── EMAIL ───────────────────────────────────────────────────
+  //   Config por defecto apunta a Resend (mismo proveedor que usa api/index.ts).
+  //   Podés overridear con env vars EMAIL_HOST/EMAIL_PORT/EMAIL_SECURE/EMAIL_USER/EMAIL_PASS.
   const createTransporter = () => nodemailer.createTransport({
-    host: process.env.EMAIL_HOST || "smtp.gmail.com",
-    port: parseInt(process.env.EMAIL_PORT || "587"),
-    secure: process.env.EMAIL_SECURE === "true",
-    auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS },
-    // Timeouts agresivos para no dejar requests colgados si el SMTP no responde
+    host:   process.env.EMAIL_HOST   || "smtp.resend.com",
+    port:   parseInt(process.env.EMAIL_PORT || "465"),
+    secure: process.env.EMAIL_SECURE !== "false", // default true (puerto 465 usa TLS)
+    auth: {
+      user: process.env.EMAIL_USER || "resend",
+      pass: process.env.EMAIL_PASS,
+    },
+    // Timeouts agresivos para no dejar requests colgados si el SMTP no responde.
     connectionTimeout: 10000,
     greetingTimeout:   10000,
     socketTimeout:     15000,
@@ -823,14 +828,16 @@ async function startServer() {
   };
 
   const sendResetPasswordEmail = async (email: string, nombre: string, password: string) => {
-    const loginUrl = process.env.ACADEMIA_URL || "https://academia-production-c4cc.up.railway.app";
+    const loginUrl = process.env.ACADEMIA_URL || "https://academia.aprende-excel.com";
     const BRAND  = "#1a472a";
     const ACCENT = "#4ecdc4";
     const LIGHT  = "#f8f9fa";
     try {
       const transporter = createTransporter();
+      // Usamos el mismo remitente verificado que el resto de la app (dominio con guion: aprende-excel.com)
+      const fromAddress = process.env.EMAIL_FROM || '"Academia Aprende Excel" <soporte@aprende-excel.com>';
       await transporter.sendMail({
-        from: '"Academia Aprende Excel" <academia@aprendeexcel.com>',
+        from: fromAddress,
         to: email,
         subject: "Restablecimiento de contraseña - Academia Aprende Excel",
         html: `<!DOCTYPE html>
