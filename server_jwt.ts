@@ -779,6 +779,21 @@ async function startServer() {
   // Router: HTTP API si la key parece de Resend, SMTP si no.
   const useResendHttp = (process.env.EMAIL_PASS || "").startsWith("re_");
 
+  // Remitente verificado por defecto (dominio con guion: aprende-excel.com).
+  // Override con EMAIL_FROM si necesitás otro from address verificado en Resend.
+  const DEFAULT_FROM = '"Academia Aprende Excel" <soporte@aprende-excel.com>';
+
+  // Helper unificado: HTTP API de Resend si la key empieza con "re_", SMTP en cualquier otro caso.
+  const sendEmail = async (opts: { to: string; subject: string; html: string; from?: string }) => {
+    const fromAddress = opts.from || process.env.EMAIL_FROM || DEFAULT_FROM;
+    if (useResendHttp) {
+      await sendViaResendApi({ from: fromAddress, to: opts.to, subject: opts.subject, html: opts.html });
+      return;
+    }
+    const transporter = createTransporter();
+    await transporter.sendMail({ from: fromAddress, to: opts.to, subject: opts.subject, html: opts.html });
+  };
+
   const generatePassword = () => {
     const chars = "ABCDEFGHJKMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789";
     let pass = "";
@@ -793,13 +808,8 @@ async function startServer() {
     const BRAND  = "#1a472a";
     const ACCENT = "#4ecdc4";
     const LIGHT  = "#f8f9fa";
-    try {
-      const transporter = createTransporter();
-      await transporter.sendMail({
-        from: '"Academia Aprende Excel" <academia@aprendeexcel.com>',
-        to: email,
-        subject: "¡Bienvenido/a a la Academia Aprende Excel! - Tus credenciales de acceso",
-        html: `<!DOCTYPE html>
+    const subject = "¡Bienvenido/a a la Academia Aprende Excel! - Tus credenciales de acceso";
+    const html = `<!DOCTYPE html>
 <html lang="es">
 <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
 <body style="font-family:Arial,sans-serif;background:#ffffff;padding:20px 0;margin:0;">
@@ -846,10 +856,11 @@ async function startServer() {
     </div>
   </div>
 </body>
-</html>`,
-      });
+</html>`;
+    try {
+      await sendEmail({ to: email, subject, html });
     } catch (e) {
-      console.error("Error enviando email:", e);
+      console.error("Error enviando email de bienvenida:", e);
     }
   };
 
@@ -910,13 +921,7 @@ async function startServer() {
 </body>
 </html>`;
     try {
-      if (useResendHttp) {
-        // Envío via HTTP API (evita cualquier problema de SMTP en Railway)
-        await sendViaResendApi({ from: fromAddress, to: email, subject, html });
-        return;
-      }
-      const transporter = createTransporter();
-      await transporter.sendMail({ from: fromAddress, to: email, subject, html });
+      await sendEmail({ from: fromAddress, to: email, subject, html });
     } catch (e) {
       console.error("Error enviando email de reset:", e);
       throw e;
@@ -925,22 +930,18 @@ async function startServer() {
 
   const sendCourseAddedEmail = async (email: string, nombre: string, cursos: string[]) => {
     const academiaUrl = process.env.ACADEMIA_URL || "https://academia-production-c4cc.up.railway.app";
+    const subject = "Nuevo curso agregado a tu cuenta";
+    const html = `
+      <div style="font-family:Arial,sans-serif;max-width:500px;margin:auto;padding:24px;border:1px solid #e0e0e0;border-radius:8px;">
+        <h2 style="color:#008B69;">¡Hola ${nombre}!</h2>
+        <p>Se agregó un nuevo curso a tu cuenta: <strong>${cursos.join(", ")}</strong></p>
+        <a href="${academiaUrl}" style="display:inline-block;background:#008B69;color:#fff;padding:12px 24px;border-radius:6px;text-decoration:none;font-weight:bold;">Ver mis cursos →</a>
+      </div>
+    `;
     try {
-      const transporter = createTransporter();
-      await transporter.sendMail({
-        from: `"Academia Aprende Excel" <${process.env.EMAIL_USER}>`,
-        to: email,
-        subject: "Nuevo curso agregado a tu cuenta",
-        html: `
-          <div style="font-family:Arial,sans-serif;max-width:500px;margin:auto;padding:24px;border:1px solid #e0e0e0;border-radius:8px;">
-            <h2 style="color:#008B69;">¡Hola ${nombre}!</h2>
-            <p>Se agregó un nuevo curso a tu cuenta: <strong>${cursos.join(", ")}</strong></p>
-            <a href="${academiaUrl}" style="display:inline-block;background:#008B69;color:#fff;padding:12px 24px;border-radius:6px;text-decoration:none;font-weight:bold;">Ver mis cursos →</a>
-          </div>
-        `,
-      });
+      await sendEmail({ to: email, subject, html });
     } catch (e) {
-      console.error("Error enviando email:", e);
+      console.error("Error enviando email de curso agregado:", e);
     }
   };
 
