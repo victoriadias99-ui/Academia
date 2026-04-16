@@ -726,22 +726,23 @@ app.post("/api/auth/reset-password", async (req, res) => {
     if (!user.activo)
       return res.status(403).json({ error: "Cuenta desactivada. Contacta a soporte." });
 
+    // 1) Generamos la contraseña y la guardamos en la base YA.
+    //    Si el mail falla, el usuario puede volver a pedir reset.
     const newPassword = generatePassword();
-    // 1) Mandar el mail antes de tocar la contraseña en la base.
-    //    Si el SMTP falla, no dejamos al usuario bloqueado.
-    try {
-      await sendResetPasswordEmail(email, user.nombre || "", newPassword);
-    } catch (mailErr: any) {
-      console.error("RESET-PASSWORD mail error:", mailErr?.message || mailErr);
-      return res.status(502).json({ error: "No pudimos enviar el email. Intenta en unos minutos o contacta a soporte." });
-    }
-    // 2) Mail OK → actualizamos la base.
-    const hashed = await bcrypt.hash(newPassword, 10);
+    const hashed      = await bcrypt.hash(newPassword, 10);
     await updateUserFields(email, { password: hashed });
-    return res.json({ status: "ok" });
+
+    // 2) Respondemos de inmediato (no bloqueamos al frontend esperando al SMTP).
+    res.json({ status: "ok" });
+
+    // 3) Mail en background. Si falla queda logueado.
+    sendResetPasswordEmail(email, user.nombre || "", newPassword).catch((mailErr: any) => {
+      console.error("RESET-PASSWORD mail error (background):", mailErr?.message || mailErr);
+    });
+    return;
   } catch (e: any) {
     console.error("RESET-PASSWORD ERROR:", e?.message || e);
-    return res.status(500).json({ error: "No se pudo restablecer la contraseña" });
+    if (!res.headersSent) return res.status(500).json({ error: "No se pudo restablecer la contraseña" });
   }
 });
 

@@ -405,22 +405,22 @@ async function startServer() {
       if (!user.activo)
         return res.status(403).json({ error: "Cuenta desactivada. Contacta a soporte." });
 
+      // 1) Generamos la contraseña y la guardamos en la base YA.
+      //    Si el mail falla, el usuario puede volver a pedir reset (que generara otra y enviara de nuevo).
       const newPassword = generatePassword();
-      // 1) Enviar el mail ANTES de pisar la contraseña en la base.
-      //    Si el SMTP falla, no dejamos al usuario bloqueado con una contraseña nueva que nunca recibió.
-      try {
-        await sendResetPasswordEmail(email, user.nombre || "", newPassword);
-      } catch (mailErr: any) {
-        console.error("RESET-PASSWORD mail error:", mailErr?.message || mailErr);
-        return res.status(502).json({ error: "No pudimos enviar el email. Intenta en unos minutos o contacta a soporte." });
-      }
-      // 2) Mail OK → recién ahora actualizamos la base.
-      const hashed = await bcrypt.hash(newPassword, 10);
+      const hashed      = await bcrypt.hash(newPassword, 10);
       await updateUserField(email, { password: hashed });
+
+      // 2) Respondemos de inmediato para que el frontend no quede esperando al SMTP.
       res.json({ status: "ok" });
+
+      // 3) Enviamos el mail en background — si falla, queda logueado en Railway.
+      sendResetPasswordEmail(email, user.nombre || "", newPassword).catch((mailErr: any) => {
+        console.error("RESET-PASSWORD mail error (background):", mailErr?.message || mailErr);
+      });
     } catch (e: any) {
       console.error("RESET-PASSWORD ERROR:", e?.message || e);
-      res.status(500).json({ error: "No se pudo restablecer la contraseña" });
+      if (!res.headersSent) res.status(500).json({ error: "No se pudo restablecer la contraseña" });
     }
   });
 
