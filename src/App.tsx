@@ -913,8 +913,18 @@ function LoginView({ onLoginSuccess }: { onLoginSuccess: (role: string, usuario:
           text: 'Si el email esta registrado, te enviamos una nueva contrasena a tu casilla. Revisa tambien spam/promociones.',
         });
       } else {
-        const data = await res.json().catch(() => ({}));
-        setForgotMessage({ type: 'error', text: data.error || 'No se pudo procesar la solicitud.' });
+        // Si el body no es JSON (ej. un HTML de error de proxy) leemos como texto
+        // para poder mostrar algo util al usuario y loguear el detalle en consola.
+        const raw = await res.text().catch(() => '');
+        let errMsg = '';
+        try {
+          errMsg = raw ? (JSON.parse(raw).error || '') : '';
+        } catch { /* no era JSON */ }
+        console.error('reset-password fallo:', res.status, raw);
+        setForgotMessage({
+          type: 'error',
+          text: errMsg || `Error del servidor (HTTP ${res.status}). Intenta mas tarde o contacta a soporte.`,
+        });
       }
     } catch (err: any) {
       if (err?.name === 'AbortError') {
