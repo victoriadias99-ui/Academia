@@ -753,6 +753,32 @@ async function startServer() {
     socketTimeout:     15000,
   });
 
+  // Envía un mail via la HTTP API de Resend (sin SMTP).
+  //   - Se activa si EMAIL_PASS empieza con "re_" (formato de API key de Resend).
+  //   - Evita los problemas de ETIMEDOUT contra smtp.resend.com en Railway.
+  const sendViaResendApi = async (opts: { from: string; to: string; subject: string; html: string }) => {
+    const apiKey = process.env.EMAIL_PASS || "";
+    if (!apiKey || !apiKey.startsWith("re_")) {
+      throw new Error("EMAIL_PASS no es una API key de Resend valida (debe empezar con 're_')");
+    }
+    const resp = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${apiKey}`,
+        "Content-Type":  "application/json",
+      },
+      body: JSON.stringify(opts),
+    });
+    if (!resp.ok) {
+      const detail = await resp.text().catch(() => "");
+      throw new Error(`Resend API ${resp.status}: ${detail}`);
+    }
+    return resp.json().catch(() => ({}));
+  };
+
+  // Router: HTTP API si la key parece de Resend, SMTP si no.
+  const useResendHttp = (process.env.EMAIL_PASS || "").startsWith("re_");
+
   const generatePassword = () => {
     const chars = "ABCDEFGHJKMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789";
     let pass = "";
@@ -832,15 +858,10 @@ async function startServer() {
     const BRAND  = "#1a472a";
     const ACCENT = "#4ecdc4";
     const LIGHT  = "#f8f9fa";
-    try {
-      const transporter = createTransporter();
-      // Usamos el mismo remitente verificado que el resto de la app (dominio con guion: aprende-excel.com)
-      const fromAddress = process.env.EMAIL_FROM || '"Academia Aprende Excel" <soporte@aprende-excel.com>';
-      await transporter.sendMail({
-        from: fromAddress,
-        to: email,
-        subject: "Restablecimiento de contraseña - Academia Aprende Excel",
-        html: `<!DOCTYPE html>
+    // Remitente verificado (dominio con guion: aprende-excel.com)
+    const fromAddress = process.env.EMAIL_FROM || '"Academia Aprende Excel" <soporte@aprende-excel.com>';
+    const subject     = "Restablecimiento de contraseña - Academia Aprende Excel";
+    const html = `<!DOCTYPE html>
 <html lang="es">
 <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
 <body style="font-family:Arial,sans-serif;background:#ffffff;padding:20px 0;margin:0;">
@@ -876,19 +897,26 @@ async function startServer() {
     </div>
     <div style="padding:20px 30px;background:${LIGHT};text-align:center;">
       <a href="${loginUrl}" style="color:${BRAND};text-decoration:none;font-size:14px;font-weight:500;margin:0 16px;">Portal de Cursos</a>
-      <a href="mailto:soporte@aprendeexcel.com" style="color:${BRAND};text-decoration:none;font-size:14px;font-weight:500;margin:0 16px;">Soporte</a>
+      <a href="mailto:soporte@aprende-excel.com" style="color:${BRAND};text-decoration:none;font-size:14px;font-weight:500;margin:0 16px;">Soporte</a>
     </div>
     <div style="height:1px;background:#e0e0e0;margin:0 30px;"></div>
     <div style="padding:30px;background:#fafafa;text-align:center;">
       <p style="font-size:12px;color:#999999;margin:8px 0;line-height:1.5;">
-        ¿Necesitas ayuda? Contáctanos en <a href="mailto:soporte@aprendeexcel.com" style="color:${BRAND};text-decoration:none;font-weight:500;">soporte@aprendeexcel.com</a>
+        ¿Necesitas ayuda? Contáctanos en <a href="mailto:soporte@aprende-excel.com" style="color:${BRAND};text-decoration:none;font-weight:500;">soporte@aprende-excel.com</a>
       </p>
       <p style="font-size:12px;color:#999999;margin:8px 0;">© 2024 Aprende Excel. Todos los derechos reservados.</p>
     </div>
   </div>
 </body>
-</html>`,
-      });
+</html>`;
+    try {
+      if (useResendHttp) {
+        // Envío via HTTP API (evita cualquier problema de SMTP en Railway)
+        await sendViaResendApi({ from: fromAddress, to: email, subject, html });
+        return;
+      }
+      const transporter = createTransporter();
+      await transporter.sendMail({ from: fromAddress, to: email, subject, html });
     } catch (e) {
       console.error("Error enviando email de reset:", e);
       throw e;

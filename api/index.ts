@@ -247,16 +247,47 @@ const buildResetPasswordHtml = (
 </html>`;
 };
 
+// Envío via HTTP API de Resend (evita ETIMEDOUT contra smtp.resend.com en hosts con egress SMTP bloqueado)
+const sendViaResendApi = async (opts: { from: string; to: string; subject: string; html: string }): Promise<void> => {
+  const apiKey = process.env.EMAIL_PASS || "";
+  if (!apiKey.startsWith("re_")) {
+    throw new Error("EMAIL_PASS no es una API key de Resend valida (debe empezar con 're_')");
+  }
+  const resp = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: {
+      "Authorization": `Bearer ${apiKey}`,
+      "Content-Type":  "application/json",
+    },
+    body: JSON.stringify(opts),
+  });
+  if (!resp.ok) {
+    const detail = await resp.text().catch(() => "");
+    throw new Error(`Resend API ${resp.status}: ${detail}`);
+  }
+};
+
+const useResendHttp = (process.env.EMAIL_PASS || "").startsWith("re_");
+
 const sendResetPasswordEmail = async (
   email: string,
   nombre: string,
   password: string,
 ): Promise<void> => {
-  const loginUrl = process.env.ACADEMIA_URL || "https://academia-production-c4cc.up.railway.app";
+  const loginUrl = process.env.ACADEMIA_URL || "https://academia.aprende-excel.com";
+  const fromAddress = process.env.EMAIL_FROM || '"Academia Aprende Excel" <soporte@aprende-excel.com>';
+  const subject     = "Restablecimiento de contraseña - Academia Aprende Excel";
+  const html        = buildResetPasswordHtml(nombre, email, password, loginUrl);
+
+  if (useResendHttp) {
+    await sendViaResendApi({ from: fromAddress, to: email, subject, html });
+    return;
+  }
+
   const transporter = nodemailer.createTransport({
     host:   process.env.EMAIL_HOST || "smtp.resend.com",
     port:   parseInt(process.env.EMAIL_PORT || "465"),
-    secure: process.env.EMAIL_SECURE === "true",
+    secure: process.env.EMAIL_SECURE !== "false",
     auth: {
       user: process.env.EMAIL_USER || "resend",
       pass: process.env.EMAIL_PASS,
@@ -266,12 +297,7 @@ const sendResetPasswordEmail = async (
     socketTimeout:     15000,
   });
 
-  await transporter.sendMail({
-    from: '"Academia Aprende Excel" <soporte@aprende-excel.com>',
-    to:      email,
-    subject: "Restablecimiento de contraseña - Academia Aprende Excel",
-    html:    buildResetPasswordHtml(nombre, email, password, loginUrl),
-  });
+  await transporter.sendMail({ from: fromAddress, to: email, subject, html });
 };
 
 // ─── DB HELPERS ──────────────────────────────────────────────────────────────
