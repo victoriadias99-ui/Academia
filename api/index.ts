@@ -171,6 +171,9 @@ const sendWelcomeEmail = async (
       user: process.env.EMAIL_USER || "resend",
       pass: process.env.EMAIL_PASS,
     },
+    connectionTimeout: 10000,
+    greetingTimeout:   10000,
+    socketTimeout:     15000,
   });
 
   await transporter.sendMail({
@@ -258,6 +261,9 @@ const sendResetPasswordEmail = async (
       user: process.env.EMAIL_USER || "resend",
       pass: process.env.EMAIL_PASS,
     },
+    connectionTimeout: 10000,
+    greetingTimeout:   10000,
+    socketTimeout:     15000,
   });
 
   await transporter.sendMail({
@@ -721,9 +727,17 @@ app.post("/api/auth/reset-password", async (req, res) => {
       return res.status(403).json({ error: "Cuenta desactivada. Contacta a soporte." });
 
     const newPassword = generatePassword();
-    const hashed      = await bcrypt.hash(newPassword, 10);
+    // 1) Mandar el mail antes de tocar la contraseña en la base.
+    //    Si el SMTP falla, no dejamos al usuario bloqueado.
+    try {
+      await sendResetPasswordEmail(email, user.nombre || "", newPassword);
+    } catch (mailErr: any) {
+      console.error("RESET-PASSWORD mail error:", mailErr?.message || mailErr);
+      return res.status(502).json({ error: "No pudimos enviar el email. Intenta en unos minutos o contacta a soporte." });
+    }
+    // 2) Mail OK → actualizamos la base.
+    const hashed = await bcrypt.hash(newPassword, 10);
     await updateUserFields(email, { password: hashed });
-    await sendResetPasswordEmail(email, user.nombre || "", newPassword);
     return res.json({ status: "ok" });
   } catch (e: any) {
     console.error("RESET-PASSWORD ERROR:", e?.message || e);

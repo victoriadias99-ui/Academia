@@ -898,10 +898,14 @@ function LoginView({ onLoginSuccess }: { onLoginSuccess: (role: string, usuario:
     }
     setForgotLoading(true);
     setForgotMessage(null);
+    // Timeout duro de 25s para que el boton no quede tildado si el server se cuelga.
+    const ctrl = new AbortController();
+    const timeoutId = setTimeout(() => ctrl.abort(), 25000);
     try {
       const res = await authFetch('/api/auth/reset-password', {
         method: 'POST',
         body: JSON.stringify({ email: target }),
+        signal: ctrl.signal,
       });
       if (res.ok) {
         setForgotMessage({
@@ -912,9 +916,14 @@ function LoginView({ onLoginSuccess }: { onLoginSuccess: (role: string, usuario:
         const data = await res.json().catch(() => ({}));
         setForgotMessage({ type: 'error', text: data.error || 'No se pudo procesar la solicitud.' });
       }
-    } catch {
-      setForgotMessage({ type: 'error', text: 'Error de conexion con el servidor.' });
+    } catch (err: any) {
+      if (err?.name === 'AbortError') {
+        setForgotMessage({ type: 'error', text: 'El servidor tardo demasiado en responder. Intenta de nuevo.' });
+      } else {
+        setForgotMessage({ type: 'error', text: 'Error de conexion con el servidor.' });
+      }
     } finally {
+      clearTimeout(timeoutId);
       setForgotLoading(false);
     }
   };

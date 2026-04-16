@@ -406,9 +406,17 @@ async function startServer() {
         return res.status(403).json({ error: "Cuenta desactivada. Contacta a soporte." });
 
       const newPassword = generatePassword();
-      const hashed      = await bcrypt.hash(newPassword, 10);
+      // 1) Enviar el mail ANTES de pisar la contraseña en la base.
+      //    Si el SMTP falla, no dejamos al usuario bloqueado con una contraseña nueva que nunca recibió.
+      try {
+        await sendResetPasswordEmail(email, user.nombre || "", newPassword);
+      } catch (mailErr: any) {
+        console.error("RESET-PASSWORD mail error:", mailErr?.message || mailErr);
+        return res.status(502).json({ error: "No pudimos enviar el email. Intenta en unos minutos o contacta a soporte." });
+      }
+      // 2) Mail OK → recién ahora actualizamos la base.
+      const hashed = await bcrypt.hash(newPassword, 10);
       await updateUserField(email, { password: hashed });
-      await sendResetPasswordEmail(email, user.nombre || "", newPassword);
       res.json({ status: "ok" });
     } catch (e: any) {
       console.error("RESET-PASSWORD ERROR:", e?.message || e);
@@ -734,6 +742,10 @@ async function startServer() {
     port: parseInt(process.env.EMAIL_PORT || "587"),
     secure: process.env.EMAIL_SECURE === "true",
     auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS },
+    // Timeouts agresivos para no dejar requests colgados si el SMTP no responde
+    connectionTimeout: 10000,
+    greetingTimeout:   10000,
+    socketTimeout:     15000,
   });
 
   const generatePassword = () => {
