@@ -1,0 +1,265 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Preview · Nueva Portada — AprendeExcel</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    :root {
+      --verde-oscuro: #0e2318;
+      --verde-medio:  #1a6e3c;
+      --verde-vivo:   #22c55e;
+      --verde-suave:  #4ade80;
+    }
+    * { font-family: 'Inter', system-ui, sans-serif; }
+
+    /* Fondo animado sutil */
+    .gradient-bg {
+      background: linear-gradient(135deg, #0a1f14 0%, #0e2318 40%, #102b1d 100%);
+      position: relative;
+      overflow: hidden;
+    }
+    .gradient-bg::before {
+      content: "";
+      position: absolute;
+      width: 600px; height: 600px;
+      background: radial-gradient(circle, rgba(34,197,94,0.18) 0%, transparent 70%);
+      top: -200px; left: -200px;
+      animation: float 12s ease-in-out infinite;
+    }
+    .gradient-bg::after {
+      content: "";
+      position: absolute;
+      width: 500px; height: 500px;
+      background: radial-gradient(circle, rgba(74,222,128,0.12) 0%, transparent 70%);
+      bottom: -150px; right: -150px;
+      animation: float 14s ease-in-out infinite reverse;
+    }
+    @keyframes float {
+      0%,100% { transform: translate(0,0) scale(1); }
+      50% { transform: translate(40px,-30px) scale(1.05); }
+    }
+
+    /* Glass card */
+    .glass {
+      background: rgba(255,255,255,0.03);
+      backdrop-filter: blur(20px);
+      border: 1px solid rgba(255,255,255,0.08);
+    }
+
+    /* Grid pattern lateral */
+    .grid-pattern {
+      background-image:
+        linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px);
+      background-size: 28px 28px;
+    }
+
+    /* Inputs modernos */
+    .modern-input {
+      background: #f8fafc;
+      border: 1.5px solid #e5e7eb;
+      transition: all .2s ease;
+    }
+    .modern-input:focus {
+      background: #fff;
+      border-color: var(--verde-vivo);
+      box-shadow: 0 0 0 4px rgba(34,197,94,0.10);
+    }
+
+    /* Boton principal con efecto shimmer */
+    .btn-primary {
+      background: linear-gradient(135deg, #0e2318 0%, #1a6e3c 100%);
+      transition: all .25s ease;
+      position: relative;
+      overflow: hidden;
+    }
+    .btn-primary:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 10px 25px -8px rgba(14,35,24,0.45);
+    }
+    .btn-primary::before {
+      content: "";
+      position: absolute; inset: 0;
+      background: linear-gradient(120deg, transparent 30%, rgba(255,255,255,0.18) 50%, transparent 70%);
+      transform: translateX(-100%);
+      transition: transform .8s ease;
+    }
+    .btn-primary:hover::before { transform: translateX(100%); }
+
+    .stat-card {
+      transition: transform .3s ease;
+    }
+    .stat-card:hover { transform: translateY(-4px); }
+
+    .feature-pill {
+      background: rgba(34,197,94,0.10);
+      border: 1px solid rgba(34,197,94,0.25);
+      color: #86efac;
+    }
+
+    /* Banner preview */
+    .preview-banner {
+      background: linear-gradient(90deg, #fbbf24, #f59e0b);
+      color: #422006;
+    }
+  </style>
+</head>
+<body class="bg-slate-100 min-h-screen">
+
+  <!-- Banner de preview (NO va a producción) -->
+  <div class="preview-banner text-center py-2 text-xs font-bold tracking-wide">
+    🎨 PREVIEW · esta es solo una vista previa del nuevo diseño · no está en producción
+  </div>
+
+  <!-- Login modernizado -->
+  <div class="flex min-h-[calc(100vh-32px)]">
+
+    <!-- LADO IZQUIERDO: hero / branding -->
+    <aside class="hidden lg:flex flex-col w-[45%] gradient-bg grid-pattern relative">
+      <div class="relative z-10 flex flex-col justify-between p-12 w-full h-full">
+
+        <!-- Logo -->
+        <div class="flex items-center gap-2">
+          <div class="w-9 h-9 rounded-lg bg-gradient-to-br from-green-400 to-green-600 flex items-center justify-center shadow-lg shadow-green-500/30">
+            <span class="text-white font-black text-lg">A</span>
+          </div>
+          <span class="text-white font-bold text-lg tracking-tight">
+            Aprende<span class="text-green-400">Excel</span>
+          </span>
+        </div>
+
+        <!-- Hero copy -->
+        <div class="space-y-6">
+          <span class="inline-block feature-pill text-xs font-semibold px-3 py-1 rounded-full">
+            ⚡ +12.000 alumnos formados
+          </span>
+          <h1 class="text-white text-5xl font-black leading-[1.05] tracking-tight">
+            Tu carrera,<br/>
+            <span class="bg-gradient-to-r from-green-300 via-green-400 to-emerald-400 bg-clip-text text-transparent">
+              en tus manos.
+            </span>
+          </h1>
+          <p class="text-white/60 text-base leading-relaxed max-w-md font-light">
+            Excel, Power BI y SQL con metodología práctica.
+            Aprendé las herramientas que el mercado laboral está pidiendo hoy.
+          </p>
+
+          <!-- Mini features -->
+          <div class="flex flex-wrap gap-2 pt-2">
+            <span class="feature-pill text-xs px-3 py-1.5 rounded-full font-medium">✓ Acceso de por vida</span>
+            <span class="feature-pill text-xs px-3 py-1.5 rounded-full font-medium">✓ Certificado oficial</span>
+            <span class="feature-pill text-xs px-3 py-1.5 rounded-full font-medium">✓ Soporte personalizado</span>
+          </div>
+        </div>
+
+        <!-- Stats inferiores -->
+        <div class="grid grid-cols-3 gap-3">
+          <div class="stat-card glass rounded-xl p-4">
+            <div class="text-white text-2xl font-black tracking-tight">+270</div>
+            <div class="text-white/40 text-[10px] uppercase tracking-widest mt-1">Empresas</div>
+          </div>
+          <div class="stat-card glass rounded-xl p-4">
+            <div class="text-white text-2xl font-black tracking-tight">4.9<span class="text-green-400">★</span></div>
+            <div class="text-white/40 text-[10px] uppercase tracking-widest mt-1">Valoración</div>
+          </div>
+          <div class="stat-card glass rounded-xl p-4">
+            <div class="text-white text-2xl font-black tracking-tight">100%</div>
+            <div class="text-white/40 text-[10px] uppercase tracking-widest mt-1">Online</div>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- LADO DERECHO: formulario -->
+    <main class="flex-1 flex items-center justify-center bg-white px-6 py-10 relative">
+      <!-- Decoración sutil -->
+      <div class="absolute top-0 right-0 w-72 h-72 bg-green-100/40 rounded-full blur-3xl -z-0"></div>
+      <div class="absolute bottom-0 left-0 w-72 h-72 bg-emerald-50 rounded-full blur-3xl -z-0"></div>
+
+      <div class="w-full max-w-sm relative z-10">
+
+        <!-- Logo móvil -->
+        <div class="lg:hidden text-center mb-8">
+          <span class="text-2xl font-black text-[#0e2318]">
+            Aprende<span class="text-green-500">Excel</span>
+          </span>
+        </div>
+
+        <div class="mb-8">
+          <h2 class="text-3xl font-black text-[#0e1a13] tracking-tight mb-2">
+            Bienvenido de nuevo 👋
+          </h2>
+          <p class="text-slate-500 text-sm">
+            Ingresá para acceder a tus cursos
+          </p>
+        </div>
+
+        <form class="space-y-4">
+          <div>
+            <label class="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-2">Email</label>
+            <div class="relative">
+              <input type="email" placeholder="tu@email.com"
+                class="modern-input w-full pl-11 pr-3 py-3 rounded-xl text-sm outline-none" />
+              <svg class="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M3 8l9 6 9-6M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+              </svg>
+            </div>
+          </div>
+
+          <div>
+            <div class="flex justify-between items-center mb-2">
+              <label class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Contraseña</label>
+              <button type="button" class="text-xs font-bold text-green-700 hover:text-green-800 transition">¿Olvidaste?</button>
+            </div>
+            <div class="relative">
+              <input type="password" placeholder="••••••••"
+                class="modern-input w-full pl-11 pr-11 py-3 rounded-xl text-sm outline-none" />
+              <svg class="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 11c0-1.1.9-2 2-2s2 .9 2 2-.9 2-2 2v2m-1-12a8 8 0 100 16 8 8 0 000-16z"/>
+                <rect x="5" y="11" width="14" height="10" rx="2" stroke-linejoin="round"/>
+              </svg>
+              <button type="button" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                  <circle cx="12" cy="12" r="3"/>
+                </svg>
+              </button>
+            </div>
+          </div>
+
+          <button type="submit"
+            class="btn-primary w-full py-3.5 rounded-xl text-white font-bold text-sm tracking-wide mt-2 flex items-center justify-center gap-2">
+            Ingresar
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3"/>
+            </svg>
+          </button>
+        </form>
+
+        <!-- Divider -->
+        <div class="flex items-center gap-3 my-6">
+          <div class="flex-1 h-px bg-slate-200"></div>
+          <span class="text-[10px] text-slate-400 uppercase tracking-widest font-semibold">o</span>
+          <div class="flex-1 h-px bg-slate-200"></div>
+        </div>
+
+        <div class="text-center text-sm text-slate-500">
+          ¿Sin cuenta?
+          <button class="text-green-700 font-bold hover:text-green-800 ml-1">Registrate gratis</button>
+        </div>
+
+        <div class="mt-8 pt-5 border-t border-slate-100 flex items-center justify-between">
+          <a href="mailto:soporte@aprende-excel.com" class="text-xs text-slate-400 hover:text-slate-600 transition">
+            ✉ Soporte
+          </a>
+          <span class="text-[10px] text-slate-300">© 2026 AprendeExcel</span>
+        </div>
+      </div>
+    </main>
+  </div>
+
+</body>
+</html>

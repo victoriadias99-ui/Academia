@@ -69,6 +69,16 @@ async function startServer() {
     try { await pool.query(sql); }
     catch (e: any) { if (e?.errno !== 1060) console.error("Migration error:", e?.message); }
   };
+  // Crear tabla base si no existe (necesario para entornos nuevos sin la tabla)
+  try {
+    await pool.query(`CREATE TABLE IF NOT EXISTS academia_usuarios (
+      id BIGINT PRIMARY KEY,
+      email VARCHAR(255) NOT NULL UNIQUE,
+      password VARCHAR(255) NOT NULL,
+      nombre VARCHAR(100) NOT NULL DEFAULT '',
+      foto_url TEXT DEFAULT NULL
+    )`);
+  } catch (e: any) { console.error("Error creando tabla academia_usuarios:", e?.message); }
   await addCol(`ALTER TABLE academia_usuarios ADD COLUMN apellido VARCHAR(100) NOT NULL DEFAULT ''`);
   await addCol(`ALTER TABLE academia_usuarios ADD COLUMN cursos TEXT`);
   await addCol(`ALTER TABLE academia_usuarios ADD COLUMN activo TINYINT(1) NOT NULL DEFAULT 1`);
