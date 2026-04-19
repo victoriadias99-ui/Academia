@@ -3,9 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Preview · Nueva Portada — AprendeExcel</title>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <script src="https://cdn.tailwindcss.com"></script>
+  <title>Preview · Nueva Portada — Academia</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
   <style>
     :root {
       --verde-oscuro: #0e2318;
@@ -13,253 +12,1068 @@
       --verde-vivo:   #22c55e;
       --verde-suave:  #4ade80;
     }
-    * { font-family: 'Inter', system-ui, sans-serif; }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Poppins', system-ui, sans-serif; }
 
-    /* Fondo animado sutil */
-    .gradient-bg {
-      background: linear-gradient(135deg, #0a1f14 0%, #0e2318 40%, #102b1d 100%);
+    html, body { min-height: 100vh; }
+    body {
+      display: flex;
+      flex-direction: column;
+      background:
+        radial-gradient(circle at 15% 20%, rgba(34,197,94,0.10), transparent 55%),
+        radial-gradient(circle at 85% 80%, rgba(74,222,128,0.08), transparent 50%),
+        linear-gradient(135deg, #0a1f14 0%, #0e2318 50%, #14352a 100%);
+      color: #fff;
       position: relative;
-      overflow: hidden;
+      overflow-x: hidden;
     }
-    .gradient-bg::before {
-      content: "";
+
+    .bubble {
       position: absolute;
-      width: 600px; height: 600px;
-      background: radial-gradient(circle, rgba(34,197,94,0.18) 0%, transparent 70%);
-      top: -200px; left: -200px;
-      animation: float 12s ease-in-out infinite;
+      border-radius: 50%;
+      pointer-events: none;
+      background: radial-gradient(circle, rgba(74,222,128,0.10), transparent 70%);
+      filter: blur(20px);
     }
-    .gradient-bg::after {
-      content: "";
-      position: absolute;
-      width: 500px; height: 500px;
-      background: radial-gradient(circle, rgba(74,222,128,0.12) 0%, transparent 70%);
-      bottom: -150px; right: -150px;
-      animation: float 14s ease-in-out infinite reverse;
-    }
-    @keyframes float {
-      0%,100% { transform: translate(0,0) scale(1); }
-      50% { transform: translate(40px,-30px) scale(1.05); }
-    }
+    .b1 { width: 380px; height: 380px; top: -120px; left: -120px; }
+    .b2 { width: 420px; height: 420px; bottom: -150px; right: -150px; }
+    .b3 { width: 200px; height: 200px; top: 40%; left: 50%; opacity: .5; }
 
-    /* Glass card */
-    .glass {
-      background: rgba(255,255,255,0.03);
-      backdrop-filter: blur(20px);
-      border: 1px solid rgba(255,255,255,0.08);
-    }
-
-    /* Grid pattern lateral */
-    .grid-pattern {
-      background-image:
-        linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px);
-      background-size: 28px 28px;
-    }
-
-    /* Inputs modernos */
-    .modern-input {
-      background: #f8fafc;
-      border: 1.5px solid #e5e7eb;
-      transition: all .2s ease;
-    }
-    .modern-input:focus {
-      background: #fff;
-      border-color: var(--verde-vivo);
-      box-shadow: 0 0 0 4px rgba(34,197,94,0.10);
-    }
-
-    /* Boton principal con efecto shimmer */
-    .btn-primary {
-      background: linear-gradient(135deg, #0e2318 0%, #1a6e3c 100%);
-      transition: all .25s ease;
-      position: relative;
-      overflow: hidden;
-    }
-    .btn-primary:hover {
-      transform: translateY(-1px);
-      box-shadow: 0 10px 25px -8px rgba(14,35,24,0.45);
-    }
-    .btn-primary::before {
-      content: "";
-      position: absolute; inset: 0;
-      background: linear-gradient(120deg, transparent 30%, rgba(255,255,255,0.18) 50%, transparent 70%);
-      transform: translateX(-100%);
-      transition: transform .8s ease;
-    }
-    .btn-primary:hover::before { transform: translateX(100%); }
-
-    .stat-card {
-      transition: transform .3s ease;
-    }
-    .stat-card:hover { transform: translateY(-4px); }
-
-    .feature-pill {
-      background: rgba(34,197,94,0.10);
-      border: 1px solid rgba(34,197,94,0.25);
-      color: #86efac;
-    }
-
-    /* Banner preview */
     .preview-banner {
       background: linear-gradient(90deg, #fbbf24, #f59e0b);
       color: #422006;
+      text-align: center;
+      padding: 8px;
+      font-size: 12px;
+      font-weight: 700;
+      flex-shrink: 0;
+      z-index: 100;
+    }
+
+    header {
+      padding: 28px 48px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-shrink: 0;
+      position: relative;
+      z-index: 5;
+    }
+    .logo { display: flex; align-items: center; gap: 12px; }
+    .logo-mark {
+      width: 40px; height: 40px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, #22c55e, #4ade80);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      font-weight: 900;
+      font-size: 18px;
+      box-shadow: 0 8px 20px -6px rgba(34,197,94,0.5);
+    }
+    .logo-text { font-size: 13px; font-weight: 700; letter-spacing: 0.04em; line-height: 1.15; }
+    .logo-text .sub {
+      display: block;
+      color: rgba(255,255,255,0.45);
+      font-size: 9px;
+      font-weight: 500;
+      letter-spacing: 0.22em;
+      margin-top: 2px;
+    }
+    .header-help { font-size: 12px; color: rgba(255,255,255,0.5); }
+    .header-help a {
+      color: rgba(255,255,255,0.85);
+      text-decoration: none;
+      font-weight: 500;
+      border-bottom: 1px solid rgba(255,255,255,0.2);
+      padding-bottom: 1px;
+      transition: border-color .2s;
+    }
+    .header-help a:hover { border-color: #4ade80; color: #4ade80; }
+
+    main {
+      flex: 1;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 60px;
+      align-items: center;
+      padding: 20px 80px 60px;
+      position: relative;
+      z-index: 2;
+      max-width: 1200px;
+      margin: 0 auto;
+      width: 100%;
+    }
+
+    .art-side {
+      position: relative;
+      aspect-ratio: 1;
+      max-width: 500px;
+      margin: 0 auto;
+      width: 100%;
+    }
+
+    /* anillos */
+    .rings { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; }
+    .ring {
+      position: absolute;
+      border-radius: 50%;
+      border: 1px solid rgba(74,222,128,0.12);
+      animation: pulseRing 6s ease-in-out infinite;
+    }
+    .ring.r1 { width: 100%; height: 100%; }
+    .ring.r2 { width: 80%; height: 80%; animation-delay: -2s; border-color: rgba(74,222,128,0.16); }
+    .ring.r3 { width: 60%; height: 60%; animation-delay: -4s; border-color: rgba(74,222,128,0.22); }
+    @keyframes pulseRing {
+      0%,100% { transform: scale(1); opacity: 1; }
+      50% { transform: scale(1.05); opacity: .55; }
+    }
+
+    .art-glow {
+      position: absolute;
+      inset: 15%;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(74,222,128,0.28) 0%, rgba(34,197,94,0.10) 40%, transparent 70%);
+      filter: blur(35px);
+      animation: glowPulse 4s ease-in-out infinite;
+    }
+    @keyframes glowPulse {
+      0%,100% { opacity: .85; transform: scale(1); }
+      50% { opacity: 1; transform: scale(1.1); }
+    }
+
+    .floating-dot {
+      position: absolute;
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: #4ade80;
+      box-shadow: 0 0 12px #22c55e;
+      animation: floatDot 8s ease-in-out infinite;
+      z-index: 4;
+    }
+    .fd1 { top: 8%; left: 15%; }
+    .fd2 { top: 12%; right: 10%; animation-delay: -2s; background: #86efac; }
+    .fd3 { bottom: 15%; left: 8%; animation-delay: -4s; }
+    .fd4 { bottom: 10%; right: 18%; animation-delay: -6s; background: #86efac; }
+    @keyframes floatDot {
+      0%,100% { transform: translate(0,0); }
+      33% { transform: translate(15px,-12px); }
+      66% { transform: translate(-10px,8px); }
+    }
+
+    .scenes {
+      position: absolute;
+      inset: 6%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 2;
+    }
+    .scene {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      transform: scale(.88);
+      animation: cycle 24s infinite;
+    }
+    .scene:nth-child(1) { animation-delay: 0s; }
+    .scene:nth-child(2) { animation-delay: 6s; }
+    .scene:nth-child(3) { animation-delay: 12s; }
+    .scene:nth-child(4) { animation-delay: 18s; }
+    @keyframes cycle {
+      0%, 22%   { opacity: 1; transform: scale(1); }
+      25%, 100% { opacity: 0; transform: scale(.88); }
+    }
+    .scene svg {
+      width: 95%;
+      max-width: 440px;
+      height: auto;
+      filter: drop-shadow(0 20px 30px rgba(0,0,0,0.35));
+      animation: floatSvg 5s ease-in-out infinite;
+    }
+    @keyframes floatSvg {
+      0%,100% { transform: translateY(0); }
+      50%     { transform: translateY(-10px); }
+    }
+
+    .scene-label {
+      position: absolute;
+      bottom: -24px;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.25em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.85);
+      padding: 8px 22px;
+      border: 1px solid rgba(74,222,128,0.35);
+      border-radius: 30px;
+      background: rgba(34,197,94,0.15);
+      backdrop-filter: blur(10px);
+      white-space: nowrap;
+    }
+    .scene-label .accent { color: #4ade80; margin-right: 6px; }
+
+    .scene-indicator {
+      position: absolute;
+      bottom: -70px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      gap: 10px;
+    }
+    .scene-indicator span {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.2);
+      animation: dotActive 24s infinite;
+    }
+    .scene-indicator span:nth-child(1) { animation-delay: 0s; }
+    .scene-indicator span:nth-child(2) { animation-delay: 6s; }
+    .scene-indicator span:nth-child(3) { animation-delay: 12s; }
+    .scene-indicator span:nth-child(4) { animation-delay: 18s; }
+    @keyframes dotActive {
+      0%, 22%   { background: #4ade80; transform: scale(1.3); box-shadow: 0 0 10px #22c55e; width: 24px; border-radius: 4px; }
+      25%, 100% { background: rgba(255,255,255,0.2); transform: scale(1); }
+    }
+
+    /* ========== ANIMACIONES DE CADA SVG ========== */
+
+    /* 1. CURSOS */
+    .cap-sway    { animation: sway 4s ease-in-out infinite; transform-origin: 200px 120px; }
+    .tassel      { animation: tassel 2.5s ease-in-out infinite; transform-origin: 200px 140px; }
+    .medal-pulse { animation: medalPulse 2s ease-in-out infinite; transform-origin: 200px 290px; }
+    .star-twinkle-1 { animation: twinkle 2.4s ease-in-out infinite; transform-origin: center; }
+    .star-twinkle-2 { animation: twinkle 2.4s ease-in-out .8s infinite; transform-origin: center; }
+    .star-twinkle-3 { animation: twinkle 2.4s ease-in-out 1.6s infinite; transform-origin: center; }
+    .rocket-fly  { animation: rocketFly 3.5s ease-in-out infinite; }
+    @keyframes sway {
+      0%,100% { transform: rotate(-3deg); }
+      50% { transform: rotate(3deg); }
+    }
+    @keyframes tassel {
+      0%,100% { transform: rotate(0deg); }
+      50% { transform: rotate(12deg); }
+    }
+    @keyframes medalPulse {
+      0%,100% { transform: scale(1); }
+      50% { transform: scale(1.08); filter: drop-shadow(0 0 8px #4ade80); }
+    }
+    @keyframes twinkle {
+      0%,100% { opacity: 0.3; transform: scale(0.7); }
+      50%     { opacity: 1;   transform: scale(1.2); }
+    }
+    @keyframes rocketFly {
+      0%,100% { transform: translate(0,0) rotate(-15deg); }
+      50% { transform: translate(8px,-10px) rotate(-8deg); }
+    }
+
+    /* 2. IDIOMAS */
+    .globe-rotate { animation: globeRotate 14s linear infinite; transform-origin: 220px 220px; }
+    .bubble-float-1 { animation: bubbleFloat 3s ease-in-out infinite; transform-origin: center; }
+    .bubble-float-2 { animation: bubbleFloat 3.4s ease-in-out .4s infinite; transform-origin: center; }
+    .bubble-float-3 { animation: bubbleFloat 3.2s ease-in-out .8s infinite; transform-origin: center; }
+    .bubble-float-4 { animation: bubbleFloat 3.6s ease-in-out 1.2s infinite; transform-origin: center; }
+    .bubble-float-5 { animation: bubbleFloat 3.1s ease-in-out 1.6s infinite; transform-origin: center; }
+    .bubble-float-6 { animation: bubbleFloat 3.5s ease-in-out 2s infinite; transform-origin: center; }
+    .orbit-dot { animation: orbitFade 2s ease-in-out infinite; }
+    @keyframes globeRotate { to { transform: rotate(360deg); } }
+    @keyframes bubbleFloat {
+      0%,100% { transform: translateY(0) scale(1); }
+      50%     { transform: translateY(-8px) scale(1.05); }
+    }
+    @keyframes orbitFade {
+      0%,100% { opacity: 0.3; }
+      50%     { opacity: 1; }
+    }
+
+    /* 3. EXCEL */
+    .laptop-float { animation: laptopFloat 4s ease-in-out infinite; transform-origin: center; }
+    .bar-grow-1 { animation: barGrow 3s ease-in-out infinite; transform-origin: bottom; }
+    .bar-grow-2 { animation: barGrow 3s ease-in-out .3s infinite; transform-origin: bottom; }
+    .bar-grow-3 { animation: barGrow 3s ease-in-out .6s infinite; transform-origin: bottom; }
+    .bar-grow-4 { animation: barGrow 3s ease-in-out .9s infinite; transform-origin: bottom; }
+    .arrow-slide { animation: arrowSlide 2.8s ease-in-out infinite; }
+    .check-pop-1 { animation: checkPop 2.5s ease-in-out infinite; transform-origin: center; }
+    .check-pop-2 { animation: checkPop 2.5s ease-in-out 1s infinite; transform-origin: center; }
+    .cell-float-1 { animation: cellFloat 3.4s ease-in-out infinite; }
+    .cell-float-2 { animation: cellFloat 3.4s ease-in-out .7s infinite; }
+    .cell-float-3 { animation: cellFloat 3.4s ease-in-out 1.4s infinite; }
+    .cell-float-4 { animation: cellFloat 3.4s ease-in-out 2.1s infinite; }
+    @keyframes laptopFloat {
+      0%,100% { transform: translateY(0) rotate(0deg); }
+      50%     { transform: translateY(-6px) rotate(-1deg); }
+    }
+    @keyframes barGrow {
+      0%,100% { transform: scaleY(1); }
+      50%     { transform: scaleY(1.25); }
+    }
+    @keyframes arrowSlide {
+      0%,100% { transform: translate(0,0); opacity: 1; }
+      50%     { transform: translate(8px,-8px); opacity: .7; }
+    }
+    @keyframes checkPop {
+      0%,100% { transform: scale(0.8); opacity: 0.6; }
+      20%     { transform: scale(1.2); opacity: 1; }
+      40%     { transform: scale(1);   opacity: 1; }
+    }
+    @keyframes cellFloat {
+      0%,100% { transform: translateY(0); opacity: .9; }
+      50%     { transform: translateY(-6px); opacity: 1; }
+    }
+
+    /* 4. IA */
+    .chip-glow { animation: chipGlow 2s ease-in-out infinite; transform-origin: center; }
+    .circuit-line { stroke-dasharray: 4 3; animation: dashFlow 1.2s linear infinite; }
+    .circuit-line-2 { stroke-dasharray: 6 4; animation: dashFlow 1.5s linear infinite reverse; }
+    .data-point { animation: dataPointPulse 1.8s ease-in-out infinite; }
+    .data-point-1 { animation-delay: 0s; }
+    .data-point-2 { animation-delay: .3s; }
+    .data-point-3 { animation-delay: .6s; }
+    .data-point-4 { animation-delay: .9s; }
+    .data-point-5 { animation-delay: 1.2s; }
+    .data-point-6 { animation-delay: 1.5s; }
+    .binary-rise-1 { animation: binaryRise 4s ease-in-out infinite; }
+    .binary-rise-2 { animation: binaryRise 4s ease-in-out 1.3s infinite; }
+    .binary-rise-3 { animation: binaryRise 4s ease-in-out 2.6s infinite; }
+    .brain-pulse { animation: brainPulse 2.2s ease-in-out infinite; transform-origin: center; }
+    @keyframes chipGlow {
+      0%,100% { filter: drop-shadow(0 0 6px #22c55e); transform: scale(1); }
+      50%     { filter: drop-shadow(0 0 16px #4ade80); transform: scale(1.05); }
+    }
+    @keyframes dashFlow { to { stroke-dashoffset: -40; } }
+    @keyframes dataPointPulse {
+      0%,100% { opacity: 0.3; r: 2; }
+      50%     { opacity: 1;   r: 4; }
+    }
+    @keyframes binaryRise {
+      0%   { transform: translateY(20px); opacity: 0; }
+      20%  { opacity: 1; }
+      80%  { opacity: 1; }
+      100% { transform: translateY(-40px); opacity: 0; }
+    }
+    @keyframes brainPulse {
+      0%,100% { opacity: 0.6; transform: scale(0.95); }
+      50%     { opacity: 1;   transform: scale(1.05); }
+    }
+
+    /* === LADO DERECHO === */
+    .form-side { max-width: 380px; width: 100%; margin: 0 auto; }
+    .welcome-tag {
+      display: inline-block;
+      font-size: 11px;
+      font-weight: 600;
+      color: #4ade80;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      margin-bottom: 14px;
+    }
+    .welcome-tag::before {
+      content: "";
+      display: inline-block;
+      width: 24px; height: 1px;
+      background: #4ade80;
+      margin-right: 10px;
+      vertical-align: middle;
+    }
+    .form-side h1 {
+      font-size: 44px;
+      font-weight: 800;
+      letter-spacing: -0.025em;
+      line-height: 1.05;
+      margin-bottom: 12px;
+    }
+    .form-side .lead {
+      font-size: 13px;
+      color: rgba(255,255,255,0.55);
+      margin-bottom: 36px;
+      line-height: 1.55;
+    }
+    .field { margin-bottom: 22px; }
+    .field label {
+      display: block;
+      font-size: 10px;
+      font-weight: 600;
+      color: rgba(255,255,255,0.5);
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      margin-bottom: 10px;
+    }
+    .input-wrap {
+      position: relative;
+      border-bottom: 1.5px solid rgba(255,255,255,0.15);
+      transition: border-color .25s ease;
+    }
+    .input-wrap:focus-within { border-color: #4ade80; }
+    .input-wrap input {
+      width: 100%;
+      padding: 8px 0 12px 0;
+      background: transparent;
+      border: none;
+      color: #fff;
+      font-size: 15px;
+      outline: none;
+      font-family: inherit;
+      font-weight: 400;
+    }
+    .input-wrap input::placeholder { color: rgba(255,255,255,0.3); }
+    .input-wrap .toggle-pwd {
+      position: absolute;
+      right: 0;
+      top: 50%;
+      transform: translateY(-50%);
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: rgba(255,255,255,0.4);
+      padding: 4px;
+      display: flex;
+    }
+    .input-wrap .toggle-pwd:hover { color: #4ade80; }
+    .input-wrap .toggle-pwd svg { width: 18px; height: 18px; }
+
+    .forgot { text-align: right; margin: -10px 0 32px; }
+    .forgot button {
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-family: inherit;
+      font-size: 12px;
+      color: rgba(255,255,255,0.55);
+      transition: color .2s;
+    }
+    .forgot button:hover { color: #4ade80; }
+
+    .btn-login {
+      width: 100%;
+      padding: 16px;
+      border: none;
+      border-radius: 100px;
+      background: linear-gradient(135deg, #22c55e 0%, #4ade80 100%);
+      color: #0e2318;
+      font-family: inherit;
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: all .3s ease;
+      position: relative;
+      overflow: hidden;
+      box-shadow: 0 12px 30px -10px rgba(34,197,94,0.55);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+    }
+    .btn-login:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 18px 40px -12px rgba(34,197,94,0.7);
+    }
+    .btn-login::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(120deg, transparent 30%, rgba(255,255,255,0.4) 50%, transparent 70%);
+      transform: translateX(-100%);
+      transition: transform .8s ease;
+    }
+    .btn-login:hover::before { transform: translateX(100%); }
+    .btn-login svg { width: 14px; height: 14px; }
+
+    footer {
+      padding: 20px 48px;
+      display: flex;
+      justify-content: space-between;
+      font-size: 11px;
+      color: rgba(255,255,255,0.35);
+      flex-shrink: 0;
+      position: relative;
+      z-index: 5;
+    }
+
+    @media (max-width: 880px) {
+      header { padding: 20px 24px; }
+      footer { padding: 16px 24px; flex-direction: column; gap: 6px; align-items: center; text-align: center; }
+      main { grid-template-columns: 1fr; gap: 40px; padding: 20px 28px 40px; }
+      .art-side { max-width: 340px; order: 2; }
+      .form-side { order: 1; }
+      .form-side h1 { font-size: 34px; }
+      .header-help { display: none; }
     }
   </style>
 </head>
-<body class="bg-slate-100 min-h-screen">
+<body>
 
-  <!-- Banner de preview (NO va a producción) -->
-  <div class="preview-banner text-center py-2 text-xs font-bold tracking-wide">
-    🎨 PREVIEW · esta es solo una vista previa del nuevo diseño · no está en producción
+  <div class="preview-banner">
+    🎨 PREVIEW · vista previa del nuevo diseño · todavía no está en producción
   </div>
 
-  <!-- Login modernizado -->
-  <div class="flex min-h-[calc(100vh-32px)]">
+  <span class="bubble b1"></span>
+  <span class="bubble b2"></span>
+  <span class="bubble b3"></span>
 
-    <!-- LADO IZQUIERDO: hero / branding -->
-    <aside class="hidden lg:flex flex-col w-[45%] gradient-bg grid-pattern relative">
-      <div class="relative z-10 flex flex-col justify-between p-12 w-full h-full">
-
-        <!-- Logo -->
-        <div class="flex items-center gap-2">
-          <div class="w-9 h-9 rounded-lg bg-gradient-to-br from-green-400 to-green-600 flex items-center justify-center shadow-lg shadow-green-500/30">
-            <span class="text-white font-black text-lg">A</span>
-          </div>
-          <span class="text-white font-bold text-lg tracking-tight">
-            Aprende<span class="text-green-400">Excel</span>
-          </span>
-        </div>
-
-        <!-- Hero copy -->
-        <div class="space-y-6">
-          <span class="inline-block feature-pill text-xs font-semibold px-3 py-1 rounded-full">
-            ⚡ +12.000 alumnos formados
-          </span>
-          <h1 class="text-white text-5xl font-black leading-[1.05] tracking-tight">
-            Tu carrera,<br/>
-            <span class="bg-gradient-to-r from-green-300 via-green-400 to-emerald-400 bg-clip-text text-transparent">
-              en tus manos.
-            </span>
-          </h1>
-          <p class="text-white/60 text-base leading-relaxed max-w-md font-light">
-            Excel, Power BI y SQL con metodología práctica.
-            Aprendé las herramientas que el mercado laboral está pidiendo hoy.
-          </p>
-
-          <!-- Mini features -->
-          <div class="flex flex-wrap gap-2 pt-2">
-            <span class="feature-pill text-xs px-3 py-1.5 rounded-full font-medium">✓ Acceso de por vida</span>
-            <span class="feature-pill text-xs px-3 py-1.5 rounded-full font-medium">✓ Certificado oficial</span>
-            <span class="feature-pill text-xs px-3 py-1.5 rounded-full font-medium">✓ Soporte personalizado</span>
-          </div>
-        </div>
-
-        <!-- Stats inferiores -->
-        <div class="grid grid-cols-3 gap-3">
-          <div class="stat-card glass rounded-xl p-4">
-            <div class="text-white text-2xl font-black tracking-tight">+270</div>
-            <div class="text-white/40 text-[10px] uppercase tracking-widest mt-1">Empresas</div>
-          </div>
-          <div class="stat-card glass rounded-xl p-4">
-            <div class="text-white text-2xl font-black tracking-tight">4.9<span class="text-green-400">★</span></div>
-            <div class="text-white/40 text-[10px] uppercase tracking-widest mt-1">Valoración</div>
-          </div>
-          <div class="stat-card glass rounded-xl p-4">
-            <div class="text-white text-2xl font-black tracking-tight">100%</div>
-            <div class="text-white/40 text-[10px] uppercase tracking-widest mt-1">Online</div>
-          </div>
-        </div>
+  <header>
+    <div class="logo">
+      <div class="logo-mark">A</div>
+      <div class="logo-text">
+        ACADEMIA
+        <span class="sub">CAMPUS VIRTUAL</span>
       </div>
-    </aside>
+    </div>
+    <div class="header-help">
+      ¿Necesitás ayuda? <a href="mailto:soporte@academia.com">Contactá soporte</a>
+    </div>
+  </header>
 
-    <!-- LADO DERECHO: formulario -->
-    <main class="flex-1 flex items-center justify-center bg-white px-6 py-10 relative">
-      <!-- Decoración sutil -->
-      <div class="absolute top-0 right-0 w-72 h-72 bg-green-100/40 rounded-full blur-3xl -z-0"></div>
-      <div class="absolute bottom-0 left-0 w-72 h-72 bg-emerald-50 rounded-full blur-3xl -z-0"></div>
+  <main>
 
-      <div class="w-full max-w-sm relative z-10">
-
-        <!-- Logo móvil -->
-        <div class="lg:hidden text-center mb-8">
-          <span class="text-2xl font-black text-[#0e2318]">
-            Aprende<span class="text-green-500">Excel</span>
-          </span>
-        </div>
-
-        <div class="mb-8">
-          <h2 class="text-3xl font-black text-[#0e1a13] tracking-tight mb-2">
-            Bienvenido de nuevo 👋
-          </h2>
-          <p class="text-slate-500 text-sm">
-            Ingresá para acceder a tus cursos
-          </p>
-        </div>
-
-        <form class="space-y-4">
-          <div>
-            <label class="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-2">Email</label>
-            <div class="relative">
-              <input type="email" placeholder="tu@email.com"
-                class="modern-input w-full pl-11 pr-3 py-3 rounded-xl text-sm outline-none" />
-              <svg class="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M3 8l9 6 9-6M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
-              </svg>
-            </div>
-          </div>
-
-          <div>
-            <div class="flex justify-between items-center mb-2">
-              <label class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Contraseña</label>
-              <button type="button" class="text-xs font-bold text-green-700 hover:text-green-800 transition">¿Olvidaste?</button>
-            </div>
-            <div class="relative">
-              <input type="password" placeholder="••••••••"
-                class="modern-input w-full pl-11 pr-11 py-3 rounded-xl text-sm outline-none" />
-              <svg class="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M12 11c0-1.1.9-2 2-2s2 .9 2 2-.9 2-2 2v2m-1-12a8 8 0 100 16 8 8 0 000-16z"/>
-                <rect x="5" y="11" width="14" height="10" rx="2" stroke-linejoin="round"/>
-              </svg>
-              <button type="button" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-                  <circle cx="12" cy="12" r="3"/>
-                </svg>
-              </button>
-            </div>
-          </div>
-
-          <button type="submit"
-            class="btn-primary w-full py-3.5 rounded-xl text-white font-bold text-sm tracking-wide mt-2 flex items-center justify-center gap-2">
-            Ingresar
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3"/>
-            </svg>
-          </button>
-        </form>
-
-        <!-- Divider -->
-        <div class="flex items-center gap-3 my-6">
-          <div class="flex-1 h-px bg-slate-200"></div>
-          <span class="text-[10px] text-slate-400 uppercase tracking-widest font-semibold">o</span>
-          <div class="flex-1 h-px bg-slate-200"></div>
-        </div>
-
-        <div class="text-center text-sm text-slate-500">
-          ¿Sin cuenta?
-          <button class="text-green-700 font-bold hover:text-green-800 ml-1">Registrate gratis</button>
-        </div>
-
-        <div class="mt-8 pt-5 border-t border-slate-100 flex items-center justify-between">
-          <a href="mailto:soporte@aprende-excel.com" class="text-xs text-slate-400 hover:text-slate-600 transition">
-            ✉ Soporte
-          </a>
-          <span class="text-[10px] text-slate-300">© 2026 AprendeExcel</span>
-        </div>
+    <div class="art-side">
+      <div class="rings">
+        <div class="ring r1"></div>
+        <div class="ring r2"></div>
+        <div class="ring r3"></div>
       </div>
-    </main>
-  </div>
+
+      <div class="art-glow"></div>
+
+      <span class="floating-dot fd1"></span>
+      <span class="floating-dot fd2"></span>
+      <span class="floating-dot fd3"></span>
+      <span class="floating-dot fd4"></span>
+
+      <div class="scenes">
+
+        <!-- ========== 1. CURSOS ========== -->
+        <div class="scene">
+          <svg viewBox="0 0 400 400" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <linearGradient id="paperG" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="#fefce8"/>
+                <stop offset="100%" stop-color="#f5f5dc"/>
+              </linearGradient>
+              <linearGradient id="capG" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="#1a6e3c"/>
+                <stop offset="100%" stop-color="#0e2318"/>
+              </linearGradient>
+              <linearGradient id="medalG" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="#4ade80"/>
+                <stop offset="100%" stop-color="#16a34a"/>
+              </linearGradient>
+              <linearGradient id="bookG1" x1="0" y1="0" x2="1" y2="0">
+                <stop offset="0%" stop-color="#16a34a"/>
+                <stop offset="100%" stop-color="#22c55e"/>
+              </linearGradient>
+              <linearGradient id="bookG2" x1="0" y1="0" x2="1" y2="0">
+                <stop offset="0%" stop-color="#166534"/>
+                <stop offset="100%" stop-color="#15803d"/>
+              </linearGradient>
+              <linearGradient id="bookG3" x1="0" y1="0" x2="1" y2="0">
+                <stop offset="0%" stop-color="#4ade80"/>
+                <stop offset="100%" stop-color="#86efac"/>
+              </linearGradient>
+            </defs>
+
+            <!-- Certificado principal -->
+            <g>
+              <!-- sombra -->
+              <rect x="115" y="170" width="170" height="180" rx="14" fill="#0e2318" opacity=".3" transform="translate(6 6)"/>
+              <!-- papel -->
+              <rect x="115" y="170" width="170" height="180" rx="14" fill="url(#paperG)" stroke="#22c55e" stroke-width="3"/>
+              <!-- lineas -->
+              <text x="200" y="230" text-anchor="middle" font-family="Poppins" font-weight="800" font-size="18" fill="#1a6e3c">CERTIFICADO</text>
+              <rect x="140" y="250" width="120" height="4" rx="2" fill="#86efac"/>
+              <rect x="155" y="268" width="90" height="3" rx="1.5" fill="#bbf7d0"/>
+              <rect x="145" y="282" width="110" height="3" rx="1.5" fill="#bbf7d0"/>
+              <!-- cinta -->
+              <rect x="115" y="300" width="170" height="24" fill="#22c55e"/>
+              <polygon points="115,324 135,324 125,340" fill="#16a34a"/>
+              <polygon points="265,324 285,324 275,340" fill="#16a34a"/>
+            </g>
+
+            <!-- Medalla que pulsa -->
+            <g class="medal-pulse">
+              <circle cx="200" cy="312" r="18" fill="url(#medalG)" stroke="#fff" stroke-width="2"/>
+              <path d="M193 312 l4 5 l10 -10" stroke="#fff" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+            </g>
+
+            <!-- Birrete que se balancea -->
+            <g class="cap-sway">
+              <!-- base del birrete -->
+              <rect x="180" y="135" width="40" height="12" rx="2" fill="url(#capG)"/>
+              <!-- cuadrado arriba -->
+              <polygon points="200,100 250,125 200,150 150,125" fill="#0e2318"/>
+              <polygon points="200,108 240,125 200,142 160,125" fill="#1a6e3c"/>
+              <!-- cordon -->
+              <g class="tassel">
+                <line x1="200" y1="125" x2="215" y2="160" stroke="#22c55e" stroke-width="2.5"/>
+                <circle cx="215" cy="163" r="5" fill="#4ade80"/>
+              </g>
+            </g>
+
+            <!-- Libros apilados a la izquierda -->
+            <g>
+              <rect x="40" y="285" width="55" height="14" rx="2" fill="url(#bookG1)"/>
+              <rect x="45" y="270" width="55" height="14" rx="2" fill="url(#bookG2)"/>
+              <rect x="42" y="255" width="55" height="14" rx="2" fill="url(#bookG3)"/>
+              <text x="55" y="295" font-family="Poppins" font-size="7" font-weight="700" fill="#fff">CURSOS</text>
+              <text x="50" y="280" font-family="Poppins" font-size="7" font-weight="700" fill="#fff">DIGITAL</text>
+              <text x="48" y="265" font-family="Poppins" font-size="7" font-weight="700" fill="#0e2318">ONLINE</text>
+            </g>
+
+            <!-- Computadora al lado derecho -->
+            <g>
+              <rect x="300" y="260" width="70" height="50" rx="4" fill="#1a6e3c" stroke="#22c55e" stroke-width="2"/>
+              <rect x="305" y="265" width="60" height="40" rx="2" fill="#0a1f14"/>
+              <polygon points="325,280 345,285 325,295" fill="#4ade80"/>
+              <rect x="290" y="308" width="90" height="5" rx="2" fill="#16a34a"/>
+              <text x="335" y="278" text-anchor="middle" font-family="Poppins" font-size="6" font-weight="700" fill="#86efac">MÓDULO 5</text>
+            </g>
+
+            <!-- Cohete volando -->
+            <g class="rocket-fly" transform="translate(270 110)">
+              <path d="M0 20 L-5 10 L0 0 L5 10 Z" fill="#22c55e"/>
+              <circle cx="0" cy="8" r="3" fill="#fefce8"/>
+              <path d="M-5 15 L-8 22 L-2 18 Z" fill="#1a6e3c"/>
+              <path d="M5 15 L8 22 L2 18 Z" fill="#1a6e3c"/>
+              <path d="M0 22 L-2 28 L2 28 Z" fill="#fbbf24"/>
+            </g>
+
+            <!-- Estrellas titilando -->
+            <g class="star-twinkle-1" transform="translate(80 140)">
+              <path d="M0 -10 L3 -3 L10 -3 L4 2 L7 10 L0 5 L-7 10 L-4 2 L-10 -3 L-3 -3 Z" fill="#fbbf24"/>
+            </g>
+            <g class="star-twinkle-2" transform="translate(340 180)">
+              <path d="M0 -8 L2 -2 L8 -2 L3 2 L5 8 L0 4 L-5 8 L-3 2 L-8 -2 L-2 -2 Z" fill="#4ade80"/>
+            </g>
+            <g class="star-twinkle-3" transform="translate(60 210)">
+              <path d="M0 -7 L2 -2 L7 -2 L3 2 L4 7 L0 4 L-4 7 L-3 2 L-7 -2 L-2 -2 Z" fill="#86efac"/>
+            </g>
+
+            <!-- Letras ABC flotando -->
+            <text class="star-twinkle-1" x="60" y="110" font-family="Poppins" font-size="22" font-weight="800" fill="#22c55e">A</text>
+            <text class="star-twinkle-2" x="130" y="80" font-family="Poppins" font-size="22" font-weight="800" fill="#4ade80">B</text>
+            <text class="star-twinkle-3" x="310" y="90" font-family="Poppins" font-size="22" font-weight="800" fill="#86efac">C</text>
+
+            <!-- Podio -->
+            <ellipse cx="200" cy="370" rx="120" ry="10" fill="#0e2318" opacity=".4"/>
+          </svg>
+          <span class="scene-label"><span class="accent">●</span>Cursos</span>
+        </div>
+
+        <!-- ========== 2. IDIOMAS ========== -->
+        <div class="scene">
+          <svg viewBox="0 0 400 400" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <radialGradient id="oceanG" cx="35%" cy="30%">
+                <stop offset="0%" stop-color="#86efac"/>
+                <stop offset="40%" stop-color="#22c55e"/>
+                <stop offset="100%" stop-color="#14532d"/>
+              </radialGradient>
+              <radialGradient id="shineG" cx="30%" cy="25%">
+                <stop offset="0%" stop-color="#fff" stop-opacity=".45"/>
+                <stop offset="40%" stop-color="#fff" stop-opacity=".1"/>
+                <stop offset="100%" stop-color="#fff" stop-opacity="0"/>
+              </radialGradient>
+              <radialGradient id="atmoG" cx="50%" cy="50%">
+                <stop offset="75%" stop-color="#4ade80" stop-opacity="0"/>
+                <stop offset="90%" stop-color="#4ade80" stop-opacity=".35"/>
+                <stop offset="100%" stop-color="#4ade80" stop-opacity="0"/>
+              </radialGradient>
+              <linearGradient id="continentG" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="#16a34a"/>
+                <stop offset="100%" stop-color="#0e2318"/>
+              </linearGradient>
+              <clipPath id="globeClip">
+                <circle cx="220" cy="220" r="82"/>
+              </clipPath>
+            </defs>
+
+            <!-- Órbitas punteadas -->
+            <ellipse cx="220" cy="220" rx="155" ry="60" fill="none" stroke="#4ade80" stroke-width="1.5" stroke-dasharray="3 6" opacity=".4"/>
+            <ellipse cx="220" cy="220" rx="60" ry="155" fill="none" stroke="#4ade80" stroke-width="1.5" stroke-dasharray="3 6" opacity=".4"/>
+
+            <!-- Atmósfera exterior -->
+            <circle cx="220" cy="220" r="100" fill="url(#atmoG)"/>
+
+            <!-- Globo -->
+            <g>
+              <!-- océano base -->
+              <circle cx="220" cy="220" r="85" fill="url(#oceanG)"/>
+
+              <!-- contenido interno (rota dentro del clip) -->
+              <g clip-path="url(#globeClip)">
+                <g class="globe-rotate">
+                  <!-- América del Norte -->
+                  <path d="M150 195 Q160 180 175 182 Q185 175 195 185 Q200 195 192 205 Q195 218 185 222 Q170 225 160 215 Q148 208 150 195 Z" fill="url(#continentG)"/>
+                  <!-- América del Sur -->
+                  <path d="M178 235 Q188 232 195 245 Q198 260 188 272 Q180 278 175 265 Q172 250 178 235 Z" fill="url(#continentG)"/>
+                  <!-- Europa / África -->
+                  <path d="M218 188 Q235 185 245 195 Q248 205 242 210 Q248 225 245 245 Q240 262 225 265 Q215 258 218 245 Q212 230 215 215 Q210 200 218 188 Z" fill="url(#continentG)"/>
+                  <!-- Asia -->
+                  <path d="M250 195 Q275 190 285 205 Q292 215 282 222 Q270 218 260 215 Q252 208 250 195 Z" fill="url(#continentG)"/>
+                  <!-- Australia/Oceanía -->
+                  <path d="M275 250 Q288 248 293 258 Q290 268 278 266 Q270 262 275 250 Z" fill="url(#continentG)"/>
+
+                  <!-- mismas masas duplicadas al otro lado para loop continuo -->
+                  <path d="M320 195 Q330 180 345 182 Q355 175 365 185 Q370 195 362 205 Q365 218 355 222 Q340 225 330 215 Q318 208 320 195 Z" fill="url(#continentG)" transform="translate(-170 0)"/>
+                </g>
+
+                <!-- Meridianos y paralelos (estáticos - no rotan) -->
+                <g fill="none" stroke="#fff" stroke-width="1" opacity=".25">
+                  <ellipse cx="220" cy="220" rx="85" ry="85"/>
+                  <ellipse cx="220" cy="220" rx="85" ry="28"/>
+                  <ellipse cx="220" cy="220" rx="85" ry="56"/>
+                  <ellipse cx="220" cy="220" rx="28" ry="85"/>
+                  <ellipse cx="220" cy="220" rx="56" ry="85"/>
+                  <line x1="135" y1="220" x2="305" y2="220"/>
+                </g>
+
+                <!-- Brillo 3D encima -->
+                <circle cx="220" cy="220" r="85" fill="url(#shineG)"/>
+              </g>
+
+              <!-- borde del globo -->
+              <circle cx="220" cy="220" r="85" fill="none" stroke="#0e2318" stroke-width="2"/>
+
+              <!-- sombra inferior 3D -->
+              <ellipse cx="220" cy="300" rx="60" ry="6" fill="#0e2318" opacity=".3" filter="blur(4px)"/>
+            </g>
+
+            <!-- puntitos de conexión -->
+            <circle cx="155" cy="175" r="3" fill="#86efac" class="orbit-dot"/>
+            <circle cx="285" cy="265" r="3" fill="#86efac" class="orbit-dot" style="animation-delay:.5s"/>
+            <circle cx="180" cy="280" r="3" fill="#4ade80" class="orbit-dot" style="animation-delay:1s"/>
+            <circle cx="275" cy="175" r="3" fill="#4ade80" class="orbit-dot" style="animation-delay:1.5s"/>
+
+            <!-- Burbujas de chat con banderas -->
+            <!-- US/UK arriba -->
+            <g class="bubble-float-1" transform="translate(170 85)">
+              <rect x="-30" y="-18" width="60" height="32" rx="16" fill="#fff" stroke="#22c55e" stroke-width="2"/>
+              <path d="M-10 14 L-15 22 L-5 17" fill="#fff" stroke="#22c55e" stroke-width="2" stroke-linejoin="round"/>
+              <!-- bandera US -->
+              <circle cx="-15" cy="-2" r="10" fill="#dc2626"/>
+              <rect x="-23" y="-10" width="16" height="3" fill="#fff"/>
+              <rect x="-23" y="-4" width="16" height="3" fill="#fff"/>
+              <rect x="-23" y="2" width="16" height="3" fill="#fff"/>
+              <rect x="-23" y="-10" width="8" height="7" fill="#1e3a8a"/>
+              <!-- bandera UK -->
+              <circle cx="15" cy="-2" r="10" fill="#1e3a8a"/>
+              <path d="M5 -11 L25 9 M5 9 L25 -11" stroke="#fff" stroke-width="2"/>
+              <path d="M15 -12 L15 8 M5 -2 L25 -2" stroke="#fff" stroke-width="2"/>
+            </g>
+
+            <!-- ES/FR derecha -->
+            <g class="bubble-float-2" transform="translate(345 170)">
+              <rect x="-30" y="-18" width="60" height="32" rx="16" fill="#fff" stroke="#22c55e" stroke-width="2"/>
+              <path d="M-28 6 L-36 12 L-26 10" fill="#fff" stroke="#22c55e" stroke-width="2" stroke-linejoin="round"/>
+              <circle cx="-15" cy="-2" r="10" fill="#fbbf24"/>
+              <rect x="-25" y="-5" width="20" height="6" fill="#fbbf24"/>
+              <rect x="-25" y="-10" width="20" height="5" fill="#dc2626"/>
+              <rect x="-25" y="1" width="20" height="5" fill="#dc2626"/>
+              <circle cx="15" cy="-2" r="10" fill="#fff"/>
+              <rect x="5" y="-12" width="7" height="20" fill="#1e3a8a"/>
+              <rect x="18" y="-12" width="7" height="20" fill="#dc2626"/>
+            </g>
+
+            <!-- BR/IT izquierda -->
+            <g class="bubble-float-3" transform="translate(95 270)">
+              <rect x="-30" y="-18" width="60" height="32" rx="16" fill="#fff" stroke="#22c55e" stroke-width="2"/>
+              <path d="M28 10 L36 18 L26 14" fill="#fff" stroke="#22c55e" stroke-width="2" stroke-linejoin="round"/>
+              <circle cx="-15" cy="-2" r="10" fill="#16a34a"/>
+              <polygon points="-20,-2 -15,-8 -10,-2 -15,4" fill="#fbbf24"/>
+              <circle cx="-15" cy="-2" r="3" fill="#1e3a8a"/>
+              <circle cx="15" cy="-2" r="10" fill="#fff"/>
+              <rect x="5" y="-12" width="7" height="20" fill="#16a34a"/>
+              <rect x="18" y="-12" width="7" height="20" fill="#dc2626"/>
+            </g>
+
+            <!-- DE derecha baja -->
+            <g class="bubble-float-4" transform="translate(330 310)">
+              <rect x="-18" y="-18" width="36" height="32" rx="16" fill="#fff" stroke="#22c55e" stroke-width="2"/>
+              <path d="M-16 10 L-22 18 L-14 14" fill="#fff" stroke="#22c55e" stroke-width="2" stroke-linejoin="round"/>
+              <circle cx="0" cy="-2" r="10" fill="#000"/>
+              <rect x="-10" y="-6" width="20" height="5" fill="#dc2626"/>
+              <rect x="-10" y="0" width="20" height="5" fill="#fbbf24"/>
+            </g>
+
+            <!-- CA arriba izq -->
+            <g class="bubble-float-5" transform="translate(90 150)">
+              <rect x="-18" y="-18" width="36" height="32" rx="16" fill="#fff" stroke="#22c55e" stroke-width="2"/>
+              <path d="M14 10 L22 18 L12 14" fill="#fff" stroke="#22c55e" stroke-width="2" stroke-linejoin="round"/>
+              <circle cx="0" cy="-2" r="10" fill="#dc2626"/>
+              <rect x="-3" y="-12" width="6" height="20" fill="#fff"/>
+              <path d="M0 -6 L-2 -2 L-4 -3 L-3 0 L0 -1 L3 0 L4 -3 L2 -2 Z" fill="#dc2626"/>
+            </g>
+
+            <!-- JP arriba centro -->
+            <g class="bubble-float-6" transform="translate(280 100)">
+              <rect x="-18" y="-18" width="36" height="32" rx="16" fill="#fff" stroke="#22c55e" stroke-width="2"/>
+              <path d="M-14 10 L-22 18 L-14 14" fill="#fff" stroke="#22c55e" stroke-width="2" stroke-linejoin="round"/>
+              <circle cx="0" cy="-2" r="10" fill="#fff" stroke="#ddd" stroke-width="1"/>
+              <circle cx="0" cy="-2" r="5" fill="#dc2626"/>
+            </g>
+
+            <ellipse cx="220" cy="365" rx="110" ry="10" fill="#0e2318" opacity=".4"/>
+          </svg>
+          <span class="scene-label"><span class="accent">●</span>Idiomas</span>
+        </div>
+
+        <!-- ========== 3. EXCEL ========== -->
+        <div class="scene">
+          <svg viewBox="0 0 400 400" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <linearGradient id="laptopG" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="#22c55e"/>
+                <stop offset="100%" stop-color="#16a34a"/>
+              </linearGradient>
+              <linearGradient id="screenG" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="#fefce8"/>
+                <stop offset="100%" stop-color="#f5f5dc"/>
+              </linearGradient>
+              <linearGradient id="cellG" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="#fff"/>
+                <stop offset="100%" stop-color="#f0fdf4"/>
+              </linearGradient>
+            </defs>
+
+            <!-- Laptop central -->
+            <g class="laptop-float">
+              <!-- pantalla -->
+              <rect x="120" y="140" width="160" height="110" rx="8" fill="url(#laptopG)" stroke="#0e2318" stroke-width="3"/>
+              <rect x="128" y="148" width="144" height="94" rx="3" fill="url(#screenG)"/>
+              <!-- barra título -->
+              <rect x="128" y="148" width="144" height="14" rx="3" fill="#16a34a"/>
+              <circle cx="134" cy="155" r="2" fill="#fff"/>
+              <circle cx="142" cy="155" r="2" fill="#fff"/>
+              <circle cx="150" cy="155" r="2" fill="#fff"/>
+              <text x="200" y="159" text-anchor="middle" font-family="Poppins" font-size="7" font-weight="700" fill="#fff">SALES DATA</text>
+              <!-- gráfico de barras -->
+              <g transform="translate(138 170)">
+                <line x1="0" y1="60" x2="120" y2="60" stroke="#cbd5e1" stroke-width="1"/>
+                <line x1="0" y1="0" x2="0" y2="60" stroke="#cbd5e1" stroke-width="1"/>
+                <rect class="bar-grow-1" x="10" y="35" width="14" height="25" fill="#22c55e" rx="2"/>
+                <rect class="bar-grow-2" x="35" y="20" width="14" height="40" fill="#4ade80" rx="2"/>
+                <rect class="bar-grow-3" x="60" y="10" width="14" height="50" fill="#16a34a" rx="2"/>
+                <rect class="bar-grow-4" x="85" y="25" width="14" height="35" fill="#86efac" rx="2"/>
+              </g>
+              <!-- Logo Excel -->
+              <rect x="258" y="170" width="12" height="12" rx="2" fill="#16a34a"/>
+              <text x="264" y="180" text-anchor="middle" font-family="Poppins" font-size="9" font-weight="900" fill="#fff">X</text>
+            </g>
+
+            <!-- Base laptop -->
+            <g>
+              <path d="M110 250 L290 250 L300 260 L100 260 Z" fill="#0e2318"/>
+              <rect x="180" y="254" width="40" height="3" rx="1" fill="#4ade80"/>
+            </g>
+
+            <!-- Celdas flotando A1, B2, C3, D10 -->
+            <g class="cell-float-1">
+              <rect x="40" y="130" width="45" height="22" rx="4" fill="url(#cellG)" stroke="#22c55e" stroke-width="1.5"/>
+              <text x="62" y="146" text-anchor="middle" font-family="Poppins" font-size="11" font-weight="800" fill="#16a34a">A1</text>
+            </g>
+            <g class="cell-float-2">
+              <rect x="40" y="195" width="45" height="22" rx="4" fill="url(#cellG)" stroke="#22c55e" stroke-width="1.5"/>
+              <text x="62" y="211" text-anchor="middle" font-family="Poppins" font-size="11" font-weight="800" fill="#16a34a">B2</text>
+            </g>
+            <g class="cell-float-3">
+              <rect x="315" y="135" width="45" height="22" rx="4" fill="url(#cellG)" stroke="#22c55e" stroke-width="1.5"/>
+              <text x="337" y="151" text-anchor="middle" font-family="Poppins" font-size="11" font-weight="800" fill="#16a34a">C3</text>
+            </g>
+            <g class="cell-float-4">
+              <rect x="315" y="195" width="50" height="22" rx="4" fill="url(#cellG)" stroke="#22c55e" stroke-width="1.5"/>
+              <text x="340" y="211" text-anchor="middle" font-family="Poppins" font-size="11" font-weight="800" fill="#16a34a">D10</text>
+            </g>
+
+            <!-- Formula flotante -->
+            <g class="cell-float-1" style="animation-delay:.3s">
+              <rect x="30" y="280" width="90" height="22" rx="4" fill="url(#cellG)" stroke="#4ade80" stroke-width="1.5"/>
+              <text x="75" y="296" text-anchor="middle" font-family="Poppins" font-size="9" font-weight="700" fill="#16a34a">SUM(B2:B20)</text>
+            </g>
+
+            <!-- Checks verdes -->
+            <g class="check-pop-1" transform="translate(90 100)">
+              <circle r="14" fill="#22c55e"/>
+              <path d="M-6 0 l4 5 l8 -8" stroke="#fff" stroke-width="3" fill="none" stroke-linecap="round"/>
+            </g>
+            <g class="check-pop-2" transform="translate(320 280)">
+              <circle r="12" fill="#4ade80"/>
+              <path d="M-5 0 l3 4 l7 -7" stroke="#fff" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+            </g>
+
+            <!-- Flecha subiendo -->
+            <g class="arrow-slide">
+              <path d="M280 305 L330 255 L315 255 M330 255 L330 270" stroke="#22c55e" stroke-width="4" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+            </g>
+
+            <!-- Gráfico tarta -->
+            <g class="cell-float-2" style="animation-delay:.5s" transform="translate(340 320)">
+              <circle r="18" fill="#86efac"/>
+              <path d="M0 0 L0 -18 A18 18 0 0 1 15 10 Z" fill="#22c55e"/>
+              <path d="M0 0 L15 10 A18 18 0 0 1 -10 14 Z" fill="#16a34a"/>
+              <circle r="6" fill="#fff"/>
+            </g>
+
+            <ellipse cx="200" cy="370" rx="110" ry="8" fill="#0e2318" opacity=".4"/>
+          </svg>
+          <span class="scene-label"><span class="accent">●</span>Excel & Datos</span>
+        </div>
+
+        <!-- ========== 4. IA ========== -->
+        <div class="scene">
+          <svg viewBox="0 0 400 400" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <linearGradient id="chipG" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="#4ade80"/>
+                <stop offset="50%" stop-color="#22c55e"/>
+                <stop offset="100%" stop-color="#16a34a"/>
+              </linearGradient>
+              <radialGradient id="chipGlowG" cx="50%" cy="50%">
+                <stop offset="0%" stop-color="#4ade80" stop-opacity=".6"/>
+                <stop offset="100%" stop-color="#4ade80" stop-opacity="0"/>
+              </radialGradient>
+            </defs>
+
+            <!-- Glow detrás del chip -->
+            <circle cx="200" cy="220" r="90" fill="url(#chipGlowG)"/>
+
+            <!-- Circuitos radiales -->
+            <g fill="none" stroke="#4ade80" stroke-width="2">
+              <path class="circuit-line"   d="M200 220 L200 140 L140 140 L140 90"/>
+              <path class="circuit-line"   d="M200 220 L200 140 L260 140 L260 90"/>
+              <path class="circuit-line-2" d="M200 220 L120 220 L120 160 L70 160"/>
+              <path class="circuit-line-2" d="M200 220 L280 220 L280 160 L330 160"/>
+              <path class="circuit-line"   d="M200 220 L120 220 L120 280 L70 280"/>
+              <path class="circuit-line-2" d="M200 220 L280 220 L280 280 L330 280"/>
+              <path class="circuit-line"   d="M200 220 L200 300 L140 300 L140 350"/>
+              <path class="circuit-line-2" d="M200 220 L200 300 L260 300 L260 350"/>
+            </g>
+
+            <!-- Puntos terminales -->
+            <g fill="#4ade80">
+              <circle cx="140" cy="90"  class="data-point data-point-1"/>
+              <circle cx="260" cy="90"  class="data-point data-point-2"/>
+              <circle cx="70"  cy="160" class="data-point data-point-3"/>
+              <circle cx="330" cy="160" class="data-point data-point-4"/>
+              <circle cx="70"  cy="280" class="data-point data-point-5"/>
+              <circle cx="330" cy="280" class="data-point data-point-6"/>
+              <circle cx="140" cy="350" class="data-point data-point-1"/>
+              <circle cx="260" cy="350" class="data-point data-point-2"/>
+            </g>
+
+            <!-- Chip central -->
+            <g class="chip-glow">
+              <rect x="160" y="180" width="80" height="80" rx="12" fill="url(#chipG)" stroke="#0e2318" stroke-width="3"/>
+              <!-- patitas del chip -->
+              <g fill="#16a34a">
+                <rect x="155" y="195" width="8" height="4" rx="1"/>
+                <rect x="155" y="210" width="8" height="4" rx="1"/>
+                <rect x="155" y="225" width="8" height="4" rx="1"/>
+                <rect x="155" y="240" width="8" height="4" rx="1"/>
+                <rect x="237" y="195" width="8" height="4" rx="1"/>
+                <rect x="237" y="210" width="8" height="4" rx="1"/>
+                <rect x="237" y="225" width="8" height="4" rx="1"/>
+                <rect x="237" y="240" width="8" height="4" rx="1"/>
+                <rect x="175" y="175" width="4" height="8" rx="1"/>
+                <rect x="190" y="175" width="4" height="8" rx="1"/>
+                <rect x="205" y="175" width="4" height="8" rx="1"/>
+                <rect x="220" y="175" width="4" height="8" rx="1"/>
+                <rect x="175" y="257" width="4" height="8" rx="1"/>
+                <rect x="190" y="257" width="4" height="8" rx="1"/>
+                <rect x="205" y="257" width="4" height="8" rx="1"/>
+                <rect x="220" y="257" width="4" height="8" rx="1"/>
+              </g>
+              <!-- Texto AI -->
+              <text x="200" y="232" text-anchor="middle" font-family="Poppins" font-size="32" font-weight="900" fill="#0e2318">AI</text>
+            </g>
+
+            <!-- Cerebro digital en esquina -->
+            <g class="brain-pulse" transform="translate(80 100)">
+              <path d="M-12 0 Q-12 -10 -5 -10 Q0 -14 5 -10 Q12 -10 12 0 Q12 10 5 10 Q0 14 -5 10 Q-12 10 -12 0 Z"
+                    fill="none" stroke="#4ade80" stroke-width="1.5"/>
+              <circle cx="-5" cy="-4" r="1.5" fill="#4ade80"/>
+              <circle cx="5" cy="-4" r="1.5" fill="#4ade80"/>
+              <circle cx="0" cy="2" r="1.5" fill="#4ade80"/>
+              <line x1="-5" y1="-4" x2="5" y2="-4" stroke="#4ade80" stroke-width="1"/>
+              <line x1="-5" y1="-4" x2="0" y2="2" stroke="#4ade80" stroke-width="1"/>
+              <line x1="5" y1="-4" x2="0" y2="2" stroke="#4ade80" stroke-width="1"/>
+            </g>
+
+            <!-- Binarios flotando -->
+            <g font-family="monospace" font-weight="700" font-size="14" fill="#4ade80" opacity=".7">
+              <text class="binary-rise-1" x="60" y="340">10110</text>
+              <text class="binary-rise-2" x="320" y="80">01001</text>
+              <text class="binary-rise-3" x="340" y="340">11010</text>
+            </g>
+
+            <!-- Wifi icon -->
+            <g class="brain-pulse" style="animation-delay:.5s" transform="translate(320 110)">
+              <path d="M-10 0 Q0 -10 10 0" fill="none" stroke="#4ade80" stroke-width="2" stroke-linecap="round"/>
+              <path d="M-6 3 Q0 -3 6 3" fill="none" stroke="#4ade80" stroke-width="2" stroke-linecap="round"/>
+              <circle cx="0" cy="6" r="1.5" fill="#4ade80"/>
+            </g>
+
+            <ellipse cx="200" cy="385" rx="100" ry="8" fill="#0e2318" opacity=".4"/>
+          </svg>
+          <span class="scene-label"><span class="accent">●</span>Inteligencia Artificial</span>
+        </div>
+
+      </div>
+
+      <div class="scene-indicator">
+        <span></span><span></span><span></span><span></span>
+      </div>
+    </div>
+
+    <div class="form-side">
+      <span class="welcome-tag">Bienvenido de nuevo</span>
+      <h1>Iniciá sesión<br/>en tu cuenta</h1>
+      <p class="lead">Ingresá con el usuario y contraseña que recibiste por mail.</p>
+
+      <form>
+        <div class="field">
+          <label>Email</label>
+          <div class="input-wrap">
+            <input type="email" placeholder="tu@email.com" required />
+          </div>
+        </div>
+
+        <div class="field">
+          <label>Contraseña</label>
+          <div class="input-wrap">
+            <input type="password" placeholder="••••••••" required />
+            <button type="button" class="toggle-pwd" aria-label="Mostrar contraseña">
+              <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                <circle cx="12" cy="12" r="3"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <div class="forgot">
+          <button type="button">¿Olvidaste tu contraseña?</button>
+        </div>
+
+        <button type="submit" class="btn-login">
+          Ingresar
+          <svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3"/>
+          </svg>
+        </button>
+      </form>
+    </div>
+
+  </main>
+
+  <footer>
+    <span>© 2026 Academia · Campus Virtual</span>
+    <span>Términos y servicios</span>
+  </footer>
 
 </body>
 </html>

@@ -45,7 +45,8 @@
       "Bash(git commit -m 'fix: auto-calculate Precio USD from AR price using dolar blue on change:*)",
       "Bash(git commit -m 'feat: auto-calculate USD column in courses table using dolar blue:*)",
       "Bash(grep -ln \"compra\\\\|notif\\\\|COMPRA\\\\|acaba\\\\|setTimeout\\\\|setInterval\" /c/Users/vicki/Documents/GitHub/Excel-test/public_html/a-libraries/js/*.js)",
-      "WebFetch(domain:ar.pinterest.com)"
+      "WebFetch(domain:ar.pinterest.com)",
+      "WebFetch(domain:www.youtube.com)"
     ]
   }
 }

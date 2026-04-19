@@ -940,7 +940,7 @@ function LoginView({ onLoginSuccess }: { onLoginSuccess: (role: string, usuario:
 
   useEffect(() => {
     const link = document.createElement('link');
-    link.href = 'https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700;800&display=swap';
+    link.href = 'https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800;900&display=swap';
     link.rel = 'stylesheet';
     document.head.appendChild(link);
   }, []);
@@ -988,197 +988,664 @@ function LoginView({ onLoginSuccess }: { onLoginSuccess: (role: string, usuario:
     }
   };
 
-  const RobotoStyle = { fontFamily: "'Roboto', Arial, sans-serif" };
+  const openForgotModal = () => {
+    setForgotEmail(email);
+    setForgotMessage(null);
+    setShowForgotModal(true);
+  };
 
   return (
-    <div className="flex min-h-screen overflow-hidden" style={RobotoStyle}>
-      {/* Sidebar izquierda */}
-      <aside className="hidden md:flex flex-col w-[300px] shrink-0 justify-between" style={{ ...RobotoStyle, background: '#0e2318', padding: '40px 36px' }}>
-        <div style={{ fontWeight: 700, fontSize: 15, color: '#fff' }}>
-          Aprende<span style={{ color: '#22c55e' }}>Excel</span>
-        </div>
-        <div>
-          <h2 style={{ fontSize: 27, fontWeight: 800, color: '#fff', lineHeight: 1.2, letterSpacing: '-0.5px', marginBottom: 8 }}>
-            Tu carrera,<br /><span style={{ color: '#22c55e' }}>en tus manos</span>
-          </h2>
-          <p style={{ fontSize: 12, color: 'rgba(255,255,255,.35)', lineHeight: 1.55, fontWeight: 300 }}>
-            Excel, Power BI y SQL para el mercado laboral.
-          </p>
-        </div>
-        <div style={{ display: 'flex', gap: 20, paddingTop: 20, borderTop: '1px solid rgba(255,255,255,.08)' }}>
-          {[{ num: '+270', label: 'Empresas' }, { num: '4.9★', label: 'Valoracion' }, { num: '100%', label: 'Online' }].map((s, i) => (
-            <div key={i}>
-              <div style={{ fontSize: 17, fontWeight: 800, color: '#fff', letterSpacing: '-0.3px' }}>{s.num}</div>
-              <div style={{ fontSize: 10, color: 'rgba(255,255,255,.3)', textTransform: 'uppercase', letterSpacing: '0.07em' }}>{s.label}</div>
-            </div>
-          ))}
-        </div>
-      </aside>
+    <>
+      <style>{`
+        .login-root { font-family: 'Poppins', system-ui, sans-serif; min-height: 100vh; display: flex; flex-direction: column; color: #fff; position: relative; overflow-x: hidden;
+          background: radial-gradient(circle at 15% 20%, rgba(34,197,94,0.10), transparent 55%), radial-gradient(circle at 85% 80%, rgba(74,222,128,0.08), transparent 50%), linear-gradient(135deg, #0a1f14 0%, #0e2318 50%, #14352a 100%); }
+        .login-root * { box-sizing: border-box; }
+        .login-bubble { position: absolute; border-radius: 50%; pointer-events: none; background: radial-gradient(circle, rgba(74,222,128,0.10), transparent 70%); filter: blur(20px); }
+        .login-b1 { width: 380px; height: 380px; top: -120px; left: -120px; }
+        .login-b2 { width: 420px; height: 420px; bottom: -150px; right: -150px; }
+        .login-b3 { width: 200px; height: 200px; top: 40%; left: 50%; opacity: .5; }
+        .login-header { padding: 28px 48px; display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; position: relative; z-index: 5; }
+        .login-logo-text { font-size: 13px; font-weight: 700; letter-spacing: 0.04em; line-height: 1.15; }
+        .login-logo-text .sub { display: block; color: rgba(255,255,255,0.45); font-size: 9px; font-weight: 500; letter-spacing: 0.22em; margin-top: 2px; }
+        .login-header-help { font-size: 12px; color: rgba(255,255,255,0.5); }
+        .login-header-help a { color: rgba(255,255,255,0.85); text-decoration: none; font-weight: 500; border-bottom: 1px solid rgba(255,255,255,0.2); padding-bottom: 1px; transition: border-color .2s; }
+        .login-header-help a:hover { border-color: #4ade80; color: #4ade80; }
+        .login-main { flex: 1; display: grid; grid-template-columns: 1fr 1fr; gap: 60px; align-items: center; padding: 20px 80px 60px; position: relative; z-index: 2; max-width: 1200px; margin: 0 auto; width: 100%; }
+        .art-side { position: relative; aspect-ratio: 1; max-width: 500px; margin: 0 auto; width: 100%; }
+        .rings { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; }
+        .ring { position: absolute; border-radius: 50%; border: 1px solid rgba(74,222,128,0.12); animation: pulseRing 6s ease-in-out infinite; }
+        .ring.r1 { width: 100%; height: 100%; }
+        .ring.r2 { width: 80%; height: 80%; animation-delay: -2s; border-color: rgba(74,222,128,0.16); }
+        .ring.r3 { width: 60%; height: 60%; animation-delay: -4s; border-color: rgba(74,222,128,0.22); }
+        @keyframes pulseRing { 0%,100% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.05); opacity: .55; } }
+        .art-glow { position: absolute; inset: 15%; border-radius: 50%; background: radial-gradient(circle, rgba(74,222,128,0.28) 0%, rgba(34,197,94,0.10) 40%, transparent 70%); filter: blur(35px); animation: glowPulse 4s ease-in-out infinite; }
+        @keyframes glowPulse { 0%,100% { opacity: .85; transform: scale(1); } 50% { opacity: 1; transform: scale(1.1); } }
+        .floating-dot { position: absolute; width: 6px; height: 6px; border-radius: 50%; background: #4ade80; box-shadow: 0 0 12px #22c55e; animation: floatDot 8s ease-in-out infinite; z-index: 4; }
+        .fd1 { top: 8%; left: 15%; } .fd2 { top: 12%; right: 10%; animation-delay: -2s; background: #86efac; } .fd3 { bottom: 15%; left: 8%; animation-delay: -4s; } .fd4 { bottom: 10%; right: 18%; animation-delay: -6s; background: #86efac; }
+        @keyframes floatDot { 0%,100% { transform: translate(0,0); } 33% { transform: translate(15px,-12px); } 66% { transform: translate(-10px,8px); } }
+        .scenes { position: absolute; inset: 6%; display: flex; align-items: center; justify-content: center; z-index: 2; }
+        .scene { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; opacity: 0; transform: scale(.88); animation: cycle 24s infinite; }
+        .scene:nth-child(1) { animation-delay: 0s; } .scene:nth-child(2) { animation-delay: 6s; } .scene:nth-child(3) { animation-delay: 12s; } .scene:nth-child(4) { animation-delay: 18s; }
+        @keyframes cycle { 0%, 22% { opacity: 1; transform: scale(1); } 25%, 100% { opacity: 0; transform: scale(.88); } }
+        .scene svg { width: 95%; max-width: 440px; height: auto; filter: drop-shadow(0 20px 30px rgba(0,0,0,0.35)); animation: floatSvg 5s ease-in-out infinite; }
+        @keyframes floatSvg { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+        .scene-label { position: absolute; bottom: -24px; font-size: 11px; font-weight: 600; letter-spacing: 0.25em; text-transform: uppercase; color: rgba(255,255,255,0.85); padding: 8px 22px; border: 1px solid rgba(74,222,128,0.35); border-radius: 30px; background: rgba(34,197,94,0.15); backdrop-filter: blur(10px); white-space: nowrap; }
+        .scene-label .accent { color: #4ade80; margin-right: 6px; }
+        .scene-indicator { position: absolute; bottom: -70px; left: 50%; transform: translateX(-50%); display: flex; gap: 10px; }
+        .scene-indicator span { width: 6px; height: 6px; border-radius: 50%; background: rgba(255,255,255,0.2); animation: dotActive 24s infinite; }
+        .scene-indicator span:nth-child(1) { animation-delay: 0s; } .scene-indicator span:nth-child(2) { animation-delay: 6s; } .scene-indicator span:nth-child(3) { animation-delay: 12s; } .scene-indicator span:nth-child(4) { animation-delay: 18s; }
+        @keyframes dotActive { 0%, 22% { background: #4ade80; transform: scale(1.3); box-shadow: 0 0 10px #22c55e; width: 24px; border-radius: 4px; } 25%, 100% { background: rgba(255,255,255,0.2); transform: scale(1); } }
+        .cap-sway { animation: sway 4s ease-in-out infinite; transform-origin: 200px 120px; }
+        .tassel { animation: tassel 2.5s ease-in-out infinite; transform-origin: 200px 140px; }
+        .medal-pulse { animation: medalPulse 2s ease-in-out infinite; transform-origin: 200px 290px; }
+        .star-tw-1 { animation: twinkle 2.4s ease-in-out infinite; transform-origin: center; }
+        .star-tw-2 { animation: twinkle 2.4s ease-in-out .8s infinite; transform-origin: center; }
+        .star-tw-3 { animation: twinkle 2.4s ease-in-out 1.6s infinite; transform-origin: center; }
+        .rocket-fly { animation: rocketFly 3.5s ease-in-out infinite; }
+        @keyframes sway { 0%,100% { transform: rotate(-3deg); } 50% { transform: rotate(3deg); } }
+        @keyframes tassel { 0%,100% { transform: rotate(0deg); } 50% { transform: rotate(12deg); } }
+        @keyframes medalPulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.08); filter: drop-shadow(0 0 8px #4ade80); } }
+        @keyframes twinkle { 0%,100% { opacity: 0.3; transform: scale(0.7); } 50% { opacity: 1; transform: scale(1.2); } }
+        @keyframes rocketFly { 0%,100% { transform: translate(0,0) rotate(-15deg); } 50% { transform: translate(8px,-10px) rotate(-8deg); } }
+        .globe-rotate { animation: globeRotate 14s linear infinite; transform-origin: 220px 220px; }
+        .bubble-float-1 { animation: bubbleFloat 3s ease-in-out infinite; transform-origin: center; }
+        .bubble-float-2 { animation: bubbleFloat 3.4s ease-in-out .4s infinite; transform-origin: center; }
+        .bubble-float-3 { animation: bubbleFloat 3.2s ease-in-out .8s infinite; transform-origin: center; }
+        .bubble-float-4 { animation: bubbleFloat 3.6s ease-in-out 1.2s infinite; transform-origin: center; }
+        .bubble-float-5 { animation: bubbleFloat 3.1s ease-in-out 1.6s infinite; transform-origin: center; }
+        .bubble-float-6 { animation: bubbleFloat 3.5s ease-in-out 2s infinite; transform-origin: center; }
+        .orbit-dot { animation: orbitFade 2s ease-in-out infinite; }
+        @keyframes globeRotate { to { transform: rotate(360deg); } }
+        @keyframes bubbleFloat { 0%,100% { transform: translateY(0) scale(1); } 50% { transform: translateY(-8px) scale(1.05); } }
+        @keyframes orbitFade { 0%,100% { opacity: 0.3; } 50% { opacity: 1; } }
+        .laptop-float { animation: laptopFloat 4s ease-in-out infinite; transform-origin: center; }
+        .bar-grow-1 { animation: barGrow 3s ease-in-out infinite; transform-origin: bottom; }
+        .bar-grow-2 { animation: barGrow 3s ease-in-out .3s infinite; transform-origin: bottom; }
+        .bar-grow-3 { animation: barGrow 3s ease-in-out .6s infinite; transform-origin: bottom; }
+        .bar-grow-4 { animation: barGrow 3s ease-in-out .9s infinite; transform-origin: bottom; }
+        .arrow-slide { animation: arrowSlide 2.8s ease-in-out infinite; }
+        .check-pop-1 { animation: checkPop 2.5s ease-in-out infinite; transform-origin: center; }
+        .check-pop-2 { animation: checkPop 2.5s ease-in-out 1s infinite; transform-origin: center; }
+        .cell-float-1 { animation: cellFloat 3.4s ease-in-out infinite; }
+        .cell-float-2 { animation: cellFloat 3.4s ease-in-out .7s infinite; }
+        .cell-float-3 { animation: cellFloat 3.4s ease-in-out 1.4s infinite; }
+        .cell-float-4 { animation: cellFloat 3.4s ease-in-out 2.1s infinite; }
+        @keyframes laptopFloat { 0%,100% { transform: translateY(0) rotate(0deg); } 50% { transform: translateY(-6px) rotate(-1deg); } }
+        @keyframes barGrow { 0%,100% { transform: scaleY(1); } 50% { transform: scaleY(1.25); } }
+        @keyframes arrowSlide { 0%,100% { transform: translate(0,0); opacity: 1; } 50% { transform: translate(8px,-8px); opacity: .7; } }
+        @keyframes checkPop { 0%,100% { transform: scale(0.8); opacity: 0.6; } 20% { transform: scale(1.2); opacity: 1; } 40% { transform: scale(1); opacity: 1; } }
+        @keyframes cellFloat { 0%,100% { transform: translateY(0); opacity: .9; } 50% { transform: translateY(-6px); opacity: 1; } }
+        .chip-glow { animation: chipGlow 2s ease-in-out infinite; transform-origin: center; }
+        .circuit-line { stroke-dasharray: 4 3; animation: dashFlow 1.2s linear infinite; }
+        .circuit-line-2 { stroke-dasharray: 6 4; animation: dashFlow 1.5s linear infinite reverse; }
+        .data-point { animation: dataPointPulse 1.8s ease-in-out infinite; }
+        .data-point-1 { animation-delay: 0s; } .data-point-2 { animation-delay: .3s; } .data-point-3 { animation-delay: .6s; } .data-point-4 { animation-delay: .9s; } .data-point-5 { animation-delay: 1.2s; } .data-point-6 { animation-delay: 1.5s; }
+        .binary-rise-1 { animation: binaryRise 4s ease-in-out infinite; }
+        .binary-rise-2 { animation: binaryRise 4s ease-in-out 1.3s infinite; }
+        .binary-rise-3 { animation: binaryRise 4s ease-in-out 2.6s infinite; }
+        .brain-pulse { animation: brainPulse 2.2s ease-in-out infinite; transform-origin: center; }
+        @keyframes chipGlow { 0%,100% { filter: drop-shadow(0 0 6px #22c55e); transform: scale(1); } 50% { filter: drop-shadow(0 0 16px #4ade80); transform: scale(1.05); } }
+        @keyframes dashFlow { to { stroke-dashoffset: -40; } }
+        @keyframes dataPointPulse { 0%,100% { opacity: 0.3; r: 2; } 50% { opacity: 1; r: 4; } }
+        @keyframes binaryRise { 0% { transform: translateY(20px); opacity: 0; } 20% { opacity: 1; } 80% { opacity: 1; } 100% { transform: translateY(-40px); opacity: 0; } }
+        @keyframes brainPulse { 0%,100% { opacity: 0.6; transform: scale(0.95); } 50% { opacity: 1; transform: scale(1.05); } }
+        .form-side { max-width: 380px; width: 100%; margin: 0 auto; }
+        .welcome-tag { display: inline-block; font-size: 11px; font-weight: 600; color: #4ade80; letter-spacing: 0.18em; text-transform: uppercase; margin-bottom: 14px; }
+        .welcome-tag::before { content: ""; display: inline-block; width: 24px; height: 1px; background: #4ade80; margin-right: 10px; vertical-align: middle; }
+        .form-side h1 { font-size: 44px; font-weight: 800; letter-spacing: -0.025em; line-height: 1.05; margin-bottom: 12px; }
+        .form-side .lead { font-size: 13px; color: rgba(255,255,255,0.55); margin-bottom: 28px; line-height: 1.55; }
+        .login-alert { padding: 10px 14px; border-radius: 8px; font-size: 12px; margin-bottom: 18px; }
+        .login-alert.err { background: rgba(220,38,38,0.12); color: #fca5a5; border: 1px solid rgba(220,38,38,0.3); }
+        .login-alert.ok { background: rgba(34,197,94,0.12); color: #86efac; border: 1px solid rgba(34,197,94,0.3); }
+        .field { margin-bottom: 22px; }
+        .field label { display: block; font-size: 10px; font-weight: 600; color: rgba(255,255,255,0.5); letter-spacing: 0.18em; text-transform: uppercase; margin-bottom: 10px; }
+        .input-wrap { position: relative; border-bottom: 1.5px solid rgba(255,255,255,0.15); transition: border-color .25s ease; }
+        .input-wrap:focus-within { border-color: #4ade80; }
+        .input-wrap input { width: 100%; padding: 8px 0 12px 0; background: transparent; border: none; color: #fff; font-size: 15px; outline: none; font-family: inherit; font-weight: 400; }
+        .input-wrap input::placeholder { color: rgba(255,255,255,0.3); }
+        .toggle-pwd { position: absolute; right: 0; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; color: rgba(255,255,255,0.4); padding: 4px; display: flex; }
+        .toggle-pwd:hover { color: #4ade80; }
+        .forgot { text-align: right; margin: -10px 0 26px; }
+        .forgot button { background: none; border: none; cursor: pointer; font-family: inherit; font-size: 12px; color: rgba(255,255,255,0.55); transition: color .2s; }
+        .forgot button:hover { color: #4ade80; }
+        .btn-login { width: 100%; padding: 16px; border: none; border-radius: 100px; background: linear-gradient(135deg, #22c55e 0%, #4ade80 100%); color: #0e2318; font-family: inherit; font-size: 13px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; cursor: pointer; transition: all .3s ease; position: relative; overflow: hidden; box-shadow: 0 12px 30px -10px rgba(34,197,94,0.55); display: flex; align-items: center; justify-content: center; gap: 10px; }
+        .btn-login:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 18px 40px -12px rgba(34,197,94,0.7); }
+        .btn-login:disabled { opacity: 0.6; cursor: not-allowed; }
+        .btn-login::before { content: ""; position: absolute; inset: 0; background: linear-gradient(120deg, transparent 30%, rgba(255,255,255,0.4) 50%, transparent 70%); transform: translateX(-100%); transition: transform .8s ease; }
+        .btn-login:hover:not(:disabled)::before { transform: translateX(100%); }
+        .login-footer { padding: 20px 48px; display: flex; justify-content: space-between; font-size: 11px; color: rgba(255,255,255,0.35); flex-shrink: 0; position: relative; z-index: 5; }
+        @media (max-width: 880px) {
+          .login-header { padding: 20px 24px; }
+          .login-footer { padding: 16px 24px; flex-direction: column; gap: 6px; align-items: center; text-align: center; }
+          .login-main { grid-template-columns: 1fr; gap: 40px; padding: 20px 28px 40px; }
+          .art-side { max-width: 340px; order: 2; }
+          .form-side { order: 1; }
+          .form-side h1 { font-size: 34px; }
+          .login-header-help { display: none; }
+        }
+      `}</style>
 
-      {/* Formulario derecha */}
-      <main className="flex-1 flex items-center justify-center" style={{ background: '#fff', padding: 40 }}>
-        <div style={{ width: '100%', maxWidth: 300, ...RobotoStyle }}>
-          <div className="md:hidden" style={{ textAlign: 'center', marginBottom: 28 }}>
-            <span style={{ fontSize: 18, fontWeight: 800, color: '#0e2318' }}>Aprende<span style={{ color: '#22c55e' }}>Excel</span></span>
+      <div className="login-root">
+        <span className="login-bubble login-b1"></span>
+        <span className="login-bubble login-b2"></span>
+        <span className="login-bubble login-b3"></span>
+
+        <header className="login-header">
+          <div className="login-logo-text">
+            ACADEMIA
+            <span className="sub">CAMPUS VIRTUAL</span>
+          </div>
+          <div className="login-header-help">
+            ¿Necesitás ayuda? <a href="mailto:soporte@aprende-excel.com">Contactá soporte</a>
+          </div>
+        </header>
+
+        <main className="login-main">
+          <div className="art-side">
+            <div className="rings">
+              <div className="ring r1"></div>
+              <div className="ring r2"></div>
+              <div className="ring r3"></div>
+            </div>
+            <div className="art-glow"></div>
+            <span className="floating-dot fd1"></span>
+            <span className="floating-dot fd2"></span>
+            <span className="floating-dot fd3"></span>
+            <span className="floating-dot fd4"></span>
+
+            <div className="scenes">
+
+              {/* 1. CURSOS */}
+              <div className="scene">
+                <svg viewBox="0 0 400 400" xmlns="http://www.w3.org/2000/svg">
+                  <defs>
+                    <linearGradient id="paperG" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#fefce8"/>
+                      <stop offset="100%" stopColor="#f5f5dc"/>
+                    </linearGradient>
+                    <linearGradient id="capG" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#1a6e3c"/>
+                      <stop offset="100%" stopColor="#0e2318"/>
+                    </linearGradient>
+                    <linearGradient id="medalG" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#4ade80"/>
+                      <stop offset="100%" stopColor="#16a34a"/>
+                    </linearGradient>
+                    <linearGradient id="bookG1" x1="0" y1="0" x2="1" y2="0">
+                      <stop offset="0%" stopColor="#16a34a"/>
+                      <stop offset="100%" stopColor="#22c55e"/>
+                    </linearGradient>
+                    <linearGradient id="bookG2" x1="0" y1="0" x2="1" y2="0">
+                      <stop offset="0%" stopColor="#166534"/>
+                      <stop offset="100%" stopColor="#15803d"/>
+                    </linearGradient>
+                    <linearGradient id="bookG3" x1="0" y1="0" x2="1" y2="0">
+                      <stop offset="0%" stopColor="#4ade80"/>
+                      <stop offset="100%" stopColor="#86efac"/>
+                    </linearGradient>
+                  </defs>
+                  <g>
+                    <rect x="115" y="170" width="170" height="180" rx="14" fill="#0e2318" opacity=".3" transform="translate(6 6)"/>
+                    <rect x="115" y="170" width="170" height="180" rx="14" fill="url(#paperG)" stroke="#22c55e" strokeWidth="3"/>
+                    <text x="200" y="230" textAnchor="middle" fontFamily="Poppins" fontWeight="800" fontSize="18" fill="#1a6e3c">CERTIFICADO</text>
+                    <rect x="140" y="250" width="120" height="4" rx="2" fill="#86efac"/>
+                    <rect x="155" y="268" width="90" height="3" rx="1.5" fill="#bbf7d0"/>
+                    <rect x="145" y="282" width="110" height="3" rx="1.5" fill="#bbf7d0"/>
+                    <rect x="115" y="300" width="170" height="24" fill="#22c55e"/>
+                    <polygon points="115,324 135,324 125,340" fill="#16a34a"/>
+                    <polygon points="265,324 285,324 275,340" fill="#16a34a"/>
+                  </g>
+                  <g className="medal-pulse">
+                    <circle cx="200" cy="312" r="18" fill="url(#medalG)" stroke="#fff" strokeWidth="2"/>
+                    <path d="M193 312 l4 5 l10 -10" stroke="#fff" strokeWidth="2.5" fill="none" strokeLinecap="round"/>
+                  </g>
+                  <g className="cap-sway">
+                    <rect x="180" y="135" width="40" height="12" rx="2" fill="url(#capG)"/>
+                    <polygon points="200,100 250,125 200,150 150,125" fill="#0e2318"/>
+                    <polygon points="200,108 240,125 200,142 160,125" fill="#1a6e3c"/>
+                    <g className="tassel">
+                      <line x1="200" y1="125" x2="215" y2="160" stroke="#22c55e" strokeWidth="2.5"/>
+                      <circle cx="215" cy="163" r="5" fill="#4ade80"/>
+                    </g>
+                  </g>
+                  <g>
+                    <rect x="40" y="285" width="55" height="14" rx="2" fill="url(#bookG1)"/>
+                    <rect x="45" y="270" width="55" height="14" rx="2" fill="url(#bookG2)"/>
+                    <rect x="42" y="255" width="55" height="14" rx="2" fill="url(#bookG3)"/>
+                    <text x="55" y="295" fontFamily="Poppins" fontSize="7" fontWeight="700" fill="#fff">CURSOS</text>
+                    <text x="50" y="280" fontFamily="Poppins" fontSize="7" fontWeight="700" fill="#fff">DIGITAL</text>
+                    <text x="48" y="265" fontFamily="Poppins" fontSize="7" fontWeight="700" fill="#0e2318">ONLINE</text>
+                  </g>
+                  <g>
+                    <rect x="300" y="260" width="70" height="50" rx="4" fill="#1a6e3c" stroke="#22c55e" strokeWidth="2"/>
+                    <rect x="305" y="265" width="60" height="40" rx="2" fill="#0a1f14"/>
+                    <polygon points="325,280 345,285 325,295" fill="#4ade80"/>
+                    <rect x="290" y="308" width="90" height="5" rx="2" fill="#16a34a"/>
+                    <text x="335" y="278" textAnchor="middle" fontFamily="Poppins" fontSize="6" fontWeight="700" fill="#86efac">MÓDULO 5</text>
+                  </g>
+                  <g className="rocket-fly" transform="translate(270 110)">
+                    <path d="M0 20 L-5 10 L0 0 L5 10 Z" fill="#22c55e"/>
+                    <circle cx="0" cy="8" r="3" fill="#fefce8"/>
+                    <path d="M-5 15 L-8 22 L-2 18 Z" fill="#1a6e3c"/>
+                    <path d="M5 15 L8 22 L2 18 Z" fill="#1a6e3c"/>
+                    <path d="M0 22 L-2 28 L2 28 Z" fill="#fbbf24"/>
+                  </g>
+                  <g className="star-tw-1" transform="translate(80 140)">
+                    <path d="M0 -10 L3 -3 L10 -3 L4 2 L7 10 L0 5 L-7 10 L-4 2 L-10 -3 L-3 -3 Z" fill="#fbbf24"/>
+                  </g>
+                  <g className="star-tw-2" transform="translate(340 180)">
+                    <path d="M0 -8 L2 -2 L8 -2 L3 2 L5 8 L0 4 L-5 8 L-3 2 L-8 -2 L-2 -2 Z" fill="#4ade80"/>
+                  </g>
+                  <g className="star-tw-3" transform="translate(60 210)">
+                    <path d="M0 -7 L2 -2 L7 -2 L3 2 L4 7 L0 4 L-4 7 L-3 2 L-7 -2 L-2 -2 Z" fill="#86efac"/>
+                  </g>
+                  <text className="star-tw-1" x="60" y="110" fontFamily="Poppins" fontSize="22" fontWeight="800" fill="#22c55e">A</text>
+                  <text className="star-tw-2" x="130" y="80" fontFamily="Poppins" fontSize="22" fontWeight="800" fill="#4ade80">B</text>
+                  <text className="star-tw-3" x="310" y="90" fontFamily="Poppins" fontSize="22" fontWeight="800" fill="#86efac">C</text>
+                  <ellipse cx="200" cy="370" rx="120" ry="10" fill="#0e2318" opacity=".4"/>
+                </svg>
+                <span className="scene-label"><span className="accent">●</span>Cursos</span>
+              </div>
+
+              {/* 2. IDIOMAS */}
+              <div className="scene">
+                <svg viewBox="0 0 400 400" xmlns="http://www.w3.org/2000/svg">
+                  <defs>
+                    <radialGradient id="oceanG" cx="35%" cy="30%">
+                      <stop offset="0%" stopColor="#86efac"/>
+                      <stop offset="40%" stopColor="#22c55e"/>
+                      <stop offset="100%" stopColor="#14532d"/>
+                    </radialGradient>
+                    <radialGradient id="shineG" cx="30%" cy="25%">
+                      <stop offset="0%" stopColor="#fff" stopOpacity=".45"/>
+                      <stop offset="40%" stopColor="#fff" stopOpacity=".1"/>
+                      <stop offset="100%" stopColor="#fff" stopOpacity="0"/>
+                    </radialGradient>
+                    <radialGradient id="atmoG" cx="50%" cy="50%">
+                      <stop offset="75%" stopColor="#4ade80" stopOpacity="0"/>
+                      <stop offset="90%" stopColor="#4ade80" stopOpacity=".35"/>
+                      <stop offset="100%" stopColor="#4ade80" stopOpacity="0"/>
+                    </radialGradient>
+                    <linearGradient id="continentG" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#16a34a"/>
+                      <stop offset="100%" stopColor="#0e2318"/>
+                    </linearGradient>
+                    <clipPath id="globeClip">
+                      <circle cx="220" cy="220" r="82"/>
+                    </clipPath>
+                  </defs>
+                  <ellipse cx="220" cy="220" rx="155" ry="60" fill="none" stroke="#4ade80" strokeWidth="1.5" strokeDasharray="3 6" opacity=".4"/>
+                  <ellipse cx="220" cy="220" rx="60" ry="155" fill="none" stroke="#4ade80" strokeWidth="1.5" strokeDasharray="3 6" opacity=".4"/>
+                  <circle cx="220" cy="220" r="100" fill="url(#atmoG)"/>
+                  <g>
+                    <circle cx="220" cy="220" r="85" fill="url(#oceanG)"/>
+                    <g clipPath="url(#globeClip)">
+                      <g className="globe-rotate">
+                        <path d="M150 195 Q160 180 175 182 Q185 175 195 185 Q200 195 192 205 Q195 218 185 222 Q170 225 160 215 Q148 208 150 195 Z" fill="url(#continentG)"/>
+                        <path d="M178 235 Q188 232 195 245 Q198 260 188 272 Q180 278 175 265 Q172 250 178 235 Z" fill="url(#continentG)"/>
+                        <path d="M218 188 Q235 185 245 195 Q248 205 242 210 Q248 225 245 245 Q240 262 225 265 Q215 258 218 245 Q212 230 215 215 Q210 200 218 188 Z" fill="url(#continentG)"/>
+                        <path d="M250 195 Q275 190 285 205 Q292 215 282 222 Q270 218 260 215 Q252 208 250 195 Z" fill="url(#continentG)"/>
+                        <path d="M275 250 Q288 248 293 258 Q290 268 278 266 Q270 262 275 250 Z" fill="url(#continentG)"/>
+                        <path d="M320 195 Q330 180 345 182 Q355 175 365 185 Q370 195 362 205 Q365 218 355 222 Q340 225 330 215 Q318 208 320 195 Z" fill="url(#continentG)" transform="translate(-170 0)"/>
+                      </g>
+                      <g fill="none" stroke="#fff" strokeWidth="1" opacity=".25">
+                        <ellipse cx="220" cy="220" rx="85" ry="85"/>
+                        <ellipse cx="220" cy="220" rx="85" ry="28"/>
+                        <ellipse cx="220" cy="220" rx="85" ry="56"/>
+                        <ellipse cx="220" cy="220" rx="28" ry="85"/>
+                        <ellipse cx="220" cy="220" rx="56" ry="85"/>
+                        <line x1="135" y1="220" x2="305" y2="220"/>
+                      </g>
+                      <circle cx="220" cy="220" r="85" fill="url(#shineG)"/>
+                    </g>
+                    <circle cx="220" cy="220" r="85" fill="none" stroke="#0e2318" strokeWidth="2"/>
+                    <ellipse cx="220" cy="300" rx="60" ry="6" fill="#0e2318" opacity=".3"/>
+                  </g>
+                  <circle cx="155" cy="175" r="3" fill="#86efac" className="orbit-dot"/>
+                  <circle cx="285" cy="265" r="3" fill="#86efac" className="orbit-dot" style={{animationDelay:'.5s'}}/>
+                  <circle cx="180" cy="280" r="3" fill="#4ade80" className="orbit-dot" style={{animationDelay:'1s'}}/>
+                  <circle cx="275" cy="175" r="3" fill="#4ade80" className="orbit-dot" style={{animationDelay:'1.5s'}}/>
+                  <g className="bubble-float-1" transform="translate(170 85)">
+                    <rect x="-30" y="-18" width="60" height="32" rx="16" fill="#fff" stroke="#22c55e" strokeWidth="2"/>
+                    <path d="M-10 14 L-15 22 L-5 17" fill="#fff" stroke="#22c55e" strokeWidth="2" strokeLinejoin="round"/>
+                    <circle cx="-15" cy="-2" r="10" fill="#dc2626"/>
+                    <rect x="-23" y="-10" width="16" height="3" fill="#fff"/>
+                    <rect x="-23" y="-4" width="16" height="3" fill="#fff"/>
+                    <rect x="-23" y="2" width="16" height="3" fill="#fff"/>
+                    <rect x="-23" y="-10" width="8" height="7" fill="#1e3a8a"/>
+                    <circle cx="15" cy="-2" r="10" fill="#1e3a8a"/>
+                    <path d="M5 -11 L25 9 M5 9 L25 -11" stroke="#fff" strokeWidth="2"/>
+                    <path d="M15 -12 L15 8 M5 -2 L25 -2" stroke="#fff" strokeWidth="2"/>
+                  </g>
+                  <g className="bubble-float-2" transform="translate(345 170)">
+                    <rect x="-30" y="-18" width="60" height="32" rx="16" fill="#fff" stroke="#22c55e" strokeWidth="2"/>
+                    <path d="M-28 6 L-36 12 L-26 10" fill="#fff" stroke="#22c55e" strokeWidth="2" strokeLinejoin="round"/>
+                    <circle cx="-15" cy="-2" r="10" fill="#fbbf24"/>
+                    <rect x="-25" y="-5" width="20" height="6" fill="#fbbf24"/>
+                    <rect x="-25" y="-10" width="20" height="5" fill="#dc2626"/>
+                    <rect x="-25" y="1" width="20" height="5" fill="#dc2626"/>
+                    <circle cx="15" cy="-2" r="10" fill="#fff"/>
+                    <rect x="5" y="-12" width="7" height="20" fill="#1e3a8a"/>
+                    <rect x="18" y="-12" width="7" height="20" fill="#dc2626"/>
+                  </g>
+                  <g className="bubble-float-3" transform="translate(95 270)">
+                    <rect x="-30" y="-18" width="60" height="32" rx="16" fill="#fff" stroke="#22c55e" strokeWidth="2"/>
+                    <path d="M28 10 L36 18 L26 14" fill="#fff" stroke="#22c55e" strokeWidth="2" strokeLinejoin="round"/>
+                    <circle cx="-15" cy="-2" r="10" fill="#16a34a"/>
+                    <polygon points="-20,-2 -15,-8 -10,-2 -15,4" fill="#fbbf24"/>
+                    <circle cx="-15" cy="-2" r="3" fill="#1e3a8a"/>
+                    <circle cx="15" cy="-2" r="10" fill="#fff"/>
+                    <rect x="5" y="-12" width="7" height="20" fill="#16a34a"/>
+                    <rect x="18" y="-12" width="7" height="20" fill="#dc2626"/>
+                  </g>
+                  <g className="bubble-float-4" transform="translate(330 310)">
+                    <rect x="-18" y="-18" width="36" height="32" rx="16" fill="#fff" stroke="#22c55e" strokeWidth="2"/>
+                    <path d="M-16 10 L-22 18 L-14 14" fill="#fff" stroke="#22c55e" strokeWidth="2" strokeLinejoin="round"/>
+                    <circle cx="0" cy="-2" r="10" fill="#000"/>
+                    <rect x="-10" y="-6" width="20" height="5" fill="#dc2626"/>
+                    <rect x="-10" y="0" width="20" height="5" fill="#fbbf24"/>
+                  </g>
+                  <g className="bubble-float-5" transform="translate(90 150)">
+                    <rect x="-18" y="-18" width="36" height="32" rx="16" fill="#fff" stroke="#22c55e" strokeWidth="2"/>
+                    <path d="M14 10 L22 18 L12 14" fill="#fff" stroke="#22c55e" strokeWidth="2" strokeLinejoin="round"/>
+                    <circle cx="0" cy="-2" r="10" fill="#dc2626"/>
+                    <rect x="-3" y="-12" width="6" height="20" fill="#fff"/>
+                    <path d="M0 -6 L-2 -2 L-4 -3 L-3 0 L0 -1 L3 0 L4 -3 L2 -2 Z" fill="#dc2626"/>
+                  </g>
+                  <g className="bubble-float-6" transform="translate(280 100)">
+                    <rect x="-18" y="-18" width="36" height="32" rx="16" fill="#fff" stroke="#22c55e" strokeWidth="2"/>
+                    <path d="M-14 10 L-22 18 L-14 14" fill="#fff" stroke="#22c55e" strokeWidth="2" strokeLinejoin="round"/>
+                    <circle cx="0" cy="-2" r="10" fill="#fff" stroke="#ddd" strokeWidth="1"/>
+                    <circle cx="0" cy="-2" r="5" fill="#dc2626"/>
+                  </g>
+                  <ellipse cx="220" cy="365" rx="110" ry="10" fill="#0e2318" opacity=".4"/>
+                </svg>
+                <span className="scene-label"><span className="accent">●</span>Idiomas</span>
+              </div>
+
+              {/* 3. EXCEL */}
+              <div className="scene">
+                <svg viewBox="0 0 400 400" xmlns="http://www.w3.org/2000/svg">
+                  <defs>
+                    <linearGradient id="laptopG" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#22c55e"/>
+                      <stop offset="100%" stopColor="#16a34a"/>
+                    </linearGradient>
+                    <linearGradient id="screenG" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#fefce8"/>
+                      <stop offset="100%" stopColor="#f5f5dc"/>
+                    </linearGradient>
+                    <linearGradient id="cellG" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#fff"/>
+                      <stop offset="100%" stopColor="#f0fdf4"/>
+                    </linearGradient>
+                  </defs>
+                  <g className="laptop-float">
+                    <rect x="120" y="140" width="160" height="110" rx="8" fill="url(#laptopG)" stroke="#0e2318" strokeWidth="3"/>
+                    <rect x="128" y="148" width="144" height="94" rx="3" fill="url(#screenG)"/>
+                    <rect x="128" y="148" width="144" height="14" rx="3" fill="#16a34a"/>
+                    <circle cx="134" cy="155" r="2" fill="#fff"/>
+                    <circle cx="142" cy="155" r="2" fill="#fff"/>
+                    <circle cx="150" cy="155" r="2" fill="#fff"/>
+                    <text x="200" y="159" textAnchor="middle" fontFamily="Poppins" fontSize="7" fontWeight="700" fill="#fff">SALES DATA</text>
+                    <g transform="translate(138 170)">
+                      <line x1="0" y1="60" x2="120" y2="60" stroke="#cbd5e1" strokeWidth="1"/>
+                      <line x1="0" y1="0" x2="0" y2="60" stroke="#cbd5e1" strokeWidth="1"/>
+                      <rect className="bar-grow-1" x="10" y="35" width="14" height="25" fill="#22c55e" rx="2"/>
+                      <rect className="bar-grow-2" x="35" y="20" width="14" height="40" fill="#4ade80" rx="2"/>
+                      <rect className="bar-grow-3" x="60" y="10" width="14" height="50" fill="#16a34a" rx="2"/>
+                      <rect className="bar-grow-4" x="85" y="25" width="14" height="35" fill="#86efac" rx="2"/>
+                    </g>
+                    <rect x="258" y="170" width="12" height="12" rx="2" fill="#16a34a"/>
+                    <text x="264" y="180" textAnchor="middle" fontFamily="Poppins" fontSize="9" fontWeight="900" fill="#fff">X</text>
+                  </g>
+                  <g>
+                    <path d="M110 250 L290 250 L300 260 L100 260 Z" fill="#0e2318"/>
+                    <rect x="180" y="254" width="40" height="3" rx="1" fill="#4ade80"/>
+                  </g>
+                  <g className="cell-float-1">
+                    <rect x="40" y="130" width="45" height="22" rx="4" fill="url(#cellG)" stroke="#22c55e" strokeWidth="1.5"/>
+                    <text x="62" y="146" textAnchor="middle" fontFamily="Poppins" fontSize="11" fontWeight="800" fill="#16a34a">A1</text>
+                  </g>
+                  <g className="cell-float-2">
+                    <rect x="40" y="195" width="45" height="22" rx="4" fill="url(#cellG)" stroke="#22c55e" strokeWidth="1.5"/>
+                    <text x="62" y="211" textAnchor="middle" fontFamily="Poppins" fontSize="11" fontWeight="800" fill="#16a34a">B2</text>
+                  </g>
+                  <g className="cell-float-3">
+                    <rect x="315" y="135" width="45" height="22" rx="4" fill="url(#cellG)" stroke="#22c55e" strokeWidth="1.5"/>
+                    <text x="337" y="151" textAnchor="middle" fontFamily="Poppins" fontSize="11" fontWeight="800" fill="#16a34a">C3</text>
+                  </g>
+                  <g className="cell-float-4">
+                    <rect x="315" y="195" width="50" height="22" rx="4" fill="url(#cellG)" stroke="#22c55e" strokeWidth="1.5"/>
+                    <text x="340" y="211" textAnchor="middle" fontFamily="Poppins" fontSize="11" fontWeight="800" fill="#16a34a">D10</text>
+                  </g>
+                  <g className="cell-float-1" style={{animationDelay:'.3s'}}>
+                    <rect x="30" y="280" width="90" height="22" rx="4" fill="url(#cellG)" stroke="#4ade80" strokeWidth="1.5"/>
+                    <text x="75" y="296" textAnchor="middle" fontFamily="Poppins" fontSize="9" fontWeight="700" fill="#16a34a">SUM(B2:B20)</text>
+                  </g>
+                  <g className="check-pop-1" transform="translate(90 100)">
+                    <circle r="14" fill="#22c55e"/>
+                    <path d="M-6 0 l4 5 l8 -8" stroke="#fff" strokeWidth="3" fill="none" strokeLinecap="round"/>
+                  </g>
+                  <g className="check-pop-2" transform="translate(320 280)">
+                    <circle r="12" fill="#4ade80"/>
+                    <path d="M-5 0 l3 4 l7 -7" stroke="#fff" strokeWidth="2.5" fill="none" strokeLinecap="round"/>
+                  </g>
+                  <g className="arrow-slide">
+                    <path d="M280 305 L330 255 L315 255 M330 255 L330 270" stroke="#22c55e" strokeWidth="4" fill="none" strokeLinecap="round" strokeLinejoin="round"/>
+                  </g>
+                  <g className="cell-float-2" style={{animationDelay:'.5s'}} transform="translate(340 320)">
+                    <circle r="18" fill="#86efac"/>
+                    <path d="M0 0 L0 -18 A18 18 0 0 1 15 10 Z" fill="#22c55e"/>
+                    <path d="M0 0 L15 10 A18 18 0 0 1 -10 14 Z" fill="#16a34a"/>
+                    <circle r="6" fill="#fff"/>
+                  </g>
+                  <ellipse cx="200" cy="370" rx="110" ry="8" fill="#0e2318" opacity=".4"/>
+                </svg>
+                <span className="scene-label"><span className="accent">●</span>Excel & Datos</span>
+              </div>
+
+              {/* 4. IA */}
+              <div className="scene">
+                <svg viewBox="0 0 400 400" xmlns="http://www.w3.org/2000/svg">
+                  <defs>
+                    <linearGradient id="chipG" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#4ade80"/>
+                      <stop offset="50%" stopColor="#22c55e"/>
+                      <stop offset="100%" stopColor="#16a34a"/>
+                    </linearGradient>
+                    <radialGradient id="chipGlowG" cx="50%" cy="50%">
+                      <stop offset="0%" stopColor="#4ade80" stopOpacity=".6"/>
+                      <stop offset="100%" stopColor="#4ade80" stopOpacity="0"/>
+                    </radialGradient>
+                  </defs>
+                  <circle cx="200" cy="220" r="90" fill="url(#chipGlowG)"/>
+                  <g fill="none" stroke="#4ade80" strokeWidth="2">
+                    <path className="circuit-line"   d="M200 220 L200 140 L140 140 L140 90"/>
+                    <path className="circuit-line"   d="M200 220 L200 140 L260 140 L260 90"/>
+                    <path className="circuit-line-2" d="M200 220 L120 220 L120 160 L70 160"/>
+                    <path className="circuit-line-2" d="M200 220 L280 220 L280 160 L330 160"/>
+                    <path className="circuit-line"   d="M200 220 L120 220 L120 280 L70 280"/>
+                    <path className="circuit-line-2" d="M200 220 L280 220 L280 280 L330 280"/>
+                    <path className="circuit-line"   d="M200 220 L200 300 L140 300 L140 350"/>
+                    <path className="circuit-line-2" d="M200 220 L200 300 L260 300 L260 350"/>
+                  </g>
+                  <g fill="#4ade80">
+                    <circle cx="140" cy="90"  className="data-point data-point-1"/>
+                    <circle cx="260" cy="90"  className="data-point data-point-2"/>
+                    <circle cx="70"  cy="160" className="data-point data-point-3"/>
+                    <circle cx="330" cy="160" className="data-point data-point-4"/>
+                    <circle cx="70"  cy="280" className="data-point data-point-5"/>
+                    <circle cx="330" cy="280" className="data-point data-point-6"/>
+                    <circle cx="140" cy="350" className="data-point data-point-1"/>
+                    <circle cx="260" cy="350" className="data-point data-point-2"/>
+                  </g>
+                  <g className="chip-glow">
+                    <rect x="160" y="180" width="80" height="80" rx="12" fill="url(#chipG)" stroke="#0e2318" strokeWidth="3"/>
+                    <g fill="#16a34a">
+                      <rect x="155" y="195" width="8" height="4" rx="1"/>
+                      <rect x="155" y="210" width="8" height="4" rx="1"/>
+                      <rect x="155" y="225" width="8" height="4" rx="1"/>
+                      <rect x="155" y="240" width="8" height="4" rx="1"/>
+                      <rect x="237" y="195" width="8" height="4" rx="1"/>
+                      <rect x="237" y="210" width="8" height="4" rx="1"/>
+                      <rect x="237" y="225" width="8" height="4" rx="1"/>
+                      <rect x="237" y="240" width="8" height="4" rx="1"/>
+                      <rect x="175" y="175" width="4" height="8" rx="1"/>
+                      <rect x="190" y="175" width="4" height="8" rx="1"/>
+                      <rect x="205" y="175" width="4" height="8" rx="1"/>
+                      <rect x="220" y="175" width="4" height="8" rx="1"/>
+                      <rect x="175" y="257" width="4" height="8" rx="1"/>
+                      <rect x="190" y="257" width="4" height="8" rx="1"/>
+                      <rect x="205" y="257" width="4" height="8" rx="1"/>
+                      <rect x="220" y="257" width="4" height="8" rx="1"/>
+                    </g>
+                    <text x="200" y="232" textAnchor="middle" fontFamily="Poppins" fontSize="32" fontWeight="900" fill="#0e2318">AI</text>
+                  </g>
+                  <g className="brain-pulse" transform="translate(80 100)">
+                    <path d="M-12 0 Q-12 -10 -5 -10 Q0 -14 5 -10 Q12 -10 12 0 Q12 10 5 10 Q0 14 -5 10 Q-12 10 -12 0 Z" fill="none" stroke="#4ade80" strokeWidth="1.5"/>
+                    <circle cx="-5" cy="-4" r="1.5" fill="#4ade80"/>
+                    <circle cx="5" cy="-4" r="1.5" fill="#4ade80"/>
+                    <circle cx="0" cy="2" r="1.5" fill="#4ade80"/>
+                    <line x1="-5" y1="-4" x2="5" y2="-4" stroke="#4ade80" strokeWidth="1"/>
+                    <line x1="-5" y1="-4" x2="0" y2="2" stroke="#4ade80" strokeWidth="1"/>
+                    <line x1="5" y1="-4" x2="0" y2="2" stroke="#4ade80" strokeWidth="1"/>
+                  </g>
+                  <g fontFamily="monospace" fontWeight="700" fontSize="14" fill="#4ade80" opacity=".7">
+                    <text className="binary-rise-1" x="60" y="340">10110</text>
+                    <text className="binary-rise-2" x="320" y="80">01001</text>
+                    <text className="binary-rise-3" x="340" y="340">11010</text>
+                  </g>
+                  <g className="brain-pulse" style={{animationDelay:'.5s'}} transform="translate(320 110)">
+                    <path d="M-10 0 Q0 -10 10 0" fill="none" stroke="#4ade80" strokeWidth="2" strokeLinecap="round"/>
+                    <path d="M-6 3 Q0 -3 6 3" fill="none" stroke="#4ade80" strokeWidth="2" strokeLinecap="round"/>
+                    <circle cx="0" cy="6" r="1.5" fill="#4ade80"/>
+                  </g>
+                  <ellipse cx="200" cy="385" rx="100" ry="8" fill="#0e2318" opacity=".4"/>
+                </svg>
+                <span className="scene-label"><span className="accent">●</span>Inteligencia Artificial</span>
+              </div>
+
+            </div>
+
+            <div className="scene-indicator">
+              <span></span><span></span><span></span><span></span>
+            </div>
           </div>
 
-          <h3 style={{ fontSize: 20, fontWeight: 800, color: '#0e1a13', marginBottom: 3, letterSpacing: '-0.3px' }}>
-            {isRegistering ? 'Crear cuenta' : 'Bienvenido'}
-          </h3>
-          <p style={{ fontSize: 12, color: '#aaa', marginBottom: 24, fontWeight: 300 }}>
-            {isRegistering ? 'Completa tus datos para empezar' : 'Ingresa para acceder a tus cursos'}
-          </p>
+          <div className="form-side">
+            <span className="welcome-tag">Bienvenido de nuevo</span>
+            <h1>Iniciá sesión<br/>en tu cuenta</h1>
+            <p className="lead">Ingresá con el usuario y contraseña que recibiste por mail.</p>
 
-          {error && (
-            <div style={{ marginBottom: 14, padding: '10px 14px', borderRadius: 7, fontSize: 13, background: '#fef2f2', color: '#991b1b', border: '1px solid #fecaca' }}>
-              {error}
-            </div>
-          )}
-          {success && (
-            <div style={{ marginBottom: 14, padding: '10px 14px', borderRadius: 7, fontSize: 13, background: '#f0fdf4', color: '#166534', border: '1px solid #bbf7d0' }}>
-              {success}
-            </div>
-          )}
+            {error && <div className="login-alert err">{error}</div>}
+            {success && <div className="login-alert ok">{success}</div>}
 
-          <form onSubmit={handleSubmit}>
-            {isRegistering && (
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 14 }}>
-                <div>
-                  <label style={{ display: 'block', fontSize: 10, fontWeight: 600, color: '#aaa', marginBottom: 5, textTransform: 'uppercase', letterSpacing: '0.07em' }}>Nombre</label>
-                  <input type="text" value={nombre} onChange={(e) => setNombre(e.target.value)}
-                    style={{ width: '100%', padding: '10px 12px', border: '1.5px solid #ebebeb', borderRadius: 7, fontSize: 13, outline: 'none', background: '#fafafa', fontFamily: 'Roboto, Arial, sans-serif' }} required />
-                </div>
-                <div>
-                  <label style={{ display: 'block', fontSize: 10, fontWeight: 600, color: '#aaa', marginBottom: 5, textTransform: 'uppercase', letterSpacing: '0.07em' }}>Apellido</label>
-                  <input type="text" value={apellido} onChange={(e) => setApellido(e.target.value)}
-                    style={{ width: '100%', padding: '10px 12px', border: '1.5px solid #ebebeb', borderRadius: 7, fontSize: 13, outline: 'none', background: '#fafafa', fontFamily: 'Roboto, Arial, sans-serif' }} />
+            <form onSubmit={handleSubmit}>
+              <div className="field">
+                <label>Email</label>
+                <div className="input-wrap">
+                  <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="tu@email.com" required />
                 </div>
               </div>
-            )}
-
-            <div style={{ marginBottom: 14 }}>
-              <label style={{ display: 'block', fontSize: 10, fontWeight: 600, color: '#aaa', marginBottom: 5, textTransform: 'uppercase', letterSpacing: '0.07em' }}>Email</label>
-              <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="tu@email.com"
-                style={{ width: '100%', padding: '10px 12px', border: '1.5px solid #ebebeb', borderRadius: 7, fontSize: 13, outline: 'none', background: '#fafafa', fontFamily: 'Roboto, Arial, sans-serif' }} required />
-            </div>
-
-            <div style={{ marginBottom: 6 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 5 }}>
-                <label style={{ fontSize: 10, fontWeight: 600, color: '#aaa', textTransform: 'uppercase', letterSpacing: '0.07em' }}>Contrasena</label>
-                {!isRegistering && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setForgotEmail(email);
-                      setForgotMessage(null);
-                      setShowForgotModal(true);
-                    }}
-                    style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, fontSize: 11, color: '#1a6e3c', fontWeight: 600, fontFamily: 'Roboto, Arial, sans-serif' }}
-                  >
-                    Olvidaste?
+              <div className="field">
+                <label>Contraseña</label>
+                <div className="input-wrap">
+                  <input type={showPassword ? 'text' : 'password'} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" required />
+                  <button type="button" className="toggle-pwd" onClick={() => setShowPassword(!showPassword)} aria-label="Mostrar contraseña">
+                    {showPassword ? <EyeOff size={18}/> : <Eye size={18}/>}
                   </button>
-                )}
+                </div>
               </div>
-              <div style={{ position: 'relative' }}>
-                <input type={showPassword ? 'text' : 'password'} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••"
-                  style={{ width: '100%', padding: '10px 36px 10px 12px', border: '1.5px solid #ebebeb', borderRadius: 7, fontSize: 13, outline: 'none', background: '#fafafa', fontFamily: 'Roboto, Arial, sans-serif' }} required />
-                <button type="button" onClick={() => setShowPassword(!showPassword)}
-                  style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: '#aaa' }}>
-                  {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
-                </button>
+              <div className="forgot">
+                <button type="button" onClick={openForgotModal}>¿Olvidaste tu contraseña?</button>
               </div>
-            </div>
-
-            <button type="submit" disabled={isLoading}
-              style={{ width: '100%', padding: '12px', background: '#0e2318', color: '#fff', border: 'none', borderRadius: 7, fontSize: 13, fontWeight: 700, cursor: 'pointer', marginTop: 18, fontFamily: 'Roboto, Arial, sans-serif', letterSpacing: '0.01em' }}>
-              {isLoading ? 'Cargando...' : isRegistering ? 'Crear cuenta' : 'Ingresar'}
-            </button>
-          </form>
-
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 18, paddingTop: 16, borderTop: '1px solid #f0f0f0' }}>
-            <button onClick={() => { setIsRegistering(!isRegistering); setError(''); setSuccess(''); }}
-              style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 11, color: '#aaa', fontFamily: 'Roboto, Arial, sans-serif' }}>
-              {isRegistering ? 'Ya tenes cuenta? ' : 'Sin cuenta? '}
-              <span style={{ color: '#1a6e3c', fontWeight: 700 }}>{isRegistering ? 'Inicia sesion' : 'Registrate'}</span>
-            </button>
-            <a href="mailto:soporte@aprende-excel.com" style={{ fontSize: 11, color: '#d1d5db', textDecoration: 'none' }}>Soporte</a>
-          </div>
-        </div>
-      </main>
-
-      {showForgotModal && (
-        <div
-          onClick={() => { if (!forgotLoading) { setShowForgotModal(false); setForgotMessage(null); } }}
-          style={{ position: 'fixed', inset: 0, background: 'rgba(14,35,24,0.55)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 20, fontFamily: 'Roboto, Arial, sans-serif' }}
-        >
-          <div
-            onClick={(e) => e.stopPropagation()}
-            style={{ background: '#fff', width: '100%', maxWidth: 380, borderRadius: 12, padding: 28, boxShadow: '0 10px 40px rgba(0,0,0,0.2)' }}
-          >
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10 }}>
-              <h3 style={{ fontSize: 18, fontWeight: 800, color: '#0e1a13', margin: 0, letterSpacing: '-0.3px' }}>
-                Recuperar contrasena
-              </h3>
-              <button
-                type="button"
-                onClick={() => { if (!forgotLoading) { setShowForgotModal(false); setForgotMessage(null); } }}
-                style={{ background: 'none', border: 'none', fontSize: 20, color: '#aaa', cursor: 'pointer', lineHeight: 1, padding: 0 }}
-                aria-label="Cerrar"
-              >
-                ×
+              <button type="submit" disabled={isLoading} className="btn-login">
+                {isLoading ? 'Ingresando...' : (<>Ingresar <ArrowRight size={14} /></>)}
               </button>
-            </div>
-            <p style={{ fontSize: 12, color: '#777', margin: '0 0 18px 0', lineHeight: 1.5 }}>
-              Ingresa tu email y te enviaremos una nueva contrasena provisoria. Podras cambiarla desde tu perfil al ingresar.
-            </p>
-
-            {forgotMessage && (
-              <div style={{
-                marginBottom: 14, padding: '10px 12px', borderRadius: 7, fontSize: 12,
-                background: forgotMessage.type === 'success' ? '#f0fdf4' : '#fef2f2',
-                color:      forgotMessage.type === 'success' ? '#166534' : '#991b1b',
-                border:     forgotMessage.type === 'success' ? '1px solid #bbf7d0' : '1px solid #fecaca',
-              }}>
-                {forgotMessage.text}
-              </div>
-            )}
-
-            <form onSubmit={handleForgotPassword}>
-              <label style={{ display: 'block', fontSize: 10, fontWeight: 600, color: '#aaa', marginBottom: 5, textTransform: 'uppercase', letterSpacing: '0.07em' }}>
-                Email
-              </label>
-              <input
-                type="email"
-                value={forgotEmail}
-                onChange={(e) => setForgotEmail(e.target.value)}
-                placeholder="tu@email.com"
-                autoFocus
-                required
-                disabled={forgotLoading}
-                style={{ width: '100%', padding: '10px 12px', border: '1.5px solid #ebebeb', borderRadius: 7, fontSize: 13, outline: 'none', background: '#fafafa', fontFamily: 'Roboto, Arial, sans-serif' }}
-              />
-
-              <div style={{ display: 'flex', gap: 8, marginTop: 18 }}>
-                <button
-                  type="button"
-                  onClick={() => { setShowForgotModal(false); setForgotMessage(null); }}
-                  disabled={forgotLoading}
-                  style={{ flex: 1, padding: '11px', background: '#fff', color: '#555', border: '1.5px solid #ebebeb', borderRadius: 7, fontSize: 12, fontWeight: 600, cursor: forgotLoading ? 'not-allowed' : 'pointer', fontFamily: 'Roboto, Arial, sans-serif' }}
-                >
-                  Cancelar
-                </button>
-                <button
-                  type="submit"
-                  disabled={forgotLoading}
-                  style={{ flex: 1, padding: '11px', background: '#0e2318', color: '#fff', border: 'none', borderRadius: 7, fontSize: 12, fontWeight: 700, cursor: forgotLoading ? 'not-allowed' : 'pointer', fontFamily: 'Roboto, Arial, sans-serif', letterSpacing: '0.01em', opacity: forgotLoading ? 0.7 : 1 }}
-                >
-                  {forgotLoading ? 'Enviando...' : 'Enviar'}
-                </button>
-              </div>
             </form>
           </div>
-        </div>
-      )}
-    </div>
+        </main>
+
+        <footer className="login-footer">
+          <span>© {new Date().getFullYear()} Academia · Campus Virtual</span>
+          <span>Términos y servicios</span>
+        </footer>
+
+        {showForgotModal && (
+          <div
+            onClick={() => { if (!forgotLoading) { setShowForgotModal(false); setForgotMessage(null); } }}
+            style={{ position: 'fixed', inset: 0, background: 'rgba(10,20,14,0.75)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 20, fontFamily: "'Poppins', system-ui, sans-serif" }}
+          >
+            <div
+              onClick={(e) => e.stopPropagation()}
+              style={{ background: '#0e2318', border: '1px solid rgba(74,222,128,0.25)', color: '#fff', width: '100%', maxWidth: 420, borderRadius: 16, padding: 28, boxShadow: '0 20px 50px rgba(0,0,0,0.5)' }}
+            >
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10 }}>
+                <h3 style={{ fontSize: 20, fontWeight: 800, color: '#fff', margin: 0, letterSpacing: '-0.02em' }}>
+                  Recuperar contraseña
+                </h3>
+                <button
+                  type="button"
+                  onClick={() => { if (!forgotLoading) { setShowForgotModal(false); setForgotMessage(null); } }}
+                  style={{ background: 'none', border: 'none', fontSize: 22, color: 'rgba(255,255,255,.5)', cursor: 'pointer', lineHeight: 1, padding: 0 }}
+                  aria-label="Cerrar"
+                >
+                  ×
+                </button>
+              </div>
+              <p style={{ fontSize: 13, color: 'rgba(255,255,255,.6)', margin: '0 0 20px 0', lineHeight: 1.5 }}>
+                Ingresá tu email y te enviaremos una nueva contraseña provisoria. Podrás cambiarla desde tu perfil al ingresar.
+              </p>
+
+              {forgotMessage && (
+                <div style={{
+                  marginBottom: 16, padding: '10px 14px', borderRadius: 8, fontSize: 12,
+                  background: forgotMessage.type === 'success' ? 'rgba(34,197,94,0.12)' : 'rgba(220,38,38,0.12)',
+                  color:      forgotMessage.type === 'success' ? '#86efac' : '#fca5a5',
+                  border:     forgotMessage.type === 'success' ? '1px solid rgba(34,197,94,0.3)' : '1px solid rgba(220,38,38,0.3)',
+                }}>
+                  {forgotMessage.text}
+                </div>
+              )}
+
+              <form onSubmit={handleForgotPassword}>
+                <label style={{ display: 'block', fontSize: 10, fontWeight: 600, color: 'rgba(255,255,255,.5)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.18em' }}>
+                  Email
+                </label>
+                <input
+                  type="email"
+                  value={forgotEmail}
+                  onChange={(e) => setForgotEmail(e.target.value)}
+                  placeholder="tu@email.com"
+                  autoFocus
+                  required
+                  disabled={forgotLoading}
+                  style={{ width: '100%', padding: '12px 14px', border: '1.5px solid rgba(255,255,255,0.15)', borderRadius: 10, fontSize: 14, outline: 'none', background: 'rgba(0,0,0,0.2)', color: '#fff', fontFamily: 'inherit' }}
+                />
+
+                <div style={{ display: 'flex', gap: 10, marginTop: 20 }}>
+                  <button
+                    type="button"
+                    onClick={() => { setShowForgotModal(false); setForgotMessage(null); }}
+                    disabled={forgotLoading}
+                    style={{ flex: 1, padding: '12px', background: 'transparent', color: 'rgba(255,255,255,.7)', border: '1.5px solid rgba(255,255,255,0.15)', borderRadius: 30, fontSize: 12, fontWeight: 600, cursor: forgotLoading ? 'not-allowed' : 'pointer', fontFamily: 'inherit', letterSpacing: '0.08em', textTransform: 'uppercase' }}
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={forgotLoading}
+                    style={{ flex: 1, padding: '12px', background: 'linear-gradient(135deg, #22c55e 0%, #4ade80 100%)', color: '#0e2318', border: 'none', borderRadius: 30, fontSize: 12, fontWeight: 700, cursor: forgotLoading ? 'not-allowed' : 'pointer', fontFamily: 'inherit', letterSpacing: '0.12em', textTransform: 'uppercase', opacity: forgotLoading ? 0.7 : 1 }}
+                  >
+                    {forgotLoading ? 'Enviando...' : 'Enviar'}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+      </div>
+    </>
   );
 }
