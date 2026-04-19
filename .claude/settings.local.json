@@ -46,7 +46,12 @@
       "Bash(git commit -m 'feat: auto-calculate USD column in courses table using dolar blue:*)",
       "Bash(grep -ln \"compra\\\\|notif\\\\|COMPRA\\\\|acaba\\\\|setTimeout\\\\|setInterval\" /c/Users/vicki/Documents/GitHub/Excel-test/public_html/a-libraries/js/*.js)",
       "WebFetch(domain:ar.pinterest.com)",
-      "WebFetch(domain:www.youtube.com)"
+      "WebFetch(domain:www.youtube.com)",
+      "mcp__Claude_Preview__preview_start",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:3000/)",
+      "Bash(curl -s http://localhost:3000/)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:5173/)",
+      "Bash(npx vite *)"
     ]
   }
 }

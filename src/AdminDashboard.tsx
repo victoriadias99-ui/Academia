@@ -2,7 +2,8 @@ import React, { useState, useEffect, useRef } from "react";
 import {
   LayoutDashboard, Users, BookOpen, PlayCircle, DollarSign, LogOut, Search, Plus, X,
   CheckCircle2, AlertCircle, ShieldCheck, ShieldX, Calendar, Edit2, Trash2,
-  FileText, Link2, MessageSquare, Upload, FolderOpen
+  FileText, Link2, MessageSquare, Upload, FolderOpen, Bug, AlertTriangle, ShieldAlert,
+  ChevronDown, ChevronRight
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 
@@ -84,6 +85,56 @@ const LATAM_PAISES = [
 interface Lesson { id: number; titulo: string; vimeo_id: string; duracion: number; preview: boolean; orden: number; }
 interface Recurso { id: number; curso_id: string; tipo: "pdf" | "link" | "comentario"; titulo: string; contenido: string; created_at: string; }
 
+type IssueCriticidad = "critica" | "alta" | "media" | "baja";
+type IssueTipo = "bug" | "error" | "warning" | "seguridad" | "performance";
+type IssueOrigen = "academia" | "landing";
+interface Issue {
+  id: string;
+  titulo: string;
+  archivo: string;
+  detalles: string;
+  criticidad: IssueCriticidad;
+  tipo: IssueTipo;
+  origen: IssueOrigen;
+}
+
+const ISSUES_CATALOG: Issue[] = [
+  // ── Academia ─────────────────────────────────────────────────────────────
+  { id: "SEC-001", titulo: "JWT secret hardcodeado y débil", archivo: "server_jwt.ts:9", detalles: "JWT_SECRET está hardcodeado como 'academia-excel-jwt-secret-2024' sin variable de entorno. Un atacante puede forjar tokens de admin.", criticidad: "critica", tipo: "seguridad", origen: "academia" },
+  { id: "SEC-002", titulo: "Token de Vimeo expuesto en el repositorio", archivo: "server_jwt.ts:240", detalles: "VIMEO_TOKEN con valor por defecto hardcodeado. Cualquiera con acceso al repo puede consumir la cuenta de Vimeo.", criticidad: "critica", tipo: "seguridad", origen: "academia" },
+  { id: "SEC-006", titulo: "Webhook /api/webhook/purchase sin HMAC", archivo: "server_jwt.ts:984-988", detalles: "El webhook valida un header plano en lugar de firma HMAC-SHA256. Permite replay y falsificación de compras.", criticidad: "critica", tipo: "seguridad", origen: "academia" },
+  { id: "BUG-004", titulo: "Progreso de lecciones sin validar acceso al curso", archivo: "server_jwt.ts:724-747", detalles: "POST /api/cursos/progreso no verifica que el usuario tenga el curso. Un alumno puede marcar lecciones de cursos que no compró.", criticidad: "critica", tipo: "seguridad", origen: "academia" },
+  { id: "SEC-003", titulo: "Email de admin hardcodeado", archivo: "server_jwt.ts:53, usuarios.json:4", detalles: "victoria.pdias99@gmail.com aparece hardcodeado como admin. Expone la cuenta principal al público del repo.", criticidad: "alta", tipo: "seguridad", origen: "academia" },
+  { id: "SEC-005", titulo: "Login acepta contraseña en texto plano (legacy)", archivo: "server_jwt.ts:332-341", detalles: "Fallback para passwords sin hash sigue activo. Un atacante con acceso a la BD podría autenticarse directamente.", criticidad: "alta", tipo: "seguridad", origen: "academia" },
+  { id: "SEC-004", titulo: "SQL update dinámico con field-keys sin lista blanca", archivo: "server_jwt.ts:188-194", detalles: "updateUserField concatena claves al SET. Si las keys vinieran de input, habría inyección SQL.", criticidad: "alta", tipo: "seguridad", origen: "academia" },
+  { id: "PERF-003", titulo: "GET /api/admin/usuarios sin paginación", archivo: "AdminDashboard.tsx:206", detalles: "Devuelve todos los alumnos en una sola respuesta. A miles de filas puede colgar el navegador.", criticidad: "alta", tipo: "performance", origen: "academia" },
+  { id: "BUG-002", titulo: "useEffect carga Google Fonts sin array de deps", archivo: "App.tsx:941-946", detalles: "El efecto se ejecuta en cada render e inyecta un nuevo <link>. Memory leak y duplicación de nodos.", criticidad: "media", tipo: "bug", origen: "academia" },
+  { id: "BUG-001", titulo: "useEffect principal no incluye selectedRecursoCursoId", archivo: "AdminDashboard.tsx:166-172", detalles: "Cambiar de curso en la pestaña Recursos no dispara el refetch porque la dep falta.", criticidad: "media", tipo: "bug", origen: "academia" },
+  { id: "PERF-001", titulo: "authFetch sin AbortController ni timeout", archivo: "App.tsx:49, AdminDashboard.tsx:11", detalles: "Si el backend no responde, las requests quedan colgadas y el UI se traba.", criticidad: "media", tipo: "warning", origen: "academia" },
+  { id: "TYPE-001", titulo: "Uso excesivo de 'any' en server_jwt.ts", archivo: "server_jwt.ts:17,25,29,35", detalles: "Anula la seguridad de tipos. Refactorear a interfaces para req/res y usuarios.", criticidad: "media", tipo: "warning", origen: "academia" },
+  { id: "BUG-003", titulo: "generateId con Math.random puede colisionar", archivo: "server_jwt.ts:814", detalles: "Math.random()*2e9 no es criptográfico. Riesgo de colisión y de predicción de IDs.", criticidad: "media", tipo: "bug", origen: "academia" },
+  { id: "ACC-001", titulo: "Links de PDF sin validación MIME", archivo: "App.tsx:618", detalles: "La descarga confía en la extensión. Un admin podría subir un archivo con MIME distinto.", criticidad: "media", tipo: "seguridad", origen: "academia" },
+  { id: "ACC-002", titulo: "Imágenes de cursos con alt posiblemente vacío", archivo: "App.tsx:322", detalles: "Si course.nombre es undefined, el alt queda vacío. Falla WCAG 1.1.1.", criticidad: "baja", tipo: "warning", origen: "academia" },
+  // ── Landing ──────────────────────────────────────────────────────────────
+  { id: "AUTH-001", titulo: "checkAbandonedUser.php sin validación de token", archivo: "checkAbandonedUser.php:21", detalles: "La comprobación de token está comentada y reemplazada por true. Cualquiera accede a emails y teléfonos de ventas abandonadas.", criticidad: "critica", tipo: "seguridad", origen: "landing" },
+  { id: "BACKEND-001", titulo: "Stripe secret key leída desde BD", archivo: "recuperar_carrito.php:60-73", detalles: "La STRIPE_SECRET_KEY se obtiene de la BD y se pasa a Stripe::setApiKey() sin origen validado. Debe ir por env var.", criticidad: "alta", tipo: "seguridad", origen: "landing" },
+  { id: "CRED-001", titulo: "Credenciales MySQL con fallback hardcodeado", archivo: "a-includes/conexion2.php:2-10", detalles: "Si faltan vars de entorno, cae a usuario 'aprendee_admin_argentina'. Riesgo si el deploy olvida el .env.", criticidad: "alta", tipo: "seguridad", origen: "landing" },
+  { id: "COOKIE-001", titulo: "$_COOKIE serializada en BD sin cifrar", archivo: "a-includes/logicparametros.php:135-146", detalles: "Se guardan todas las cookies del visitante en DB en texto claro. Exposición severa si la BD se filtra.", criticidad: "alta", tipo: "seguridad", origen: "landing" },
+  { id: "ARCH-002", titulo: "WordPress antiguo expuesto en /archivos-sin-uso", archivo: "archivos-sin-uso/Basura a revisar/cursemia-oficial/", detalles: "Instalación completa con wp-login.php accesible. Superficie de ataque enorme (CVEs conocidos).", criticidad: "alta", tipo: "seguridad", origen: "landing" },
+  { id: "INJ-001", titulo: "idVenta de $_GET reusado en JSON sin escapar", archivo: "unirse.php:9", detalles: "Aunque se usan prepared statements, el valor se interpola luego en JS y puede producir XSS.", criticidad: "alta", tipo: "seguridad", origen: "landing" },
+  { id: "DEBUG-001", titulo: "Debug bar expuesta con ?dev o ?resetip", archivo: "a-includes/logicparametros.php:175-184", detalles: "Muestra IP, país y estado de caché en producción. Permite enumeración de infraestructura.", criticidad: "media", tipo: "seguridad", origen: "landing" },
+  { id: "NOSEC-001", titulo: "display_errors activable con ?test en unirse.php", archivo: "unirse.php:2-6", detalles: "Un visitante puede forzar errores PHP visibles y filtrar rutas/SQL.", criticidad: "media", tipo: "seguridad", origen: "landing" },
+  { id: "REDIR-001", titulo: "Redirección sin validar REQUEST_URI", archivo: "a-includes/logicparametros.php:153-156", detalles: "Se construye destino con REQUEST_URI sin sanitizar. Puede abrir open-redirect con payloads.", criticidad: "media", tipo: "seguridad", origen: "landing" },
+  { id: "CSRF-001", titulo: "reenviar_credenciales.php sin token CSRF", archivo: "reenviar_credenciales.php", detalles: "Un sitio externo puede disparar reenvíos masivos de credenciales.", criticidad: "media", tipo: "seguridad", origen: "landing" },
+  { id: "PASSWD-001", titulo: "Password temporal con entropía baja (5 bytes)", archivo: "reenviar_credenciales.php:81", detalles: "bin2hex(random_bytes(5)) da 40 bits. Recomendado ≥ 128 bits (16 bytes).", criticidad: "media", tipo: "seguridad", origen: "landing" },
+  { id: "XSS-001", titulo: "URL_FACEBOOK_GROUP proveniente de JSON sin whitelistear esquema", archivo: "unirse_n.php:85", detalles: "Si la URL almacenada arranca con javascript:/data:, el htmlspecialchars no impide ejecución al hacer click.", criticidad: "media", tipo: "seguridad", origen: "landing" },
+  { id: "ARCHI-001", titulo: "Archivo HTML con nombre aleatorio en root", archivo: "1hyjy51eksumvhiobbq2q19o34qzix.html", detalles: "Nombre sospechoso (posible verificación de dominio o shell). Auditar y eliminar si no se reconoce.", criticidad: "media", tipo: "warning", origen: "landing" },
+  { id: "FB-PIXEL-001", titulo: "Facebook Pixel sin SRI", archivo: "unirse.php:149, unirse_n.php:121", detalles: "Script externo sin integrity hash. Si la CDN se compromete, se ejecuta código arbitrario.", criticidad: "media", tipo: "warning", origen: "landing" },
+  { id: "API-001", titulo: "api-precios.php con CORS *", archivo: "api-precios.php:5", detalles: "Permite consumo desde cualquier origen. Bajo impacto pero habilita scraping fácil.", criticidad: "baja", tipo: "seguridad", origen: "landing" },
+  { id: "HTACCESS-001", titulo: "CSP sólo con upgrade-insecure-requests", archivo: ".htaccess:5", detalles: "Falta default-src/script-src. No protege contra XSS inyectado.", criticidad: "baja", tipo: "warning", origen: "landing" },
+  { id: "IMG-001", titulo: "Imágenes sin atributo alt", archivo: "index.php:64, unirse.php:43", detalles: "Varias <img> sin alt. Afecta accesibilidad (WCAG) y SEO.", criticidad: "baja", tipo: "warning", origen: "landing" },
+];
+
 const Toast = ({ message, type, onClose }: { message: string, type: 'success' | 'error', onClose: () => void }) => {
   useEffect(() => { const t = setTimeout(onClose, 3000); return () => clearTimeout(t); }, [onClose]);
   return (
@@ -142,6 +193,50 @@ export default function AdminDashboard({ onLogout }: { onLogout: () => void }) {
   const [isRecursoModalOpen, setIsRecursoModalOpen] = useState(false);
   const [recursoForm, setRecursoForm] = useState({ tipo: "link" as "pdf" | "link" | "comentario", titulo: "", contenido: "" });
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const [issueOrigen, setIssueOrigen] = useState<"todos" | IssueOrigen>("todos");
+  const [issueCritic, setIssueCritic] = useState<"todas" | IssueCriticidad>("todas");
+  const [issueTipo, setIssueTipo] = useState<"todos" | IssueTipo>("todos");
+  const [expandedIssue, setExpandedIssue] = useState<string | null>(null);
+  const [resolvedIssues, setResolvedIssues] = useState<Record<string, boolean>>(() => {
+    try { return JSON.parse(localStorage.getItem("resolved_issues") || "{}"); } catch { return {}; }
+  });
+  const toggleResolved = (id: string) => {
+    setResolvedIssues(prev => {
+      const next = { ...prev, [id]: !prev[id] };
+      localStorage.setItem("resolved_issues", JSON.stringify(next));
+      return next;
+    });
+  };
+
+  const CRIT_META: Record<IssueCriticidad, { label: string; bg: string; text: string; border: string; order: number }> = {
+    critica: { label: "Crítica", bg: "bg-red-50",    text: "text-red-700",    border: "border-red-200",    order: 0 },
+    alta:    { label: "Alta",    bg: "bg-orange-50", text: "text-orange-700", border: "border-orange-200", order: 1 },
+    media:   { label: "Media",   bg: "bg-amber-50",  text: "text-amber-700",  border: "border-amber-200",  order: 2 },
+    baja:    { label: "Baja",    bg: "bg-sky-50",    text: "text-sky-700",    border: "border-sky-200",    order: 3 },
+  };
+  const TIPO_META: Record<IssueTipo, { label: string; Icon: any }> = {
+    bug:         { label: "Bug",         Icon: Bug },
+    error:       { label: "Error",       Icon: AlertCircle },
+    warning:     { label: "Warning",     Icon: AlertTriangle },
+    seguridad:   { label: "Seguridad",   Icon: ShieldAlert },
+    performance: { label: "Performance", Icon: AlertTriangle },
+  };
+
+  const filteredIssues = ISSUES_CATALOG
+    .filter(i => issueOrigen === "todos" || i.origen === issueOrigen)
+    .filter(i => issueCritic === "todas" || i.criticidad === issueCritic)
+    .filter(i => issueTipo === "todos" || i.tipo === issueTipo)
+    .sort((a, b) => CRIT_META[a.criticidad].order - CRIT_META[b.criticidad].order);
+
+  const issueCounts = {
+    critica: ISSUES_CATALOG.filter(i => i.criticidad === "critica" && !resolvedIssues[i.id]).length,
+    alta:    ISSUES_CATALOG.filter(i => i.criticidad === "alta" && !resolvedIssues[i.id]).length,
+    media:   ISSUES_CATALOG.filter(i => i.criticidad === "media" && !resolvedIssues[i.id]).length,
+    baja:    ISSUES_CATALOG.filter(i => i.criticidad === "baja" && !resolvedIssues[i.id]).length,
+    resueltos: Object.values(resolvedIssues).filter(Boolean).length,
+    total: ISSUES_CATALOG.length,
+  };
 
   const fetchDolar = async () => {
     try {
@@ -417,6 +512,7 @@ export default function AdminDashboard({ onLogout }: { onLogout: () => void }) {
     { id: "lecciones", label: "Lecciones", icon: PlayCircle },
     { id: "recursos", label: "Recursos", icon: FolderOpen },
     { id: "ventas", label: "Ventas", icon: DollarSign },
+    { id: "errores", label: "Fix de errores", icon: Bug },
   ];
 
   if (!authChecked) {
@@ -780,6 +876,125 @@ export default function AdminDashboard({ onLogout }: { onLogout: () => void }) {
                     </tbody>
                   </table>
                 </div>
+              </div>
+            </motion.div>
+          )}
+
+          {activeTab === "errores" && (
+            <motion.div key="errores" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="p-8">
+              <header className="mb-6 flex items-start justify-between gap-4 flex-wrap">
+                <div>
+                  <h1 className="text-3xl font-bold text-[#0d2137] flex items-center gap-3"><Bug className="text-[#00a86b]" size={28}/>Fix de errores</h1>
+                  <p className="text-gray-500">Bugs, warnings y riesgos de seguridad detectados en la Academia y la landing de ventas.</p>
+                </div>
+                <div className="text-xs text-gray-500">
+                  Auditoría automática · {ISSUES_CATALOG.length} hallazgos
+                </div>
+              </header>
+
+              <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-6">
+                {([
+                  { key: "critica", label: "Críticas", color: "red" },
+                  { key: "alta", label: "Altas", color: "orange" },
+                  { key: "media", label: "Medias", color: "amber" },
+                  { key: "baja", label: "Bajas", color: "sky" },
+                ] as const).map(c => (
+                  <div key={c.key} className={`bg-white p-4 rounded-lg border border-[#dee2e6] shadow-sm`}>
+                    <div className={`text-xs font-semibold uppercase tracking-wider text-${c.color}-600`}>{c.label}</div>
+                    <div className="text-2xl font-bold text-[#0d2137] mt-1">{issueCounts[c.key]}</div>
+                  </div>
+                ))}
+                <div className="bg-[#00a86b]/10 p-4 rounded-lg border border-[#00a86b]/30">
+                  <div className="text-xs font-semibold uppercase tracking-wider text-[#1a5c4a]">Resueltos</div>
+                  <div className="text-2xl font-bold text-[#1a5c4a] mt-1">{issueCounts.resueltos}/{issueCounts.total}</div>
+                </div>
+              </div>
+
+              <div className="bg-white rounded-lg border border-[#dee2e6] shadow-sm p-4 mb-4 flex flex-wrap gap-3">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-medium text-gray-500">Origen:</span>
+                  {(["todos","academia","landing"] as const).map(o => (
+                    <button key={o} onClick={() => setIssueOrigen(o)}
+                      className={`px-3 py-1 rounded-full text-xs font-medium border transition-all ${issueOrigen===o ? "bg-[#1a5c4a] text-white border-[#1a5c4a]" : "bg-white text-gray-600 border-[#dee2e6] hover:border-gray-400"}`}>
+                      {o === "todos" ? "Todos" : o === "academia" ? "Academia" : "Landing ventas"}
+                    </button>
+                  ))}
+                </div>
+                <div className="w-px bg-[#dee2e6]" />
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-medium text-gray-500">Criticidad:</span>
+                  {(["todas","critica","alta","media","baja"] as const).map(c => (
+                    <button key={c} onClick={() => setIssueCritic(c)}
+                      className={`px-3 py-1 rounded-full text-xs font-medium border transition-all ${issueCritic===c ? "bg-[#1a5c4a] text-white border-[#1a5c4a]" : "bg-white text-gray-600 border-[#dee2e6] hover:border-gray-400"}`}>
+                      {c === "todas" ? "Todas" : CRIT_META[c].label}
+                    </button>
+                  ))}
+                </div>
+                <div className="w-px bg-[#dee2e6]" />
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-medium text-gray-500">Tipo:</span>
+                  {(["todos","bug","error","warning","seguridad","performance"] as const).map(t => (
+                    <button key={t} onClick={() => setIssueTipo(t)}
+                      className={`px-3 py-1 rounded-full text-xs font-medium border transition-all ${issueTipo===t ? "bg-[#1a5c4a] text-white border-[#1a5c4a]" : "bg-white text-gray-600 border-[#dee2e6] hover:border-gray-400"}`}>
+                      {t === "todos" ? "Todos" : TIPO_META[t].label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                {filteredIssues.length === 0 && (
+                  <div className="bg-white rounded-lg border border-[#dee2e6] p-8 text-center text-gray-400">No hay hallazgos con estos filtros.</div>
+                )}
+                {filteredIssues.map(issue => {
+                  const crit = CRIT_META[issue.criticidad];
+                  const TipoIcon = TIPO_META[issue.tipo].Icon;
+                  const resolved = !!resolvedIssues[issue.id];
+                  const expanded = expandedIssue === issue.id;
+                  return (
+                    <div key={issue.id}
+                      className={`bg-white rounded-lg border shadow-sm transition-all ${resolved ? "border-[#dee2e6] opacity-60" : crit.border}`}>
+                      <button
+                        onClick={() => setExpandedIssue(expanded ? null : issue.id)}
+                        className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-gray-50 transition-colors">
+                        {expanded ? <ChevronDown size={18} className="text-gray-400 shrink-0"/> : <ChevronRight size={18} className="text-gray-400 shrink-0"/>}
+                        <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${crit.bg} ${crit.text} ${crit.border} border shrink-0`}>
+                          {crit.label}
+                        </span>
+                        <span className="flex items-center gap-1 text-xs text-gray-500 shrink-0">
+                          <TipoIcon size={14}/>{TIPO_META[issue.tipo].label}
+                        </span>
+                        <span className="text-[10px] font-mono text-gray-400 shrink-0">{issue.id}</span>
+                        <span className={`px-2 py-0.5 rounded text-[10px] font-semibold shrink-0 ${issue.origen==="academia" ? "bg-[#00a86b]/15 text-[#1a5c4a]" : "bg-indigo-50 text-indigo-700"}`}>
+                          {issue.origen === "academia" ? "Academia" : "Landing"}
+                        </span>
+                        <span className={`flex-1 font-medium ${resolved ? "line-through text-gray-400" : "text-[#0d2137]"}`}>{issue.titulo}</span>
+                        <span className="text-[11px] font-mono text-gray-400 truncate max-w-[240px] hidden md:block">{issue.archivo}</span>
+                      </button>
+                      {expanded && (
+                        <div className="px-4 pb-4 pt-1 border-t border-[#dee2e6] bg-gray-50/50">
+                          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-3 text-sm">
+                            <div className="md:col-span-2">
+                              <div className="text-xs font-semibold uppercase tracking-wider text-gray-500 mb-1">Detalles</div>
+                              <p className="text-gray-700 leading-relaxed">{issue.detalles}</p>
+                            </div>
+                            <div className="space-y-3">
+                              <div>
+                                <div className="text-xs font-semibold uppercase tracking-wider text-gray-500 mb-1">Ubicación</div>
+                                <code className="text-xs bg-white border border-[#dee2e6] rounded px-2 py-1 block break-all">{issue.archivo}</code>
+                              </div>
+                              <button
+                                onClick={() => toggleResolved(issue.id)}
+                                className={`w-full px-3 py-2 rounded-md text-sm font-medium border transition-all ${resolved ? "bg-white text-gray-500 border-[#dee2e6] hover:bg-gray-100" : "bg-[#00a86b] text-white border-[#00a86b] hover:bg-[#008f5a]"}`}>
+                                {resolved ? "Reabrir" : "Marcar como resuelto"}
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             </motion.div>
           )}
