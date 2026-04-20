@@ -1010,10 +1010,12 @@ function LoginView({ onLoginSuccess }: { onLoginSuccess: (role: string, usuario:
         .login-header-help { font-size: 12px; color: rgba(255,255,255,0.5); }
         .login-header-help a { color: rgba(255,255,255,0.85); text-decoration: none; font-weight: 500; border-bottom: 1px solid rgba(255,255,255,0.2); padding-bottom: 1px; transition: border-color .2s; }
         .login-header-help a:hover { border-color: #4ade80; color: #4ade80; }
-        .login-main { flex: 1; display: grid; grid-template-columns: 1fr 1fr; gap: 60px; align-items: center; padding: 20px 80px 60px; position: relative; z-index: 2; max-width: 1200px; margin: 0 auto; width: 100%; }
-        .art-side { position: relative; aspect-ratio: 1; max-width: 500px; margin: 0 auto; width: 100%; border-radius: 24px; overflow: hidden; box-shadow: 0 30px 60px -20px rgba(0,0,0,0.55), 0 0 0 1px rgba(74,222,128,0.18); }
+        .login-main { flex: 1; display: grid; grid-template-columns: 1fr 1fr; gap: 0; align-items: stretch; padding: 0; position: relative; z-index: 2; width: 100%; }
+        .login-main > .art-side { align-self: stretch; }
+        .login-main > .form-side { padding: 40px 80px; align-self: center; }
+        .art-side { position: relative; width: 100%; height: 100%; min-height: 600px; overflow: hidden; box-shadow: 0 0 0 1px rgba(74,222,128,0.12); }
         .art-img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; }
-        .art-frost { position: absolute; inset: 0; background: rgba(255,255,255,0.28); backdrop-filter: blur(6px) saturate(110%); -webkit-backdrop-filter: blur(6px) saturate(110%); border: 1px solid rgba(255,255,255,0.25); border-radius: inherit; }
+        .art-frost { position: absolute; inset: 0; background: linear-gradient(135deg, rgba(255,255,255,0.18), rgba(255,255,255,0.08)); border: 1px solid rgba(255,255,255,0.22); border-radius: inherit; pointer-events: none; }
         .rings { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; }
         .ring { position: absolute; border-radius: 50%; border: 1px solid rgba(74,222,128,0.12); animation: pulseRing 6s ease-in-out infinite; }
         .ring.r1 { width: 100%; height: 100%; }
