@@ -997,7 +997,7 @@ function LoginView({ onLoginSuccess }: { onLoginSuccess: (role: string, usuario:
   return (
     <>
       <style>{`
-        .login-root { font-family: 'Poppins', system-ui, sans-serif; min-height: 100vh; display: flex; flex-direction: column; color: #fff; position: relative; overflow-x: hidden;
+        .login-root { font-family: 'Poppins', system-ui, sans-serif; height: 100vh; display: flex; flex-direction: column; color: #fff; position: relative; overflow: hidden;
           background: radial-gradient(circle at 15% 20%, rgba(34,197,94,0.10), transparent 55%), radial-gradient(circle at 85% 80%, rgba(74,222,128,0.08), transparent 50%), linear-gradient(135deg, #0a1f14 0%, #0e2318 50%, #14352a 100%); }
         .login-root * { box-sizing: border-box; }
         .login-bubble { position: absolute; border-radius: 50%; pointer-events: none; background: radial-gradient(circle, rgba(74,222,128,0.10), transparent 70%); filter: blur(20px); }
