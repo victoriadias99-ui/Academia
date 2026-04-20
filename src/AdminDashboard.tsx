@@ -3,7 +3,7 @@ import {
   LayoutDashboard, Users, BookOpen, PlayCircle, DollarSign, LogOut, Search, Plus, X,
   CheckCircle2, AlertCircle, ShieldCheck, ShieldX, Calendar, Edit2, Trash2,
   FileText, Link2, MessageSquare, Upload, FolderOpen, Bug, AlertTriangle, ShieldAlert,
-  ChevronDown, ChevronRight
+  ChevronDown, ChevronRight, LifeBuoy, Mail, Phone
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 
@@ -194,6 +194,28 @@ export default function AdminDashboard({ onLogout }: { onLogout: () => void }) {
   const [recursoForm, setRecursoForm] = useState({ tipo: "link" as "pdf" | "link" | "comentario", titulo: "", contenido: "" });
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const [supportTickets, setSupportTickets] = useState<Array<{ id: number; nombre: string; email: string; telefono: string; consulta: string; estado: 'pendiente' | 'resuelto'; created_at: string }>>([]);
+  const [supportFilter, setSupportFilter] = useState<'todos' | 'pendiente' | 'resuelto'>('pendiente');
+  const fetchSupportTickets = async () => {
+    try {
+      const res = await authFetch('/api/admin/soporte');
+      if (res.ok) { const data = await res.json(); setSupportTickets(data.tickets || []); }
+    } catch { console.error('Error cargando tickets de soporte'); }
+  };
+  const updateTicketEstado = async (id: number, estado: 'pendiente' | 'resuelto') => {
+    try {
+      const res = await authFetch(`/api/admin/soporte/${id}`, { method: 'PATCH', body: JSON.stringify({ estado }) });
+      if (res.ok) { setToast({ message: estado === 'resuelto' ? '✓ Ticket marcado como resuelto' : '↺ Ticket marcado como pendiente', type: 'success' }); fetchSupportTickets(); }
+    } catch { setToast({ message: 'Error de conexión', type: 'error' }); }
+  };
+  const deleteTicket = async (id: number) => {
+    if (!confirm('¿Eliminar esta consulta de soporte?')) return;
+    try {
+      const res = await authFetch(`/api/admin/soporte/${id}`, { method: 'DELETE' });
+      if (res.ok) { setToast({ message: '✓ Consulta eliminada', type: 'success' }); fetchSupportTickets(); }
+    } catch { setToast({ message: 'Error de conexión', type: 'error' }); }
+  };
+
   const [issueOrigen, setIssueOrigen] = useState<"todos" | IssueOrigen>("todos");
   const [issueCritic, setIssueCritic] = useState<"todas" | IssueCriticidad>("todas");
   const [issueTipo, setIssueTipo] = useState<"todos" | IssueTipo>("todos");
@@ -264,6 +286,7 @@ export default function AdminDashboard({ onLogout }: { onLogout: () => void }) {
     if (activeTab === "cursos") { fetchCourses(); fetchDolar(); }
     if (activeTab === "lecciones") { fetchCourses(); if (selectedCourseId) fetchLessons(selectedCourseId); }
     if (activeTab === "recursos") { fetchCourses(); if (selectedRecursoCursoId) fetchRecursos(selectedRecursoCursoId); }
+    if (activeTab === "soporte") fetchSupportTickets();
   }, [activeTab, selectedCourseId]);
 
   const checkAuth = async () => {
@@ -512,6 +535,7 @@ export default function AdminDashboard({ onLogout }: { onLogout: () => void }) {
     { id: "lecciones", label: "Lecciones", icon: PlayCircle },
     { id: "recursos", label: "Recursos", icon: FolderOpen },
     { id: "ventas", label: "Ventas", icon: DollarSign },
+    { id: "soporte", label: "Soporte", icon: LifeBuoy },
     { id: "errores", label: "Fix de errores", icon: Bug },
   ];
 
@@ -876,6 +900,75 @@ export default function AdminDashboard({ onLogout }: { onLogout: () => void }) {
                     </tbody>
                   </table>
                 </div>
+              </div>
+            </motion.div>
+          )}
+
+          {activeTab === "soporte" && (
+            <motion.div key="soporte" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="p-8">
+              <header className="mb-6 flex items-start justify-between gap-4 flex-wrap">
+                <div>
+                  <h1 className="text-3xl font-bold text-[#0d2137]">Soporte</h1>
+                  <p className="text-gray-500">Consultas recibidas desde la página de login</p>
+                </div>
+                <div className="flex gap-2">
+                  {(['pendiente', 'resuelto', 'todos'] as const).map(f => {
+                    const count = f === 'todos' ? supportTickets.length : supportTickets.filter(t => t.estado === f).length;
+                    return (
+                      <button key={f} onClick={() => setSupportFilter(f)}
+                        className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${supportFilter === f ? 'bg-[#1a5c4a] text-white' : 'bg-white border border-[#dee2e6] text-gray-700 hover:bg-gray-50'}`}>
+                        {f === 'pendiente' ? 'Pendientes' : f === 'resuelto' ? 'Resueltas' : 'Todas'} ({count})
+                      </button>
+                    );
+                  })}
+                </div>
+              </header>
+              <div className="space-y-3">
+                {supportTickets.filter(t => supportFilter === 'todos' || t.estado === supportFilter).length === 0 ? (
+                  <div className="bg-white rounded-lg border border-[#dee2e6] shadow-sm p-12 text-center text-gray-500">
+                    <LifeBuoy size={40} className="mx-auto mb-3 text-gray-300" />
+                    No hay consultas {supportFilter === 'pendiente' ? 'pendientes' : supportFilter === 'resuelto' ? 'resueltas' : ''}.
+                  </div>
+                ) : supportTickets.filter(t => supportFilter === 'todos' || t.estado === supportFilter).map(t => (
+                  <div key={t.id} className={`bg-white rounded-lg border shadow-sm p-5 ${t.estado === 'resuelto' ? 'border-[#dee2e6] opacity-70' : 'border-[#00a86b]/30'}`}>
+                    <div className="flex items-start justify-between gap-4 flex-wrap mb-3">
+                      <div className="flex items-center gap-3">
+                        <div className={`w-10 h-10 rounded-full flex items-center justify-center ${t.estado === 'resuelto' ? 'bg-gray-100 text-gray-500' : 'bg-[#00a86b]/10 text-[#00a86b]'}`}>
+                          <LifeBuoy size={18} />
+                        </div>
+                        <div>
+                          <div className="font-bold text-[#0d2137]">{t.nombre}</div>
+                          <div className="text-xs text-gray-500">{new Date(t.created_at).toLocaleString('es-AR')}</div>
+                        </div>
+                      </div>
+                      <span className={`text-[11px] font-semibold px-3 py-1 rounded-full uppercase tracking-wider ${t.estado === 'resuelto' ? 'bg-gray-100 text-gray-600' : 'bg-orange-100 text-orange-700'}`}>
+                        {t.estado === 'resuelto' ? 'Resuelto' : 'Pendiente'}
+                      </span>
+                    </div>
+                    <div className="flex flex-wrap gap-x-5 gap-y-1 text-sm text-gray-600 mb-3">
+                      <a href={`mailto:${t.email}`} className="flex items-center gap-1.5 hover:text-[#00a86b]"><Mail size={14} />{t.email}</a>
+                      {t.telefono && <a href={`tel:${t.telefono}`} className="flex items-center gap-1.5 hover:text-[#00a86b]"><Phone size={14} />{t.telefono}</a>}
+                    </div>
+                    <div className="bg-gray-50 rounded-md p-3 text-sm text-gray-700 whitespace-pre-wrap mb-3">{t.consulta}</div>
+                    <div className="flex gap-2 flex-wrap">
+                      {t.estado === 'pendiente' ? (
+                        <button onClick={() => updateTicketEstado(t.id, 'resuelto')} className="px-4 py-2 rounded-md bg-[#00a86b] text-white text-sm font-medium hover:bg-[#008f5a] flex items-center gap-1.5">
+                          <CheckCircle2 size={16} /> Marcar como resuelta
+                        </button>
+                      ) : (
+                        <button onClick={() => updateTicketEstado(t.id, 'pendiente')} className="px-4 py-2 rounded-md bg-white border border-[#dee2e6] text-gray-700 text-sm font-medium hover:bg-gray-50">
+                          Reabrir
+                        </button>
+                      )}
+                      <a href={`mailto:${t.email}?subject=Re: tu consulta en Academia`} className="px-4 py-2 rounded-md bg-white border border-[#dee2e6] text-gray-700 text-sm font-medium hover:bg-gray-50 flex items-center gap-1.5">
+                        <Mail size={16} /> Responder
+                      </a>
+                      <button onClick={() => deleteTicket(t.id)} className="px-4 py-2 rounded-md bg-white border border-red-200 text-red-600 text-sm font-medium hover:bg-red-50 flex items-center gap-1.5 ml-auto">
+                        <Trash2 size={16} /> Eliminar
+                      </button>
+                    </div>
+                  </div>
+                ))}
               </div>
             </motion.div>
           )}

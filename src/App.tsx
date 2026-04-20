@@ -888,6 +888,38 @@ function LoginView({ onLoginSuccess }: { onLoginSuccess: (role: string, usuario:
   const [forgotEmail, setForgotEmail] = useState('');
   const [forgotLoading, setForgotLoading] = useState(false);
   const [forgotMessage, setForgotMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
+  const [showSupportModal, setShowSupportModal] = useState(false);
+  const [supportForm, setSupportForm] = useState({ nombre: '', email: '', telefono: '', consulta: '' });
+  const [supportLoading, setSupportLoading] = useState(false);
+  const [supportMessage, setSupportMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
+
+  const handleSupportSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const { nombre, email, telefono, consulta } = supportForm;
+    if (!nombre.trim() || !email.trim() || !consulta.trim()) {
+      setSupportMessage({ type: 'error', text: 'Nombre, email y consulta son obligatorios.' });
+      return;
+    }
+    setSupportLoading(true);
+    setSupportMessage(null);
+    try {
+      const res = await authFetch('/api/soporte', {
+        method: 'POST',
+        body: JSON.stringify({ nombre: nombre.trim(), email: email.trim(), telefono: telefono.trim(), consulta: consulta.trim() }),
+      });
+      if (res.ok) {
+        setSupportMessage({ type: 'success', text: 'Recibimos tu consulta. Te vamos a responder pronto.' });
+        setSupportForm({ nombre: '', email: '', telefono: '', consulta: '' });
+      } else {
+        const data = await res.json().catch(() => ({}));
+        setSupportMessage({ type: 'error', text: data.error || 'No se pudo enviar la consulta.' });
+      }
+    } catch {
+      setSupportMessage({ type: 'error', text: 'Error de conexión. Intentá más tarde.' });
+    } finally {
+      setSupportLoading(false);
+    }
+  };
 
   const handleForgotPassword = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -1010,6 +1042,8 @@ function LoginView({ onLoginSuccess }: { onLoginSuccess: (role: string, usuario:
         .login-header-help { font-size: 12px; color: rgba(255,255,255,0.5); }
         .login-header-help a { color: rgba(255,255,255,0.85); text-decoration: none; font-weight: 500; border-bottom: 1px solid rgba(255,255,255,0.2); padding-bottom: 1px; transition: border-color .2s; }
         .login-header-help a:hover { border-color: #4ade80; color: #4ade80; }
+        .support-link { background: none; border: none; padding: 0 0 1px 0; font-family: inherit; font-size: inherit; cursor: pointer; color: rgba(255,255,255,0.85); font-weight: 500; border-bottom: 1px solid rgba(255,255,255,0.2); transition: border-color .2s, color .2s; }
+        .support-link:hover { border-color: #4ade80; color: #4ade80; }
         .login-main { flex: 1; display: flex; align-items: center; justify-content: center; padding: 20px 80px 40px calc(50vw + 60px); position: relative; z-index: 2; width: 100%; }
         .art-side { position: fixed; top: 0; left: 0; bottom: 0; width: 50vw; height: 100vh; overflow: hidden; z-index: 1; }
         .art-img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; }
@@ -1137,7 +1171,7 @@ function LoginView({ onLoginSuccess }: { onLoginSuccess: (role: string, usuario:
             <span className="sub">CAMPUS VIRTUAL</span>
           </div>
           <div className="login-header-help">
-            ¿Necesitás ayuda? <a href="mailto:soporte@aprende-excel.com">Contactá soporte</a>
+            ¿Necesitás ayuda? <button type="button" className="support-link" onClick={() => { setShowSupportModal(true); setSupportMessage(null); }}>Contactá soporte</button>
           </div>
         </header>
 
@@ -1253,6 +1287,65 @@ function LoginView({ onLoginSuccess }: { onLoginSuccess: (role: string, usuario:
                     style={{ flex: 1, padding: '12px', background: 'linear-gradient(135deg, #22c55e 0%, #4ade80 100%)', color: '#0e2318', border: 'none', borderRadius: 30, fontSize: 12, fontWeight: 700, cursor: forgotLoading ? 'not-allowed' : 'pointer', fontFamily: 'inherit', letterSpacing: '0.12em', textTransform: 'uppercase', opacity: forgotLoading ? 0.7 : 1 }}
                   >
                     {forgotLoading ? 'Enviando...' : 'Enviar'}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+
+        {showSupportModal && (
+          <div
+            onClick={() => { if (!supportLoading) { setShowSupportModal(false); setSupportMessage(null); } }}
+            style={{ position: 'fixed', inset: 0, background: 'rgba(10,20,14,0.75)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 20, fontFamily: "'Poppins', system-ui, sans-serif" }}
+          >
+            <div
+              onClick={(e) => e.stopPropagation()}
+              style={{ background: '#0e2318', border: '1px solid rgba(74,222,128,0.25)', color: '#fff', width: '100%', maxWidth: 460, borderRadius: 16, padding: 28, boxShadow: '0 20px 50px rgba(0,0,0,0.5)', maxHeight: '90vh', overflowY: 'auto' }}
+            >
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10 }}>
+                <h3 style={{ fontSize: 20, fontWeight: 800, color: '#fff', margin: 0, letterSpacing: '-0.02em' }}>Contactá soporte</h3>
+                <button type="button" onClick={() => { if (!supportLoading) { setShowSupportModal(false); setSupportMessage(null); } }}
+                  style={{ background: 'none', border: 'none', fontSize: 22, color: 'rgba(255,255,255,.5)', cursor: 'pointer', lineHeight: 1, padding: 0 }} aria-label="Cerrar">×</button>
+              </div>
+              <p style={{ fontSize: 13, color: 'rgba(255,255,255,.6)', margin: '0 0 20px 0', lineHeight: 1.5 }}>
+                Contanos tu consulta y te vamos a responder a la brevedad.
+              </p>
+              {supportMessage && (
+                <div style={{
+                  marginBottom: 16, padding: '10px 14px', borderRadius: 8, fontSize: 12,
+                  background: supportMessage.type === 'success' ? 'rgba(34,197,94,0.12)' : 'rgba(220,38,38,0.12)',
+                  color:      supportMessage.type === 'success' ? '#86efac' : '#fca5a5',
+                  border:     supportMessage.type === 'success' ? '1px solid rgba(34,197,94,0.3)' : '1px solid rgba(220,38,38,0.3)',
+                }}>{supportMessage.text}</div>
+              )}
+              <form onSubmit={handleSupportSubmit}>
+                {([
+                  { key: 'nombre', label: 'Nombre', type: 'text', placeholder: 'Tu nombre', required: true },
+                  { key: 'email', label: 'Email', type: 'email', placeholder: 'tu@email.com', required: true },
+                  { key: 'telefono', label: 'Teléfono', type: 'tel', placeholder: '+54 9 11 1234-5678', required: false },
+                ] as const).map((f) => (
+                  <div key={f.key} style={{ marginBottom: 14 }}>
+                    <label style={{ display: 'block', fontSize: 10, fontWeight: 600, color: 'rgba(255,255,255,.5)', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.18em' }}>{f.label}{f.required ? ' *' : ''}</label>
+                    <input type={f.type} value={(supportForm as any)[f.key]}
+                      onChange={(e) => setSupportForm({ ...supportForm, [f.key]: e.target.value })}
+                      placeholder={f.placeholder} required={f.required} disabled={supportLoading}
+                      style={{ width: '100%', padding: '11px 14px', border: '1.5px solid rgba(255,255,255,0.15)', borderRadius: 10, fontSize: 14, outline: 'none', background: 'rgba(0,0,0,0.2)', color: '#fff', fontFamily: 'inherit' }} />
+                  </div>
+                ))}
+                <div style={{ marginBottom: 14 }}>
+                  <label style={{ display: 'block', fontSize: 10, fontWeight: 600, color: 'rgba(255,255,255,.5)', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.18em' }}>Consulta *</label>
+                  <textarea value={supportForm.consulta}
+                    onChange={(e) => setSupportForm({ ...supportForm, consulta: e.target.value })}
+                    placeholder="Contanos en qué podemos ayudarte..." required disabled={supportLoading} rows={4}
+                    style={{ width: '100%', padding: '11px 14px', border: '1.5px solid rgba(255,255,255,0.15)', borderRadius: 10, fontSize: 14, outline: 'none', background: 'rgba(0,0,0,0.2)', color: '#fff', fontFamily: 'inherit', resize: 'vertical' }} />
+                </div>
+                <div style={{ display: 'flex', gap: 10, marginTop: 20 }}>
+                  <button type="button" onClick={() => { setShowSupportModal(false); setSupportMessage(null); }} disabled={supportLoading}
+                    style={{ flex: 1, padding: '12px', background: 'transparent', color: 'rgba(255,255,255,.7)', border: '1.5px solid rgba(255,255,255,0.15)', borderRadius: 30, fontSize: 12, fontWeight: 600, cursor: supportLoading ? 'not-allowed' : 'pointer', fontFamily: 'inherit', letterSpacing: '0.08em', textTransform: 'uppercase' }}>Cancelar</button>
+                  <button type="submit" disabled={supportLoading}
+                    style={{ flex: 1, padding: '12px', background: 'linear-gradient(135deg, #22c55e 0%, #4ade80 100%)', color: '#0e2318', border: 'none', borderRadius: 30, fontSize: 12, fontWeight: 700, cursor: supportLoading ? 'not-allowed' : 'pointer', fontFamily: 'inherit', letterSpacing: '0.12em', textTransform: 'uppercase', opacity: supportLoading ? 0.7 : 1 }}>
+                    {supportLoading ? 'Enviando...' : 'Enviar consulta'}
                   </button>
                 </div>
               </form>

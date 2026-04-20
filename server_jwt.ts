@@ -130,6 +130,18 @@ async function startServer() {
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )`);
   } catch (e: any) { console.error("Error creando tabla recursos:", e?.message); }
+  // Tabla de tickets de soporte
+  try {
+    await pool.query(`CREATE TABLE IF NOT EXISTS academia_soporte (
+      id BIGINT PRIMARY KEY AUTO_INCREMENT,
+      nombre VARCHAR(255) NOT NULL,
+      email VARCHAR(255) NOT NULL,
+      telefono VARCHAR(50),
+      consulta TEXT NOT NULL,
+      estado ENUM('pendiente','resuelto') NOT NULL DEFAULT 'pendiente',
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )`);
+  } catch (e: any) { console.error("Error creando tabla soporte:", e?.message); }
   // Migrar admins conocidos: crea o actualiza con role='admin'
   if (ADMIN_EMAILS.length > 0) {
     const adminPassword = process.env.ADMIN_PASSWORD;
@@ -589,6 +601,47 @@ async function startServer() {
       const [ventas] = await pool.query(`SELECT * FROM academia_ventas ORDER BY fecha DESC, id DESC`);
       res.json({ ventas });
     } catch { res.status(500).json({ error: "Error al obtener ventas" }); }
+  });
+
+  // ─── SOPORTE (tickets de contacto) ────────────────────────────────
+  app.post("/api/soporte", async (req, res) => {
+    try {
+      const { nombre, email, telefono, consulta } = req.body || {};
+      if (!nombre || !email || !consulta) {
+        return res.status(400).json({ error: "Nombre, email y consulta son obligatorios" });
+      }
+      if (String(nombre).length > 255 || String(email).length > 255 || String(telefono || '').length > 50 || String(consulta).length > 5000) {
+        return res.status(400).json({ error: "Los datos exceden el tamaño permitido" });
+      }
+      await pool.query(
+        `INSERT INTO academia_soporte (nombre, email, telefono, consulta) VALUES (?, ?, ?, ?)`,
+        [String(nombre).trim(), String(email).trim().toLowerCase(), String(telefono || '').trim(), String(consulta).trim()]
+      );
+      res.json({ status: "ok" });
+    } catch (e: any) {
+      console.error("Error creando ticket de soporte:", e?.message);
+      res.status(500).json({ error: "No se pudo registrar la consulta" });
+    }
+  });
+  app.get("/api/admin/soporte", requireAdmin, async (_req, res) => {
+    try {
+      const [tickets] = await pool.query(`SELECT id, nombre, email, telefono, consulta, estado, created_at FROM academia_soporte ORDER BY created_at DESC`);
+      res.json({ tickets });
+    } catch { res.status(500).json({ error: "Error al obtener tickets" }); }
+  });
+  app.patch("/api/admin/soporte/:id", requireAdmin, async (req, res) => {
+    try {
+      const { estado } = req.body || {};
+      if (estado !== 'pendiente' && estado !== 'resuelto') return res.status(400).json({ error: "Estado inválido" });
+      await pool.query(`UPDATE academia_soporte SET estado=? WHERE id=?`, [estado, req.params.id]);
+      res.json({ status: "ok" });
+    } catch { res.status(500).json({ error: "Error al actualizar ticket" }); }
+  });
+  app.delete("/api/admin/soporte/:id", requireAdmin, async (req, res) => {
+    try {
+      await pool.query(`DELETE FROM academia_soporte WHERE id=?`, [req.params.id]);
+      res.json({ status: "ok" });
+    } catch { res.status(500).json({ error: "Error al eliminar ticket" }); }
   });
 
   // ─── PRECIOS PÚBLICOS (sin auth, para la landing) ────────────────
