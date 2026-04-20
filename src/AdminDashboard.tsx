@@ -34,6 +34,34 @@ const VIMEO_TO_SLUG: Record<number, string> = {
   12305086: "powerbi",
   12072965: "powerpoint",
   12073015: "word",
+  14775505: "aleman",
+  12776926: "italiano",
+  16225291: "italiano_intermedio",
+  16790466: "italiano_avanzado",
+  13968526: "frances",
+  12727702: "ingles",
+  12727823: "ingles_intermedio",
+  13968522: "japones",
+};
+
+// Agrupación por academia. Usado por el selector del panel admin.
+const ACADEMIA_EXCEL = "Aprende Excel";
+const ACADEMIA_IDIOMAS = "Aprende Idiomas";
+const IDIOMA_VIMEO_IDS = new Set<number>([
+  14775505, 12776926, 16225291, 16790466, 13968526, 12727702, 12727823, 13968522,
+]);
+const IDIOMA_SLUGS = new Set<string>([
+  "aleman", "italiano", "italiano_intermedio", "italiano_avanzado",
+  "frances", "ingles", "ingles_intermedio", "japones",
+  "pack_italiano_avanzado", "pack_italiano_ingles",
+]);
+const getCourseAcademia = (vimeoId: number): string =>
+  IDIOMA_VIMEO_IDS.has(vimeoId) ? ACADEMIA_IDIOMAS : ACADEMIA_EXCEL;
+const getAcademiaForIdentifier = (id: string): string => {
+  if (IDIOMA_SLUGS.has(id)) return ACADEMIA_IDIOMAS;
+  const n = parseInt(id, 10);
+  if (!isNaN(n) && IDIOMA_VIMEO_IDS.has(n)) return ACADEMIA_IDIOMAS;
+  return ACADEMIA_EXCEL;
 };
 
 // Devuelve el identificador a usar para un curso (slug si existe, ID de Vimeo como string si no)
@@ -171,6 +199,28 @@ export default function AdminDashboard({ onLogout }: { onLogout: () => void }) {
   const [students, setStudents] = useState<Student[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [courses, setCourses] = useState<Course[]>([]);
+  const [academiaFilter, setAcademiaFilter] = useState<string>(() => localStorage.getItem("academiaFilter") || "todas");
+  useEffect(() => { localStorage.setItem("academiaFilter", academiaFilter); }, [academiaFilter]);
+  const filteredCourses = academiaFilter === "todas"
+    ? courses
+    : courses.filter(c => getCourseAcademia(c.id) === academiaFilter);
+  const filteredStudents = academiaFilter === "todas"
+    ? students
+    : students.filter(s => {
+        const ids = (s.cursos_slugs || "").split("|").filter(Boolean);
+        return ids.length > 0 && ids.some(id => getAcademiaForIdentifier(id) === academiaFilter);
+      });
+  const filteredCourseNames = new Set(filteredCourses.map(c => c.nombre));
+  const filteredSales = academiaFilter === "todas"
+    ? recentSales
+    : recentSales.filter(s => filteredCourseNames.has(s.curso));
+  const filteredStats = academiaFilter === "todas"
+    ? stats
+    : {
+        totalAlumnos: filteredStudents.length,
+        alumnosActivos: filteredStudents.filter(s => s.activo).length,
+        cursosActivos: filteredCourses.filter(c => c.activo !== false).length,
+      };
   const [lessons, setLessons] = useState<Lesson[]>([]);
   const [selectedCourseId, setSelectedCourseId] = useState<number | null>(null);
   const [isCourseModalOpen, setIsCourseModalOpen] = useState(false);
@@ -556,7 +606,19 @@ export default function AdminDashboard({ onLogout }: { onLogout: () => void }) {
             <span className="text-[#00a86b] text-[10px] font-bold uppercase tracking-wider mt-1">Admin</span>
           </div>
         </div>
-        <div className="h-[1px] bg-white/15 mx-6 mb-6"></div>
+        <div className="h-[1px] bg-white/15 mx-6 mb-4"></div>
+        <div className="px-6 mb-4">
+          <label className="block text-white/60 text-[10px] font-bold uppercase tracking-wider mb-1.5">Academia</label>
+          <select
+            value={academiaFilter}
+            onChange={(e) => setAcademiaFilter(e.target.value)}
+            className="w-full bg-[#134735] text-white text-sm px-3 py-2 rounded-md border border-white/15 focus:outline-none focus:ring-2 focus:ring-[#00a86b]/50 cursor-pointer"
+          >
+            <option value="todas">Todas</option>
+            <option value={ACADEMIA_EXCEL}>Aprende Excel</option>
+            <option value={ACADEMIA_IDIOMAS}>Aprende Idiomas</option>
+          </select>
+        </div>
         <nav className="flex-1 px-3 space-y-1">
           {menuItems.map((item) => (
             <button key={item.id} onClick={() => setActiveTab(item.id)}
@@ -592,9 +654,9 @@ export default function AdminDashboard({ onLogout }: { onLogout: () => void }) {
               </header>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
                 {[
-                  { label: "Total Alumnos", value: stats?.totalAlumnos, icon: Users },
-                  { label: "Alumnos Activos", value: stats?.alumnosActivos, icon: Users },
-                  { label: "Cursos Activos", value: stats?.cursosActivos, icon: BookOpen },
+                  { label: "Total Alumnos", value: filteredStats?.totalAlumnos, icon: Users },
+                  { label: "Alumnos Activos", value: filteredStats?.alumnosActivos, icon: Users },
+                  { label: "Cursos Activos", value: filteredStats?.cursosActivos, icon: BookOpen },
                 ].map((card) => (
                   <div key={card.label} className="bg-white p-5 rounded-lg border border-[#dee2e6] shadow-sm">
                     <div className="flex items-center justify-between mb-2">
@@ -613,7 +675,7 @@ export default function AdminDashboard({ onLogout }: { onLogout: () => void }) {
                       <tr><th className="px-6 py-4 font-semibold">Email</th><th className="px-6 py-4 font-semibold">Nombre</th><th className="px-6 py-4 font-semibold">Curso</th><th className="px-6 py-4 font-semibold">Monto</th><th className="px-6 py-4 font-semibold">Fecha</th></tr>
                     </thead>
                     <tbody className="divide-y divide-[#dee2e6]">
-                      {recentSales.map((sale, i) => (
+                      {filteredSales.map((sale, i) => (
                         <tr key={i} className="hover:bg-gray-50 transition-colors">
                           <td className="px-6 py-4 text-gray-600">{sale.email}</td>
                           <td className="px-6 py-4 font-medium text-[#0d2137]">{sale.nombre}</td>
@@ -648,9 +710,9 @@ export default function AdminDashboard({ onLogout }: { onLogout: () => void }) {
                       <tr><th className="px-6 py-4 font-semibold">Email</th><th className="px-6 py-4 font-semibold">Nombre</th><th className="px-6 py-4 font-semibold">Cursos asignados</th><th className="px-6 py-4 font-semibold">Rol</th><th className="px-6 py-4 font-semibold">Estado</th><th className="px-6 py-4 font-semibold">Vencimiento</th><th className="px-6 py-4 font-semibold">Acciones</th></tr>
                     </thead>
                     <tbody className="divide-y divide-[#dee2e6]">
-                      {students.map((student, i) => {
+                      {filteredStudents.map((student, i) => {
                         const assignedIds = (student.cursos_slugs || "").split("|").filter(Boolean);
-                        const availableCourses = courses.filter(c => !assignedIds.includes(getCourseIdentifier(c.id)));
+                        const availableCourses = filteredCourses.filter(c => !assignedIds.includes(getCourseIdentifier(c.id)));
                         return (
                         <tr key={i} className="hover:bg-gray-50 transition-colors">
                           <td className="px-6 py-4 text-gray-600 text-sm">{student.email}</td>
@@ -730,7 +792,7 @@ export default function AdminDashboard({ onLogout }: { onLogout: () => void }) {
                       <tr><th className="px-6 py-4 font-semibold">Nombre</th><th className="px-6 py-4 font-semibold">Academia</th><th className="px-6 py-4 font-semibold">Stripe Price ID</th><th className="px-6 py-4 font-semibold">Precio ARS</th><th className="px-6 py-4 font-semibold">Precio USD</th><th className="px-6 py-4 font-semibold">Activo</th><th className="px-6 py-4 font-semibold">Acciones</th></tr>
                     </thead>
                     <tbody className="divide-y divide-[#dee2e6]">
-                      {courses.map((course) => (
+                      {filteredCourses.map((course) => (
                         <tr key={course.id} className="hover:bg-gray-50 transition-colors">
                           <td className="px-6 py-4 font-medium text-[#0d2137]">{course.nombre}</td>
                           <td className="px-6 py-4 text-gray-600">{course.academia || "Aprende Excel"}</td>
@@ -778,7 +840,7 @@ export default function AdminDashboard({ onLogout }: { onLogout: () => void }) {
                 <div className="flex gap-2">
                   <select className="px-4 py-2 rounded-md border border-[#dee2e6] focus:outline-none focus:ring-2 focus:ring-[#00a86b]/50 bg-white" value={selectedCourseId || ""} onChange={(e) => setSelectedCourseId(Number(e.target.value))}>
                     <option value="">Seleccionar curso...</option>
-                    {courses.map(c => (<option key={c.id} value={c.id}>{c.nombre}</option>))}
+                    {filteredCourses.map(c => (<option key={c.id} value={c.id}>{c.nombre}</option>))}
                   </select>
                   <button disabled={!selectedCourseId} onClick={() => { setEditingLesson(null); setLessonForm({ titulo: "", vimeo_id: "", duracion: 0, orden: 0, preview: false }); setIsLessonModalOpen(true); }} className="bg-[#00a86b] text-white px-6 py-2 rounded-md font-medium hover:bg-[#008f5a] transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"><Plus size={20} />Agregar lección</button>
                 </div>
@@ -828,7 +890,7 @@ export default function AdminDashboard({ onLogout }: { onLogout: () => void }) {
                     value={selectedRecursoCursoId}
                     onChange={e => { setSelectedRecursoCursoId(e.target.value); fetchRecursos(e.target.value); }}>
                     <option value="">Seleccionar curso...</option>
-                    {courses.map(c => <option key={c.id} value={c.id.toString()}>{c.nombre}</option>)}
+                    {filteredCourses.map(c => <option key={c.id} value={c.id.toString()}>{c.nombre}</option>)}
                   </select>
                   <button disabled={!selectedRecursoCursoId}
                     onClick={() => { setRecursoForm({ tipo: "link", titulo: "", contenido: "" }); setIsRecursoModalOpen(true); }}
@@ -888,7 +950,7 @@ export default function AdminDashboard({ onLogout }: { onLogout: () => void }) {
                       <tr><th className="px-6 py-4 font-semibold">Email</th><th className="px-6 py-4 font-semibold">Nombre</th><th className="px-6 py-4 font-semibold">Curso</th><th className="px-6 py-4 font-semibold">Monto</th><th className="px-6 py-4 font-semibold">Fecha</th></tr>
                     </thead>
                     <tbody className="divide-y divide-[#dee2e6]">
-                      {recentSales.map((sale, i) => (
+                      {filteredSales.map((sale, i) => (
                         <tr key={i} className="hover:bg-gray-50 transition-colors">
                           <td className="px-6 py-4 text-gray-600">{sale.email}</td>
                           <td className="px-6 py-4 font-medium text-[#0d2137]">{sale.nombre}</td>
