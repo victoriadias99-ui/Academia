@@ -893,6 +893,12 @@ function LoginView({ onLoginSuccess }: { onLoginSuccess: (role: string, usuario:
   const [supportLoading, setSupportLoading] = useState(false);
   const [supportMessage, setSupportMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
 
+  const isIdiomas = typeof window !== 'undefined' && window.location.hostname === 'academia-idiomas.up.railway.app';
+  const ctaGradient = isIdiomas
+    ? 'linear-gradient(135deg, #ec4899 0%, #3b82f6 100%)'
+    : 'linear-gradient(135deg, #22c55e 0%, #4ade80 100%)';
+  const ctaTextColor = isIdiomas ? '#ffffff' : '#0e2318';
+
   const handleSupportSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const { nombre, email, telefono, consulta } = supportForm;
@@ -1150,6 +1156,40 @@ function LoginView({ onLoginSuccess }: { onLoginSuccess: (role: string, usuario:
         .btn-login::before { content: ""; position: absolute; inset: 0; background: linear-gradient(120deg, transparent 30%, rgba(255,255,255,0.4) 50%, transparent 70%); transform: translateX(-100%); transition: transform .8s ease; }
         .btn-login:hover:not(:disabled)::before { transform: translateX(100%); }
         .login-footer { padding: 20px 48px 20px calc(50vw + 48px); display: flex; justify-content: space-between; font-size: 11px; color: rgba(255,255,255,0.35); flex-shrink: 0; position: relative; z-index: 5; }
+        .theme-idiomas.login-root { background: radial-gradient(circle at 15% 20%, rgba(236,72,153,0.10), transparent 55%), radial-gradient(circle at 85% 80%, rgba(59,130,246,0.08), transparent 50%), linear-gradient(135deg, #ffffff 0%, #fafbff 50%, #ffffff 100%); color: #1a0a1f; }
+        .theme-idiomas .login-bubble { background: radial-gradient(circle, rgba(236,72,153,0.12), transparent 70%); }
+        .theme-idiomas .login-header-help { color: rgba(26,10,31,0.55); }
+        .theme-idiomas .login-header-help a,
+        .theme-idiomas .support-link { color: rgba(26,10,31,0.85); border-bottom-color: rgba(26,10,31,0.2); }
+        .theme-idiomas .form-side h1 { color: #1a0a1f; }
+        .theme-idiomas .form-side .lead { color: rgba(26,10,31,0.6); }
+        .theme-idiomas .field label { color: rgba(26,10,31,0.55); }
+        .theme-idiomas .input-wrap { border-bottom-color: rgba(26,10,31,0.15); }
+        .theme-idiomas .input-wrap input { color: #1a0a1f; }
+        .theme-idiomas .input-wrap input::placeholder { color: rgba(26,10,31,0.3); }
+        .theme-idiomas .toggle-pwd { color: rgba(26,10,31,0.4); }
+        .theme-idiomas .forgot button { color: rgba(26,10,31,0.55); }
+        .theme-idiomas .login-footer { color: rgba(26,10,31,0.4); }
+        .theme-idiomas .art-frost { background: linear-gradient(180deg, rgba(255,255,255,0.5) 0%, rgba(255,255,255,0.15) 45%, rgba(255,255,255,0.1) 75%, rgba(255,255,255,0.25) 100%); }
+        .theme-idiomas .login-header-help a:hover,
+        .theme-idiomas .support-link:hover,
+        .theme-idiomas .toggle-pwd:hover,
+        .theme-idiomas .forgot button:hover { color: #ec4899; border-color: #ec4899; }
+        .theme-idiomas .ring { border-color: rgba(236,72,153,0.14); }
+        .theme-idiomas .ring.r2 { border-color: rgba(236,72,153,0.18); }
+        .theme-idiomas .ring.r3 { border-color: rgba(59,130,246,0.24); }
+        .theme-idiomas .art-glow { background: radial-gradient(circle, rgba(236,72,153,0.28) 0%, rgba(59,130,246,0.12) 40%, transparent 70%); }
+        .theme-idiomas .floating-dot { background: #ec4899; box-shadow: 0 0 12px #ec4899; }
+        .theme-idiomas .fd2 { background: #f9a8d4; }
+        .theme-idiomas .fd4 { background: #93c5fd; }
+        .theme-idiomas .scene-label { border-color: rgba(236,72,153,0.35); background: rgba(236,72,153,0.15); }
+        .theme-idiomas .scene-label .accent { color: #ec4899; }
+        .theme-idiomas .welcome-tag { color: #ec4899; }
+        .theme-idiomas .welcome-tag::before { background: #ec4899; }
+        .theme-idiomas .input-wrap:focus-within { border-color: #ec4899; }
+        .theme-idiomas .btn-login { background: linear-gradient(135deg, #ec4899 0%, #3b82f6 100%); color: #fff; box-shadow: 0 12px 30px -10px rgba(236,72,153,0.55); }
+        .theme-idiomas .btn-login:hover:not(:disabled) { box-shadow: 0 18px 40px -12px rgba(236,72,153,0.7); }
+
         @media (max-width: 880px) {
           .login-header { padding: 20px 24px; }
           .login-footer { padding: 16px 24px; flex-direction: column; gap: 6px; align-items: center; text-align: center; }
@@ -1160,7 +1200,7 @@ function LoginView({ onLoginSuccess }: { onLoginSuccess: (role: string, usuario:
         }
       `}</style>
 
-      <div className="login-root">
+      <div className={isIdiomas ? 'login-root theme-idiomas' : 'login-root'}>
         <span className="login-bubble login-b1"></span>
         <span className="login-bubble login-b2"></span>
         <span className="login-bubble login-b3"></span>
@@ -1177,7 +1217,7 @@ function LoginView({ onLoginSuccess }: { onLoginSuccess: (role: string, usuario:
 
         <main className="login-main">
           <div className="art-side">
-            <img className="art-img" src="/login-bg.png" alt="" />
+            <img className="art-img" src={isIdiomas ? '/login-bg-1.png' : '/login-bg.png'} alt="" />
             <div className="art-frost"></div>
           </div>
 
@@ -1284,7 +1324,7 @@ function LoginView({ onLoginSuccess }: { onLoginSuccess: (role: string, usuario:
                   <button
                     type="submit"
                     disabled={forgotLoading}
-                    style={{ flex: 1, padding: '12px', background: 'linear-gradient(135deg, #22c55e 0%, #4ade80 100%)', color: '#0e2318', border: 'none', borderRadius: 30, fontSize: 12, fontWeight: 700, cursor: forgotLoading ? 'not-allowed' : 'pointer', fontFamily: 'inherit', letterSpacing: '0.12em', textTransform: 'uppercase', opacity: forgotLoading ? 0.7 : 1 }}
+                    style={{ flex: 1, padding: '12px', background: ctaGradient, color: ctaTextColor, border: 'none', borderRadius: 30, fontSize: 12, fontWeight: 700, cursor: forgotLoading ? 'not-allowed' : 'pointer', fontFamily: 'inherit', letterSpacing: '0.12em', textTransform: 'uppercase', opacity: forgotLoading ? 0.7 : 1 }}
                   >
                     {forgotLoading ? 'Enviando...' : 'Enviar'}
                   </button>
@@ -1344,7 +1384,7 @@ function LoginView({ onLoginSuccess }: { onLoginSuccess: (role: string, usuario:
                   <button type="button" onClick={() => { setShowSupportModal(false); setSupportMessage(null); }} disabled={supportLoading}
                     style={{ flex: 1, padding: '12px', background: 'transparent', color: 'rgba(255,255,255,.7)', border: '1.5px solid rgba(255,255,255,0.15)', borderRadius: 30, fontSize: 12, fontWeight: 600, cursor: supportLoading ? 'not-allowed' : 'pointer', fontFamily: 'inherit', letterSpacing: '0.08em', textTransform: 'uppercase' }}>Cancelar</button>
                   <button type="submit" disabled={supportLoading}
-                    style={{ flex: 1, padding: '12px', background: 'linear-gradient(135deg, #22c55e 0%, #4ade80 100%)', color: '#0e2318', border: 'none', borderRadius: 30, fontSize: 12, fontWeight: 700, cursor: supportLoading ? 'not-allowed' : 'pointer', fontFamily: 'inherit', letterSpacing: '0.12em', textTransform: 'uppercase', opacity: supportLoading ? 0.7 : 1 }}>
+                    style={{ flex: 1, padding: '12px', background: ctaGradient, color: ctaTextColor, border: 'none', borderRadius: 30, fontSize: 12, fontWeight: 700, cursor: supportLoading ? 'not-allowed' : 'pointer', fontFamily: 'inherit', letterSpacing: '0.12em', textTransform: 'uppercase', opacity: supportLoading ? 0.7 : 1 }}>
                     {supportLoading ? 'Enviando...' : 'Enviar consulta'}
                   </button>
                 </div>
