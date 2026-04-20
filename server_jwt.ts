@@ -207,22 +207,32 @@ async function startServer() {
 
   // ─── COURSE MAPPING ───────────────────────────────────────────
   const COURSE_MAPPING: Record<string, string> = {
-    excel:            "12286845",
-    excel_intermedio: "12286854",
-    excel_avanzado:   "12052707",
-    sql:              "12305404",
-    windows_server:   "13018504",
-    pbi_avanzado:     "12107061",
-    powerbi:          "12305086",
-    powerpoint:       "12072965",
-    word:             "12073015",
+    excel:              "12286845",
+    excel_intermedio:   "12286854",
+    excel_avanzado:     "12052707",
+    sql:                "12305404",
+    windows_server:     "13018504",
+    pbi_avanzado:       "12107061",
+    powerbi:            "12305086",
+    powerpoint:         "12072965",
+    word:               "12073015",
+    aleman:             "14775505",
+    italiano:           "12776926",
+    italiano_intermedio:"16225291",
+    italiano_avanzado:  "16790466",
+    frances:            "13968526",
+    ingles:             "12727702",
+    ingles_intermedio:  "12727823",
+    japones:            "13968522",
   };
 
   // Paquetes: slug del paquete → array de slugs individuales
   const PACK_MAPPING: Record<string, string[]> = {
-    excel_promo:    ["excel", "excel_intermedio", "excel_avanzado"],           // Pack Experto
-    office:         ["excel", "powerpoint", "word"],                           // Pack Office
-    prom_pbi_excel: ["excel", "excel_intermedio", "excel_avanzado", "powerbi"], // Pack Excel
+    excel_promo:            ["excel", "excel_intermedio", "excel_avanzado"],           // Pack Experto
+    office:                 ["excel", "powerpoint", "word"],                           // Pack Office
+    prom_pbi_excel:         ["excel", "excel_intermedio", "excel_avanzado", "powerbi"], // Pack Excel
+    pack_italiano_avanzado: ["italiano", "italiano_intermedio", "italiano_avanzado"],   // Pack Italiano Avanzado
+    pack_italiano_ingles:   ["italiano", "ingles"],                                     // Pack Italiano + Inglés
   };
 
   // Expande slugs (incluyendo paquetes) a Vimeo IDs únicos
@@ -250,7 +260,7 @@ async function startServer() {
 
   // ─── VIMEO ────────────────────────────────────────────────────
   const VIMEO_TOKEN = "713ab24da995946cc8ebeaabd1a90880";
-  const FOLDER_IDS = ["12286845", "12286854", "12052707", "12305404", "13018504", "12107061", "12305086", "12072965", "12073015"];
+  const FOLDER_IDS = ["12286845", "12286854", "12052707", "12305404", "13018504", "12107061", "12305086", "12072965", "12073015", "14775505", "12776926", "16225291", "16790466", "13968526", "12727702", "12727823", "13968522"];
   let vimeoCourses: any[] = [];
   let vimeoLessons: Record<number, any[]> = {};
 
