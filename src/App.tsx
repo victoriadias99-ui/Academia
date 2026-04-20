@@ -1004,18 +1004,16 @@ function LoginView({ onLoginSuccess }: { onLoginSuccess: (role: string, usuario:
         .login-b1 { width: 380px; height: 380px; top: -120px; left: -120px; }
         .login-b2 { width: 420px; height: 420px; bottom: -150px; right: -150px; }
         .login-b3 { width: 200px; height: 200px; top: 40%; left: 50%; opacity: .5; }
-        .login-header { padding: 28px 48px; display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; position: relative; z-index: 5; }
+        .login-header { padding: 28px 48px 28px calc(50vw + 48px); display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; position: relative; z-index: 5; }
         .login-logo-text { font-size: 13px; font-weight: 700; letter-spacing: 0.04em; line-height: 1.15; }
         .login-logo-text .sub { display: block; color: rgba(255,255,255,0.45); font-size: 9px; font-weight: 500; letter-spacing: 0.22em; margin-top: 2px; }
         .login-header-help { font-size: 12px; color: rgba(255,255,255,0.5); }
         .login-header-help a { color: rgba(255,255,255,0.85); text-decoration: none; font-weight: 500; border-bottom: 1px solid rgba(255,255,255,0.2); padding-bottom: 1px; transition: border-color .2s; }
         .login-header-help a:hover { border-color: #4ade80; color: #4ade80; }
-        .login-main { flex: 1; display: grid; grid-template-columns: 1fr 1fr; gap: 0; align-items: stretch; padding: 0; position: relative; z-index: 2; width: 100%; }
-        .login-main > .art-side { align-self: stretch; }
-        .login-main > .form-side { padding: 40px 80px; align-self: center; }
-        .art-side { position: relative; width: 100%; height: 100%; min-height: 600px; overflow: hidden; box-shadow: 0 0 0 1px rgba(74,222,128,0.12); }
+        .login-main { flex: 1; display: flex; align-items: center; justify-content: center; padding: 20px 80px 40px calc(50vw + 60px); position: relative; z-index: 2; width: 100%; }
+        .art-side { position: fixed; top: 0; left: 0; bottom: 0; width: 50vw; height: 100vh; overflow: hidden; z-index: 1; }
         .art-img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; }
-        .art-frost { position: absolute; inset: 0; background: linear-gradient(135deg, rgba(255,255,255,0.18), rgba(255,255,255,0.08)); border: 1px solid rgba(255,255,255,0.22); border-radius: inherit; pointer-events: none; }
+        .art-frost { position: absolute; inset: 0; background: linear-gradient(180deg, rgba(0,0,0,0.7) 0%, rgba(0,0,0,0.35) 45%, rgba(0,0,0,0.2) 75%, rgba(0,0,0,0.45) 100%); pointer-events: none; }
         .rings { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; }
         .ring { position: absolute; border-radius: 50%; border: 1px solid rgba(74,222,128,0.12); animation: pulseRing 6s ease-in-out infinite; }
         .ring.r1 { width: 100%; height: 100%; }
@@ -1117,13 +1115,12 @@ function LoginView({ onLoginSuccess }: { onLoginSuccess: (role: string, usuario:
         .btn-login:disabled { opacity: 0.6; cursor: not-allowed; }
         .btn-login::before { content: ""; position: absolute; inset: 0; background: linear-gradient(120deg, transparent 30%, rgba(255,255,255,0.4) 50%, transparent 70%); transform: translateX(-100%); transition: transform .8s ease; }
         .btn-login:hover:not(:disabled)::before { transform: translateX(100%); }
-        .login-footer { padding: 20px 48px; display: flex; justify-content: space-between; font-size: 11px; color: rgba(255,255,255,0.35); flex-shrink: 0; position: relative; z-index: 5; }
+        .login-footer { padding: 20px 48px 20px calc(50vw + 48px); display: flex; justify-content: space-between; font-size: 11px; color: rgba(255,255,255,0.35); flex-shrink: 0; position: relative; z-index: 5; }
         @media (max-width: 880px) {
           .login-header { padding: 20px 24px; }
           .login-footer { padding: 16px 24px; flex-direction: column; gap: 6px; align-items: center; text-align: center; }
-          .login-main { grid-template-columns: 1fr; gap: 40px; padding: 20px 28px 40px; }
-          .art-side { max-width: 340px; order: 2; }
-          .form-side { order: 1; }
+          .login-main { padding: 20px 28px 40px; }
+          .art-side { position: absolute; width: 100%; height: 100%; opacity: 0.25; }
           .form-side h1 { font-size: 34px; }
           .login-header-help { display: none; }
         }
