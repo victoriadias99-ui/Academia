@@ -12,33 +12,51 @@ const ACADEMIA_URL   = process.env.ACADEMIA_URL   || "https://academia-wine.verc
 const ADMIN_EMAILS   = ["victoria.pdias99@gmail.com", "admin@gmail.com"];
 
 const COURSE_MAPPING: Record<string, string> = {
-  excel:            "12286845",
-  excel_intermedio: "12286854",
-  excel_avanzado:   "12052707",
-  sql:              "12305404",
-  windows_server:   "13018504",
-  pbi_avanzado:     "12107061",
-  powerbi:          "12305086",
-  powerpoint:       "12072965",
-  word:             "12073015",
+  excel:              "12286845",
+  excel_intermedio:   "12286854",
+  excel_avanzado:     "12052707",
+  sql:                "12305404",
+  windows_server:     "13018504",
+  pbi_avanzado:       "12107061",
+  powerbi:            "12305086",
+  powerpoint:         "12072965",
+  word:               "12073015",
+  aleman:             "14775505",
+  italiano:           "12776926",
+  italiano_intermedio:"16225291",
+  italiano_avanzado:  "16790466",
+  frances:            "13968526",
+  ingles:             "12727702",
+  ingles_intermedio:  "12727823",
+  japones:            "13968522",
 };
 
 const COURSE_NAMES: Record<string, string> = {
-  excel:            "Excel Inicial",
-  excel_intermedio: "Excel Intermedio",
-  excel_avanzado:   "Excel Avanzado",
-  sql:              "Sql Server - Inicial",
-  windows_server:   "Windows Server",
-  pbi_avanzado:     "Power Bi - Avanzado",
-  powerbi:          "Power Bi - Inicial",
-  powerpoint:       "Power Point",
-  word:             "Word",
+  excel:              "Excel Inicial",
+  excel_intermedio:   "Excel Intermedio",
+  excel_avanzado:     "Excel Avanzado",
+  sql:                "Sql Server - Inicial",
+  windows_server:     "Windows Server",
+  pbi_avanzado:       "Power Bi - Avanzado",
+  powerbi:            "Power Bi - Inicial",
+  powerpoint:         "Power Point",
+  word:               "Word",
+  aleman:             "Alemán",
+  italiano:           "Italiano Inicial",
+  italiano_intermedio:"Italiano A2",
+  italiano_avanzado:  "Italiano B1",
+  frances:            "Francés",
+  ingles:             "Inglés Inicial",
+  ingles_intermedio:  "Inglés Intermedio",
+  japones:            "Japonés",
 };
 
 const PACK_MAPPING: Record<string, string[]> = {
-  excel_promo:    ["excel", "excel_intermedio", "excel_avanzado"],
-  office:         ["excel", "powerpoint", "word"],
-  prom_pbi_excel: ["excel", "excel_intermedio", "excel_avanzado", "powerbi"],
+  excel_promo:            ["excel", "excel_intermedio", "excel_avanzado"],
+  office:                 ["excel", "powerpoint", "word"],
+  prom_pbi_excel:         ["excel", "excel_intermedio", "excel_avanzado", "powerbi"],
+  pack_italiano_avanzado: ["italiano", "italiano_intermedio", "italiano_avanzado"],
+  pack_italiano_ingles:   ["italiano", "ingles"],
 };
 
 const expandSlugsToIds = (slugs: string[]): string[] => {
@@ -505,6 +523,14 @@ const FOLDER_IDS  = [
   "12305086", // powerbi
   "12072965", // powerpoint
   "12073015", // word
+  "14775505", // aleman
+  "12776926", // italiano
+  "16225291", // italiano_intermedio (A2)
+  "16790466", // italiano_avanzado (B1)
+  "13968526", // frances
+  "12727702", // ingles
+  "12727823", // ingles_intermedio
+  "13968522", // japones
 ];
 let vimeoCourses: any[]               = [];
 let vimeoLessons: Record<number, any[]> = {};
