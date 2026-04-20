@@ -1171,7 +1171,7 @@ function LoginView({ onLoginSuccess }: { onLoginSuccess: (role: string, usuario:
         .theme-idiomas .forgot button { color: rgba(26,10,31,0.55); }
         .theme-idiomas .login-footer { color: rgba(26,10,31,0.4); }
         .theme-idiomas .art-frost { background: linear-gradient(180deg, rgba(255,255,255,0.5) 0%, rgba(255,255,255,0.15) 45%, rgba(255,255,255,0.1) 75%, rgba(255,255,255,0.25) 100%); }
-        .theme-idiomas .art-img { object-position: center 40%; }
+        .theme-idiomas .art-img { object-position: center 55%; }
         .theme-idiomas .login-header-help a:hover,
         .theme-idiomas .support-link:hover,
         .theme-idiomas .toggle-pwd:hover,
