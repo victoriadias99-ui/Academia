@@ -456,6 +456,44 @@ const upsertCourseDb = async (id: number, fields: {
   );
 };
 
+// ─── PDF COURSES (MySQL) ─────────────────────────────────────────────────────
+let _pdfTableReady = false;
+const ensurePdfTable = async (): Promise<void> => {
+  if (_pdfTableReady) return;
+  await getPool().query(`
+    CREATE TABLE IF NOT EXISTS academia_pdf_cursos (
+      id BIGINT NOT NULL AUTO_INCREMENT,
+      slug VARCHAR(255) NOT NULL,
+      nombre VARCHAR(500) NOT NULL,
+      descripcion TEXT NULL,
+      imagen_url TEXT NULL,
+      activo TINYINT(1) NOT NULL DEFAULT 1,
+      modulos JSON NOT NULL,
+      PRIMARY KEY (id),
+      UNIQUE KEY uq_slug (slug)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+  `);
+  _pdfTableReady = true;
+};
+
+const parsePdfCourse = (row: any): any => ({
+  ...row,
+  modulos: typeof row.modulos === "string" ? JSON.parse(row.modulos || "[]") : (row.modulos ?? []),
+});
+
+const getPdfCourses = async (): Promise<any[]> => {
+  await ensurePdfTable();
+  const [rows] = await getPool().query("SELECT * FROM academia_pdf_cursos ORDER BY id");
+  return (rows as any[]).map(parsePdfCourse);
+};
+
+const getPdfCourseById = async (id: number): Promise<any | null> => {
+  await ensurePdfTable();
+  const [rows] = await getPool().query("SELECT * FROM academia_pdf_cursos WHERE id = ? LIMIT 1", [id]);
+  const row = (rows as any[])[0];
+  return row ? parsePdfCourse(row) : null;
+};
+
 // ─── UTILS ───────────────────────────────────────────────────────────────────
 const generatePassword = (len = 12): string => {
   const chars =
@@ -905,40 +943,149 @@ app.get("/api/admin/ventas", requireAdmin, (_, res) =>
   res.json({ ventas: [] })
 );
 
+// ─── ADMIN PDF COURSES ────────────────────────────────────────────────────────
+app.get("/api/admin/cursos-pdf", requireAdmin, async (_req, res) => {
+  try { res.json({ cursos: await getPdfCourses() }); }
+  catch { res.status(500).json({ error: "Error interno" }); }
+});
+
+app.post("/api/admin/cursos-pdf", requireAdmin, async (req, res) => {
+  const { nombre, descripcion, imagen_url, slug } = req.body;
+  if (!nombre || !slug) return res.status(400).json({ error: "Nombre y slug son requeridos" });
+  try {
+    await ensurePdfTable();
+    const [result]: any = await getPool().query(
+      "INSERT INTO academia_pdf_cursos (slug, nombre, descripcion, imagen_url, activo, modulos) VALUES (?, ?, ?, ?, 1, '[]')",
+      [slug, nombre, descripcion || "", imagen_url || ""]
+    );
+    const curso = await getPdfCourseById(result.insertId);
+    res.json({ status: "ok", curso });
+  } catch (e: any) {
+    if (e?.code === "ER_DUP_ENTRY") return res.status(400).json({ error: "El slug ya existe" });
+    res.status(500).json({ error: "Error interno" });
+  }
+});
+
+app.put("/api/admin/cursos-pdf/:id", requireAdmin, async (req, res) => {
+  const id = parseInt(req.params.id);
+  const { nombre, descripcion, imagen_url, slug, activo } = req.body;
+  try {
+    const fields: string[] = [];
+    const vals: any[] = [];
+    if (nombre      !== undefined) { fields.push("nombre=?");      vals.push(nombre); }
+    if (descripcion !== undefined) { fields.push("descripcion=?"); vals.push(descripcion); }
+    if (imagen_url  !== undefined) { fields.push("imagen_url=?");  vals.push(imagen_url); }
+    if (slug        !== undefined) { fields.push("slug=?");        vals.push(slug); }
+    if (activo      !== undefined) { fields.push("activo=?");      vals.push(activo ? 1 : 0); }
+    if (fields.length) await getPool().query(`UPDATE academia_pdf_cursos SET ${fields.join(",")} WHERE id=?`, [...vals, id]);
+    res.json({ status: "ok", curso: await getPdfCourseById(id) });
+  } catch { res.status(500).json({ error: "Error interno" }); }
+});
+
+app.delete("/api/admin/cursos-pdf/:id", requireAdmin, async (req, res) => {
+  try {
+    await ensurePdfTable();
+    await getPool().query("DELETE FROM academia_pdf_cursos WHERE id=?", [parseInt(req.params.id)]);
+    res.json({ status: "ok" });
+  } catch { res.status(500).json({ error: "Error interno" }); }
+});
+
+app.post("/api/admin/cursos-pdf/:id/modulos", requireAdmin, async (req, res) => {
+  const id = parseInt(req.params.id);
+  const { titulo, pdf_url, orden } = req.body;
+  if (!titulo || !pdf_url) return res.status(400).json({ error: "Titulo y URL del PDF son requeridos" });
+  try {
+    const course = await getPdfCourseById(id);
+    if (!course) return res.status(404).json({ error: "Curso no encontrado" });
+    const modulo = { id: `pdf_${id}_${Date.now()}`, titulo, pdf_url, orden: orden ?? (course.modulos.length + 1) };
+    const modulos = [...course.modulos, modulo].sort((a: any, b: any) => a.orden - b.orden);
+    await getPool().query("UPDATE academia_pdf_cursos SET modulos=? WHERE id=?", [JSON.stringify(modulos), id]);
+    res.json({ status: "ok", modulo });
+  } catch { res.status(500).json({ error: "Error interno" }); }
+});
+
+app.put("/api/admin/cursos-pdf/:id/modulos/:moduloId", requireAdmin, async (req, res) => {
+  const id = parseInt(req.params.id);
+  const { moduloId } = req.params;
+  const { titulo, pdf_url, orden } = req.body;
+  try {
+    const course = await getPdfCourseById(id);
+    if (!course) return res.status(404).json({ error: "Curso no encontrado" });
+    const modulos = course.modulos.map((m: any) => {
+      if (m.id !== moduloId) return m;
+      return { ...m, ...(titulo !== undefined && { titulo }), ...(pdf_url !== undefined && { pdf_url }), ...(orden !== undefined && { orden }) };
+    }).sort((a: any, b: any) => a.orden - b.orden);
+    await getPool().query("UPDATE academia_pdf_cursos SET modulos=? WHERE id=?", [JSON.stringify(modulos), id]);
+    res.json({ status: "ok", modulo: modulos.find((m: any) => m.id === moduloId) });
+  } catch { res.status(500).json({ error: "Error interno" }); }
+});
+
+app.delete("/api/admin/cursos-pdf/:id/modulos/:moduloId", requireAdmin, async (req, res) => {
+  const id = parseInt(req.params.id);
+  const { moduloId } = req.params;
+  try {
+    const course = await getPdfCourseById(id);
+    if (!course) return res.status(404).json({ error: "Curso no encontrado" });
+    const modulos = course.modulos.filter((m: any) => m.id !== moduloId);
+    await getPool().query("UPDATE academia_pdf_cursos SET modulos=? WHERE id=?", [JSON.stringify(modulos), id]);
+    res.json({ status: "ok" });
+  } catch { res.status(500).json({ error: "Error interno" }); }
+});
+
 // ─── CURSOS ───────────────────────────────────────────────────────────────────
 app.get("/api/cursos/mis-cursos", requireAuth, async (req: any, res) => {
   await loadVimeo();
-  const [progreso, dbUser, dbCourses] = await Promise.all([
+  const [progreso, dbUser, dbCourses, pdfAll] = await Promise.all([
     getUserProgress(req.user.email),
     getUserByEmail(req.user.email),
     getAllCoursesDb(),
+    getPdfCourses(),
   ]);
   const slugs = (dbUser?.cursos ?? req.user.cursos ?? "") as string;
+  const slugList = slugs.split("|").filter(Boolean);
 
   const cursosBase =
     req.user.role === "admin"
       ? vimeoCourses
       : (() => {
-          const ids = expandSlugsToIds(slugs.split("|").filter(Boolean));
+          const ids = expandSlugsToIds(slugList);
           return vimeoCourses.filter((c) => ids.includes(c.id.toString()));
         })();
 
+  const cursosPdf = (req.user.role === "admin"
+    ? pdfAll
+    : pdfAll.filter((c: any) => c.activo && slugList.includes(c.slug))
+  ).map((c: any) => {
+    const done  = (progreso[c.id.toString()] || []).length;
+    const total = c.modulos.length;
+    return {
+      id: c.id, nombre: c.nombre, descripcion: c.descripcion, imagen_url: c.imagen_url,
+      tipo: "pdf", slug: c.slug, activo: !!c.activo,
+      stripe_price_id: "", precio_ars: 0, precio_usd: 0, precios_paises: {},
+      lecciones_completadas: done, total_lecciones: total,
+      progreso: total > 0 ? Math.round((done / total) * 100) : 0,
+    };
+  });
+
   res.json({
-    cursos: cursosBase.map((c) => {
-      const done    = (progreso[c.id.toString()] || []).length;
-      const total   = c.total_lecciones;
-      const dbExtra = dbCourses[c.id] || {};
-      return {
-        ...c,
-        stripe_price_id: dbExtra.stripe_price_id ?? "",
-        precio_ars:      dbExtra.precio_ars ?? 0,
-        precio_usd:      dbExtra.precio_usd ?? 0,
-        precios_paises:  dbExtra.precios_paises ?? {},
-        activo:          dbExtra.activo !== undefined ? !!dbExtra.activo : true,
-        lecciones_completadas: done,
-        progreso: total > 0 ? Math.round((done / total) * 100) : 0,
-      };
-    }),
+    cursos: [
+      ...cursosBase.map((c) => {
+        const done    = (progreso[c.id.toString()] || []).length;
+        const total   = c.total_lecciones;
+        const dbExtra = dbCourses[c.id] || {};
+        return {
+          ...c,
+          stripe_price_id: dbExtra.stripe_price_id ?? "",
+          precio_ars:      dbExtra.precio_ars ?? 0,
+          precio_usd:      dbExtra.precio_usd ?? 0,
+          precios_paises:  dbExtra.precios_paises ?? {},
+          activo:          dbExtra.activo !== undefined ? !!dbExtra.activo : true,
+          lecciones_completadas: done,
+          progreso: total > 0 ? Math.round((done / total) * 100) : 0,
+        };
+      }),
+      ...cursosPdf,
+    ],
   });
 });
 
@@ -957,8 +1104,30 @@ app.put("/api/admin/cursos/:id", requireAdmin, async (req, res) => {
 });
 
 app.get("/api/cursos/:id", requireAuth, async (req: any, res) => {
+  const id = parseInt(req.params.id);
+
+  const pdfCourse = await getPdfCourseById(id);
+  if (pdfCourse) {
+    if (req.user.role !== "admin") {
+      const dbUser = await getUserByEmail(req.user.email);
+      const slugList = (dbUser?.cursos ?? req.user.cursos ?? "").split("|").filter(Boolean);
+      if (!slugList.includes(pdfCourse.slug))
+        return res.status(403).json({ error: "No tenes acceso a este curso" });
+    }
+    const completadas = (await getUserProgress(req.user.email))[id.toString()] || [];
+    const lecciones = pdfCourse.modulos.map((m: any) => ({
+      id: m.id, titulo: m.titulo, pdf_url: m.pdf_url, vimeo_id: "", duracion: 0,
+      completada: completadas.includes(m.id), tipo: "pdf", orden: m.orden,
+    }));
+    const done = lecciones.filter((l: any) => l.completada).length;
+    const total = lecciones.length;
+    return res.json({
+      curso: { ...pdfCourse, lecciones_completadas: done, total_lecciones: total, progreso: total > 0 ? Math.round((done / total) * 100) : 0 },
+      lecciones,
+    });
+  }
+
   await loadVimeo();
-  const id    = parseInt(req.params.id);
   const curso = vimeoCourses.find((c) => c.id === id);
   if (!curso)
     return res.status(404).json({ error: "Curso no encontrado" });
