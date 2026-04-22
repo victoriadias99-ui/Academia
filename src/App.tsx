@@ -100,8 +100,10 @@ export default function App() {
     const init = async () => {
       const userData = await fetchProfile();
       if (userData) {
+        // Admins no auto-entran al panel: deben loguearse explícitamente
         if (userData.role === 'admin') {
-          setView('admin');
+          removeToken();
+          setUser(null);
           setIsInitializing(false);
           return;
         }

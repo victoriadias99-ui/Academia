@@ -839,16 +839,40 @@ app.post("/api/auth/reset-password", async (req, res) => {
 // ─── ADMIN ───────────────────────────────────────────────────────────────────
 app.get("/api/admin/dashboard", requireAdmin, async (_, res) => {
   try {
-    const users = await getUsers();
+    const [users, coursesDb] = await Promise.all([getUsers(), getAllCoursesDb()]);
+
+    const recent = [...users]
+      .filter((u: any) => u.fecha_creacion)
+      .sort((a: any, b: any) =>
+        new Date(b.fecha_creacion).getTime() - new Date(a.fecha_creacion).getTime()
+      )
+      .slice(0, 10);
+
+    const ultimasCompras = recent.map((u: any) => {
+      const slugs = (u.cursos || "").split("|").filter(Boolean);
+      const firstSlug = slugs[0] || "";
+      const vimeoId = parseInt(COURSE_MAPPING[firstSlug] || "0");
+      const curso   = COURSE_NAMES[firstSlug] || firstSlug || "-";
+      const monto   = vimeoId && coursesDb[vimeoId]?.precio_ars ? coursesDb[vimeoId].precio_ars : 0;
+      return {
+        email:  u.email,
+        nombre: `${u.nombre} ${u.apellido || ""}`.trim(),
+        curso,
+        monto,
+        fecha:  u.fecha_creacion,
+      };
+    });
+
     res.json({
       stats: {
         totalAlumnos:   users.length,
         alumnosActivos: users.filter((u: any) => u.activo).length,
         cursosActivos:  FOLDER_IDS.length,
       },
-      ultimasCompras: [],
+      ultimasCompras,
     });
-  } catch {
+  } catch (e) {
+    console.error("Error en /api/admin/dashboard:", e);
     res.status(500).json({ error: "Error interno" });
   }
 });
