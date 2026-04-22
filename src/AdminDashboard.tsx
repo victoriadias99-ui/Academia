@@ -207,6 +207,7 @@ export default function AdminDashboard({ onLogout }: { onLogout: () => void }) {
   const filteredStudents = academiaFilter === "todas"
     ? students
     : students.filter(s => {
+        if (s.role === "admin") return true;
         const ids = (s.cursos_slugs || "").split("|").filter(Boolean);
         return ids.length > 0 && ids.some(id => getAcademiaForIdentifier(id) === academiaFilter);
       });
