@@ -76,7 +76,7 @@ const getCourseDisplayName = (identifier: string, courseList: Course[]): string 
   return course?.nombre || identifier;
 };
 interface PrecioPais { precio: number; stripe_price_id: string; }
-interface Course { id: number; nombre: string; academia: string; stripe_price_id: string; precio_ars: number; precio_usd: number; precios_paises?: Record<string, PrecioPais>; activo: boolean; descripcion?: string; imagen_url?: string; orden?: number; }
+interface Course { id: number; nombre: string; academia: string; stripe_price_id: string; precio_ars: number; precio_usd: number; precios_paises?: Record<string, PrecioPais>; activo: boolean; descripcion?: string; imagen_url?: string; orden?: number; slug?: string; tipo?: string; }
 
 // Tasas de conversión USD → moneda local (mismas que logicprecios.php en la landing)
 const TASAS_DESDE_USD: Record<string, number> = {
@@ -780,7 +780,7 @@ export default function AdminDashboard({ onLogout }: { onLogout: () => void }) {
                     <tbody className="divide-y divide-[#dee2e6]">
                       {filteredStudents.map((student, i) => {
                         const assignedIds = (student.cursos_slugs || "").split("|").filter(Boolean);
-                        const availableCourses = filteredCourses.filter(c => !assignedIds.includes(getCourseIdentifier(c.id)));
+                        const availableCourses = filteredCourses.filter(c => !assignedIds.includes(getCourseIdentifier(c)));
                         return (
                         <tr key={i} className="hover:bg-gray-50 transition-colors">
                           <td className="px-6 py-4 text-gray-600 text-sm">{student.email}</td>

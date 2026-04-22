@@ -71,6 +71,7 @@ const LoadingSpinner = () => (
 
 export default function App() {
   const [view, setView] = useState<'login' | 'dashboard' | 'player' | 'admin'>('login');
+  const [isInitializing, setIsInitializing] = useState(true);
   const [activeTab, setActiveTab] = useState<'cursos' | 'perfil' | 'password'>('cursos');
   const [selectedCourseId, setSelectedCourseId] = useState<number | null>(null);
   const [user, setUser] = useState<UserData | null>(null);
@@ -101,6 +102,7 @@ export default function App() {
       if (userData) {
         if (userData.role === 'admin') {
           setView('admin');
+          setIsInitializing(false);
           return;
         }
 
@@ -115,6 +117,7 @@ export default function App() {
           fetchCourses();
         }
       }
+      setIsInitializing(false);
     };
     init();
   }, []);
@@ -152,6 +155,14 @@ export default function App() {
     window.history.pushState({}, '', '/');
     fetchCourses();
   };
+
+  if (isInitializing) {
+    return (
+      <div className="flex items-center justify-center h-screen bg-fondo-gris">
+        <div className="w-10 h-10 border-4 border-verde-brillante border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
 
   if (view === 'login') {
     return <LoginView onLoginSuccess={(role, usuario) => {

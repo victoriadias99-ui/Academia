@@ -842,10 +842,9 @@ app.get("/api/admin/dashboard", requireAdmin, async (_, res) => {
     const users = await getUsers();
     res.json({
       stats: {
-        totalAlumnos:  users.length,
-        totalVentas:   users.length,
-        ingresosUSD:   0,
-        cursosActivos: FOLDER_IDS.length,
+        totalAlumnos:   users.length,
+        alumnosActivos: users.filter((u: any) => u.activo).length,
+        cursosActivos:  FOLDER_IDS.length,
       },
       ultimasCompras: [],
     });
