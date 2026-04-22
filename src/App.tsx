@@ -9,11 +9,13 @@ import AdminDashboard from './AdminDashboard';
 
 // --- Types ---
 interface Lesson {
-  id: number;
+  id: number | string;
   titulo: string;
   vimeo_id: string;
   duracion: number;
   completada: boolean;
+  pdf_url?: string;
+  tipo?: string;
 }
 
 interface Course {
@@ -24,6 +26,8 @@ interface Course {
   progreso: number;
   total_lecciones: number;
   lecciones_completadas: number;
+  tipo?: string;
+  slug?: string;
 }
 
 interface UserData {
@@ -539,23 +543,31 @@ function PlayerView({ courseId, onBack }: { courseId: number, onBack: () => void
                   }`}>
                     {lesson.titulo}
                   </p>
-                  <p className="text-[10px] text-white/25 mt-0.5">{formatDuracion(lesson.duracion)}</p>
+                  <p className="text-[10px] text-white/25 mt-0.5">{lesson.pdf_url ? 'Módulo PDF' : formatDuracion(lesson.duracion)}</p>
                 </div>
               </button>
             ))}
           </div>
         </aside>
 
-        {/* Video Area */}
+        {/* Video / PDF Area */}
         <div className="flex-1 flex flex-col bg-black overflow-hidden">
           <div className="flex-1 relative">
-            <iframe
-              src={`https://player.vimeo.com/video/${currentLesson.vimeo_id}?autoplay=1`}
-              className="absolute inset-0 w-full h-full"
-              frameBorder="0"
-              allow="autoplay; fullscreen; picture-in-picture"
-              allowFullScreen
-            ></iframe>
+            {currentLesson.pdf_url ? (
+              <iframe
+                src={currentLesson.pdf_url}
+                className="absolute inset-0 w-full h-full"
+                frameBorder="0"
+              />
+            ) : (
+              <iframe
+                src={`https://player.vimeo.com/video/${currentLesson.vimeo_id}?autoplay=1`}
+                className="absolute inset-0 w-full h-full"
+                frameBorder="0"
+                allow="autoplay; fullscreen; picture-in-picture"
+                allowFullScreen
+              ></iframe>
+            )}
           </div>
 
           {/* Info Bar mejorado */}

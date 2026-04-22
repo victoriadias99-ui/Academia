@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
-import { 
+import {
   LayoutDashboard, Users, BookOpen, PlayCircle, DollarSign, LogOut, Search, Plus, X,
-  CheckCircle2, AlertCircle, ShieldCheck, ShieldX, Calendar, Edit2, Trash2
+  CheckCircle2, AlertCircle, ShieldCheck, ShieldX, Calendar, Edit2, Trash2, FileText
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 
@@ -30,18 +30,20 @@ const VIMEO_TO_SLUG: Record<number, string> = {
 };
 
 // Devuelve el identificador a usar para un curso (slug si existe, ID de Vimeo como string si no)
-const getCourseIdentifier = (vimeoId: number): string =>
-  VIMEO_TO_SLUG[vimeoId] || vimeoId.toString();
+const getCourseIdentifier = (course: { id: number; slug?: string }): string =>
+  course.slug || VIMEO_TO_SLUG[course.id] || course.id.toString();
 
 // Devuelve el nombre legible de un identificador usando la lista de cursos
 const getCourseDisplayName = (identifier: string, courseList: Course[]): string => {
   const course = courseList.find(c =>
-    getCourseIdentifier(c.id) === identifier || c.id.toString() === identifier
+    getCourseIdentifier(c) === identifier || c.id.toString() === identifier
   );
   return course?.nombre || identifier;
 };
-interface Course { id: number; nombre: string; academia: string; stripe_price_id: string; precio_ars: number; precio_usd: number; activo: boolean; descripcion?: string; imagen_url?: string; orden?: number; }
+interface Course { id: number; nombre: string; academia: string; stripe_price_id: string; precio_ars: number; precio_usd: number; activo: boolean; descripcion?: string; imagen_url?: string; orden?: number; slug?: string; tipo?: string; }
 interface Lesson { id: number; titulo: string; vimeo_id: string; duracion: number; preview: boolean; orden: number; }
+interface PdfModulo { id: string; titulo: string; pdf_url: string; orden: number; }
+interface PdfCourse { id: number; slug: string; nombre: string; descripcion: string; imagen_url: string; tipo: string; activo: boolean; modulos: PdfModulo[]; }
 
 const Toast = ({ message, type, onClose }: { message: string, type: 'success' | 'error', onClose: () => void }) => {
   useEffect(() => { const t = setTimeout(onClose, 3000); return () => clearTimeout(t); }, [onClose]);
@@ -93,12 +95,23 @@ export default function AdminDashboard() {
   const [lessonForm, setLessonForm] = useState({ titulo: "", vimeo_id: "", duracion: 0, orden: 0, preview: false });
   const [studentForm, setStudentForm] = useState({ nombre: "", email: "", cursos: "", activo: true, vencimiento: "" });
 
+  // PDF courses state
+  const [pdfCourses, setPdfCourses] = useState<PdfCourse[]>([]);
+  const [selectedPdfCourseId, setSelectedPdfCourseId] = useState<number | null>(null);
+  const [isPdfCourseModalOpen, setIsPdfCourseModalOpen] = useState(false);
+  const [isPdfModuloModalOpen, setIsPdfModuloModalOpen] = useState(false);
+  const [editingPdfCourse, setEditingPdfCourse] = useState<PdfCourse | null>(null);
+  const [editingPdfModulo, setEditingPdfModulo] = useState<PdfModulo | null>(null);
+  const [pdfCourseForm, setPdfCourseForm] = useState({ nombre: "", descripcion: "", imagen_url: "", slug: "" });
+  const [pdfModuloForm, setPdfModuloForm] = useState({ titulo: "", pdf_url: "", orden: 1 });
+
   useEffect(() => { checkAuth(); }, []);
   useEffect(() => {
     if (activeTab === "dashboard") fetchDashboard();
     if (activeTab === "alumnos") fetchStudents();
     if (activeTab === "cursos") fetchCourses();
     if (activeTab === "lecciones") { fetchCourses(); if (selectedCourseId) fetchLessons(selectedCourseId); }
+    if (activeTab === "cursos-pdf") fetchPdfCourses();
   }, [activeTab, selectedCourseId]);
 
   const checkAuth = async () => {
@@ -237,11 +250,69 @@ export default function AdminDashboard() {
     } catch { setToast({ message: "Error de conexión", type: 'error' }); }
   };
 
+  const fetchPdfCourses = async () => {
+    try {
+      const res = await authFetch('/api/admin/cursos-pdf');
+      const data = await res.json();
+      setPdfCourses(data.cursos || []);
+    } catch (e) { console.error(e); }
+  };
+
+  const handleSavePdfCourse = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      const url = editingPdfCourse ? `/api/admin/cursos-pdf/${editingPdfCourse.id}` : '/api/admin/cursos-pdf';
+      const res = await authFetch(url, { method: editingPdfCourse ? 'PUT' : 'POST', body: JSON.stringify(pdfCourseForm) });
+      if (res.ok) {
+        setToast({ message: editingPdfCourse ? "✓ Curso PDF actualizado" : "✓ Curso PDF creado", type: 'success' });
+        setIsPdfCourseModalOpen(false); setEditingPdfCourse(null);
+        setPdfCourseForm({ nombre: "", descripcion: "", imagen_url: "", slug: "" });
+        fetchPdfCourses();
+      } else setToast({ message: "Error al guardar", type: 'error' });
+    } catch { setToast({ message: "Error de conexión", type: 'error' }); }
+  };
+
+  const handleDeletePdfCourse = async (id: number) => {
+    if (!confirm("¿Eliminar este curso PDF?")) return;
+    try {
+      const res = await authFetch(`/api/admin/cursos-pdf/${id}`, { method: 'DELETE' });
+      if (res.ok) { setToast({ message: "✓ Curso PDF eliminado", type: 'success' }); setSelectedPdfCourseId(null); fetchPdfCourses(); }
+      else setToast({ message: "Error al eliminar", type: 'error' });
+    } catch { setToast({ message: "Error de conexión", type: 'error' }); }
+  };
+
+  const handleSavePdfModulo = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedPdfCourseId) return;
+    try {
+      const url = editingPdfModulo
+        ? `/api/admin/cursos-pdf/${selectedPdfCourseId}/modulos/${editingPdfModulo.id}`
+        : `/api/admin/cursos-pdf/${selectedPdfCourseId}/modulos`;
+      const res = await authFetch(url, { method: editingPdfModulo ? 'PUT' : 'POST', body: JSON.stringify(pdfModuloForm) });
+      if (res.ok) {
+        setToast({ message: editingPdfModulo ? "✓ Módulo actualizado" : "✓ Módulo agregado", type: 'success' });
+        setIsPdfModuloModalOpen(false); setEditingPdfModulo(null);
+        setPdfModuloForm({ titulo: "", pdf_url: "", orden: 1 });
+        fetchPdfCourses();
+      } else setToast({ message: "Error al guardar módulo", type: 'error' });
+    } catch { setToast({ message: "Error de conexión", type: 'error' }); }
+  };
+
+  const handleDeletePdfModulo = async (courseId: number, moduloId: string) => {
+    if (!confirm("¿Eliminar este módulo?")) return;
+    try {
+      const res = await authFetch(`/api/admin/cursos-pdf/${courseId}/modulos/${moduloId}`, { method: 'DELETE' });
+      if (res.ok) { setToast({ message: "✓ Módulo eliminado", type: 'success' }); fetchPdfCourses(); }
+      else setToast({ message: "Error al eliminar", type: 'error' });
+    } catch { setToast({ message: "Error de conexión", type: 'error' }); }
+  };
+
   const menuItems = [
     { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
     { id: "alumnos", label: "Alumnos", icon: Users },
     { id: "cursos", label: "Cursos", icon: BookOpen },
     { id: "lecciones", label: "Lecciones", icon: PlayCircle },
+    { id: "cursos-pdf", label: "Cursos PDF", icon: FileText },
     { id: "ventas", label: "Ventas", icon: DollarSign },
   ];
 
@@ -349,7 +420,7 @@ export default function AdminDashboard() {
                     <tbody className="divide-y divide-[#dee2e6]">
                       {students.map((student, i) => {
                         const assignedIds = (student.cursos_slugs || "").split("|").filter(Boolean);
-                        const availableCourses = courses.filter(c => !assignedIds.includes(getCourseIdentifier(c.id)));
+                        const availableCourses = courses.filter(c => !assignedIds.includes(getCourseIdentifier(c)));
                         return (
                         <tr key={i} className="hover:bg-gray-50 transition-colors">
                           <td className="px-6 py-4 text-gray-600 text-sm">{student.email}</td>
@@ -375,7 +446,7 @@ export default function AdminDashboard() {
                                 >
                                   <option value="">＋ Agregar curso...</option>
                                   {availableCourses.map(c => (
-                                    <option key={c.id} value={getCourseIdentifier(c.id)}>{c.nombre}</option>
+                                    <option key={c.id} value={getCourseIdentifier(c)}>{c.nombre}</option>
                                   ))}
                                 </select>
                               )}
@@ -487,6 +558,77 @@ export default function AdminDashboard() {
             </motion.div>
           )}
 
+          {activeTab === "cursos-pdf" && (
+            <motion.div key="cursos-pdf" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="p-8">
+              <div className="flex gap-6">
+                {/* Lista de cursos PDF */}
+                <div className="flex-1 min-w-0">
+                  <header className="flex items-center justify-between mb-6">
+                    <div><h1 className="text-3xl font-bold text-[#0d2137]">Cursos PDF</h1><p className="text-gray-500">Cursos basados en módulos PDF</p></div>
+                    <button onClick={() => { setEditingPdfCourse(null); setPdfCourseForm({ nombre: "", descripcion: "", imagen_url: "", slug: "" }); setIsPdfCourseModalOpen(true); }} className="bg-[#1a7a5e] text-white px-5 py-2 rounded-md font-medium hover:bg-[#00a86b] transition-colors flex items-center gap-2"><Plus size={18} />Nuevo curso PDF</button>
+                  </header>
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                    {pdfCourses.length === 0 && (
+                      <div className="col-span-2 bg-white rounded-lg border border-dashed border-[#dee2e6] p-12 text-center">
+                        <FileText size={48} className="mx-auto text-gray-300 mb-4" />
+                        <p className="text-gray-500">No hay cursos PDF. Creá el primero.</p>
+                      </div>
+                    )}
+                    {pdfCourses.map(pc => (
+                      <div key={pc.id} onClick={() => setSelectedPdfCourseId(selectedPdfCourseId === pc.id ? null : pc.id)}
+                        className={`bg-white rounded-lg border transition-all cursor-pointer ${selectedPdfCourseId === pc.id ? 'border-[#00a86b] shadow-md' : 'border-[#dee2e6] hover:shadow-sm'}`}>
+                        <div className="p-5">
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 mb-1">
+                                <FileText size={16} className="text-[#00a86b] shrink-0" />
+                                <h3 className="font-bold text-[#0d2137] truncate">{pc.nombre}</h3>
+                              </div>
+                              <p className="text-xs text-gray-500 font-mono mb-2">slug: {pc.slug}</p>
+                              <p className="text-sm text-gray-500 line-clamp-2">{pc.descripcion}</p>
+                              <p className="text-xs text-[#00a86b] font-semibold mt-2">{pc.modulos.length} módulo{pc.modulos.length !== 1 ? 's' : ''}</p>
+                            </div>
+                            <div className="flex gap-1 shrink-0">
+                              <button onClick={(e) => { e.stopPropagation(); setEditingPdfCourse(pc); setPdfCourseForm({ nombre: pc.nombre, descripcion: pc.descripcion, imagen_url: pc.imagen_url, slug: pc.slug }); setIsPdfCourseModalOpen(true); }} className="p-1.5 rounded border border-indigo-200 text-indigo-600 hover:bg-indigo-50 transition-all"><Edit2 size={14} /></button>
+                              <button onClick={(e) => { e.stopPropagation(); handleDeletePdfCourse(pc.id); }} className="p-1.5 rounded border border-red-200 text-red-600 hover:bg-red-50 transition-all"><Trash2 size={14} /></button>
+                            </div>
+                          </div>
+                        </div>
+                        {selectedPdfCourseId === pc.id && (
+                          <div className="border-t border-[#dee2e6] p-4">
+                            <div className="flex items-center justify-between mb-3">
+                              <h4 className="font-semibold text-[#0d2137] text-sm">Módulos</h4>
+                              <button onClick={(e) => { e.stopPropagation(); setEditingPdfModulo(null); setPdfModuloForm({ titulo: "", pdf_url: "", orden: pc.modulos.length + 1 }); setIsPdfModuloModalOpen(true); }} className="text-xs bg-[#00a86b] text-white px-3 py-1.5 rounded-md hover:bg-[#008f5a] transition-colors flex items-center gap-1"><Plus size={12} />Agregar módulo</button>
+                            </div>
+                            {pc.modulos.length === 0 ? (
+                              <p className="text-xs text-gray-400 italic text-center py-3">Sin módulos aún</p>
+                            ) : (
+                              <div className="space-y-2">
+                                {pc.modulos.map((m, idx) => (
+                                  <div key={m.id} className="flex items-center gap-3 p-2.5 bg-[#f8fdf9] rounded-lg border border-[#e8f5e9]">
+                                    <div className="w-6 h-6 rounded-full bg-[#00a86b]/15 text-[#00a86b] text-[10px] font-bold flex items-center justify-center shrink-0">{idx + 1}</div>
+                                    <div className="flex-1 min-w-0">
+                                      <p className="text-sm font-medium text-[#0d2137] truncate">{m.titulo}</p>
+                                      <p className="text-[10px] text-gray-400 truncate">{m.pdf_url}</p>
+                                    </div>
+                                    <div className="flex gap-1 shrink-0">
+                                      <button onClick={(e) => { e.stopPropagation(); setEditingPdfModulo(m); setPdfModuloForm({ titulo: m.titulo, pdf_url: m.pdf_url, orden: m.orden }); setIsPdfModuloModalOpen(true); }} className="p-1 text-gray-400 hover:text-indigo-600 transition-colors"><Edit2 size={13} /></button>
+                                      <button onClick={(e) => { e.stopPropagation(); handleDeletePdfModulo(pc.id, m.id); }} className="p-1 text-gray-400 hover:text-red-600 transition-colors"><Trash2 size={13} /></button>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          )}
+
           {activeTab === "ventas" && (
             <motion.div key="ventas" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="p-8">
               <header className="mb-8"><h1 className="text-3xl font-bold text-[#0d2137]">Ventas</h1><p className="text-gray-500">Historial de transacciones</p></header>
@@ -561,6 +703,37 @@ export default function AdminDashboard() {
           </div>
           <div className="flex justify-end gap-3 pt-4">
             <button type="button" onClick={() => setIsLessonModalOpen(false)} className="px-6 py-2 rounded-md font-medium text-gray-500 hover:bg-gray-100 transition-colors">Cancelar</button>
+            <button type="submit" className="px-6 py-2 rounded-md font-medium bg-[#1a7a5e] text-white hover:bg-[#00a86b] transition-colors">Guardar</button>
+          </div>
+        </form>
+      </Modal>
+
+      <Modal isOpen={isPdfCourseModalOpen} onClose={() => { setIsPdfCourseModalOpen(false); setEditingPdfCourse(null); }} title={editingPdfCourse ? "Editar Curso PDF" : "Nuevo Curso PDF"}>
+        <form onSubmit={handleSavePdfCourse} className="space-y-4">
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-1"><label className="text-sm font-medium text-gray-700">Nombre</label><input type="text" required className="w-full px-3 py-2 rounded-md border border-[#dee2e6] focus:outline-none focus:ring-2 focus:ring-[#00a86b]/50" value={pdfCourseForm.nombre} onChange={e => setPdfCourseForm({...pdfCourseForm, nombre: e.target.value})} /></div>
+            <div className="space-y-1"><label className="text-sm font-medium text-gray-700">Slug <span className="text-gray-400 text-xs">(único, ej: pdf_excel)</span></label><input type="text" required className="w-full px-3 py-2 rounded-md border border-[#dee2e6] focus:outline-none font-mono" value={pdfCourseForm.slug} onChange={e => setPdfCourseForm({...pdfCourseForm, slug: e.target.value.replace(/\s/g, '_')})} /></div>
+          </div>
+          <div className="space-y-1"><label className="text-sm font-medium text-gray-700">Descripción</label><textarea rows={3} className="w-full px-3 py-2 rounded-md border border-[#dee2e6] focus:outline-none" value={pdfCourseForm.descripcion} onChange={e => setPdfCourseForm({...pdfCourseForm, descripcion: e.target.value})} /></div>
+          <div className="space-y-1"><label className="text-sm font-medium text-gray-700">URL Imagen de portada</label><input type="url" className="w-full px-3 py-2 rounded-md border border-[#dee2e6] focus:outline-none" value={pdfCourseForm.imagen_url} onChange={e => setPdfCourseForm({...pdfCourseForm, imagen_url: e.target.value})} /></div>
+          <div className="flex justify-end gap-3 pt-4">
+            <button type="button" onClick={() => setIsPdfCourseModalOpen(false)} className="px-6 py-2 rounded-md font-medium text-gray-500 hover:bg-gray-100 transition-colors">Cancelar</button>
+            <button type="submit" className="px-6 py-2 rounded-md font-medium bg-[#1a7a5e] text-white hover:bg-[#00a86b] transition-colors">Guardar</button>
+          </div>
+        </form>
+      </Modal>
+
+      <Modal isOpen={isPdfModuloModalOpen} onClose={() => { setIsPdfModuloModalOpen(false); setEditingPdfModulo(null); }} title={editingPdfModulo ? "Editar Módulo" : "Nuevo Módulo"}>
+        <form onSubmit={handleSavePdfModulo} className="space-y-4">
+          <div className="space-y-1"><label className="text-sm font-medium text-gray-700">Título del módulo</label><input type="text" required className="w-full px-3 py-2 rounded-md border border-[#dee2e6] focus:outline-none" value={pdfModuloForm.titulo} onChange={e => setPdfModuloForm({...pdfModuloForm, titulo: e.target.value})} /></div>
+          <div className="space-y-1">
+            <label className="text-sm font-medium text-gray-700">URL del PDF</label>
+            <p className="text-xs text-gray-400">Podés usar Google Drive (vista previa), Dropbox o cualquier URL pública de PDF</p>
+            <input type="text" required className="w-full px-3 py-2 rounded-md border border-[#dee2e6] focus:outline-none font-mono text-sm" placeholder="https://drive.google.com/file/d/ID/preview" value={pdfModuloForm.pdf_url} onChange={e => setPdfModuloForm({...pdfModuloForm, pdf_url: e.target.value})} />
+          </div>
+          <div className="space-y-1 w-32"><label className="text-sm font-medium text-gray-700">Orden</label><input type="number" min={1} required className="w-full px-3 py-2 rounded-md border border-[#dee2e6] focus:outline-none" value={pdfModuloForm.orden} onChange={e => setPdfModuloForm({...pdfModuloForm, orden: Number(e.target.value)})} /></div>
+          <div className="flex justify-end gap-3 pt-4">
+            <button type="button" onClick={() => setIsPdfModuloModalOpen(false)} className="px-6 py-2 rounded-md font-medium text-gray-500 hover:bg-gray-100 transition-colors">Cancelar</button>
             <button type="submit" className="px-6 py-2 rounded-md font-medium bg-[#1a7a5e] text-white hover:bg-[#00a86b] transition-colors">Guardar</button>
           </div>
         </form>

@@ -46,6 +46,13 @@ const getUsers = (): any[] => {
 };
 const saveUsers = (users: any[]) => fs.writeFileSync(DB_PATH, JSON.stringify(users, null, 2));
 
+const PDF_COURSES_PATH = path.join("/tmp", "pdf_courses.json");
+const getPdfCourses = (): any[] => {
+  if (!fs.existsSync(PDF_COURSES_PATH)) { fs.writeFileSync(PDF_COURSES_PATH, JSON.stringify([])); return []; }
+  try { return JSON.parse(fs.readFileSync(PDF_COURSES_PATH, "utf-8")); } catch { return []; }
+};
+const savePdfCourses = (courses: any[]) => fs.writeFileSync(PDF_COURSES_PATH, JSON.stringify(courses, null, 2));
+
 // ─── PROGRESS HELPERS ─────────────────────────────────────────
 const getUserProgress = (email: string): Record<string, string[]> => {
   const users = getUsers();
@@ -237,6 +244,88 @@ app.put("/api/admin/usuarios/:email", requireAdmin, (req, res) => {
 app.delete("/api/admin/usuarios/:email", requireAdmin, (req, res) => { const idx = mockStudents.findIndex(s => s.email === req.params.email); if (idx !== -1) { mockStudents.splice(idx, 1); res.json({ status: "ok" }); } else res.status(404).json({ error: "No encontrado" }); });
 app.get("/api/admin/ventas", requireAdmin, (req, res) => res.json({ ventas: mockSales }));
 
+// PDF COURSES ADMIN
+app.get("/api/admin/cursos-pdf", requireAdmin, (_req, res) => res.json({ cursos: getPdfCourses() }));
+
+app.post("/api/admin/cursos-pdf", requireAdmin, (req, res) => {
+  const { nombre, descripcion, imagen_url, slug } = req.body;
+  if (!nombre || !slug) return res.status(400).json({ error: "Nombre y slug son requeridos" });
+  const courses = getPdfCourses();
+  if (courses.find((c: any) => c.slug === slug)) return res.status(400).json({ error: "El slug ya existe" });
+  const newCourse = { id: Date.now(), slug, nombre, descripcion: descripcion || "", imagen_url: imagen_url || "", tipo: "pdf", activo: true, modulos: [] };
+  courses.push(newCourse);
+  savePdfCourses(courses);
+  res.json({ status: "ok", curso: newCourse });
+});
+
+app.put("/api/admin/cursos-pdf/:id", requireAdmin, (req, res) => {
+  const id = parseInt(req.params.id);
+  const courses = getPdfCourses();
+  const idx = courses.findIndex((c: any) => c.id === id);
+  if (idx === -1) return res.status(404).json({ error: "Curso no encontrado" });
+  const { nombre, descripcion, imagen_url, slug, activo } = req.body;
+  if (nombre !== undefined) courses[idx].nombre = nombre;
+  if (descripcion !== undefined) courses[idx].descripcion = descripcion;
+  if (imagen_url !== undefined) courses[idx].imagen_url = imagen_url;
+  if (slug !== undefined) courses[idx].slug = slug;
+  if (activo !== undefined) courses[idx].activo = activo;
+  savePdfCourses(courses);
+  res.json({ status: "ok", curso: courses[idx] });
+});
+
+app.delete("/api/admin/cursos-pdf/:id", requireAdmin, (req, res) => {
+  const id = parseInt(req.params.id);
+  const courses = getPdfCourses();
+  const idx = courses.findIndex((c: any) => c.id === id);
+  if (idx === -1) return res.status(404).json({ error: "Curso no encontrado" });
+  courses.splice(idx, 1);
+  savePdfCourses(courses);
+  res.json({ status: "ok" });
+});
+
+app.post("/api/admin/cursos-pdf/:id/modulos", requireAdmin, (req, res) => {
+  const id = parseInt(req.params.id);
+  const courses = getPdfCourses();
+  const idx = courses.findIndex((c: any) => c.id === id);
+  if (idx === -1) return res.status(404).json({ error: "Curso no encontrado" });
+  const { titulo, pdf_url, orden } = req.body;
+  if (!titulo || !pdf_url) return res.status(400).json({ error: "Titulo y URL del PDF son requeridos" });
+  const modulo = { id: `pdf_${id}_${Date.now()}`, titulo, pdf_url, orden: orden || (courses[idx].modulos.length + 1) };
+  courses[idx].modulos.push(modulo);
+  courses[idx].modulos.sort((a: any, b: any) => a.orden - b.orden);
+  savePdfCourses(courses);
+  res.json({ status: "ok", modulo });
+});
+
+app.put("/api/admin/cursos-pdf/:id/modulos/:moduloId", requireAdmin, (req, res) => {
+  const id = parseInt(req.params.id);
+  const { moduloId } = req.params;
+  const courses = getPdfCourses();
+  const ci = courses.findIndex((c: any) => c.id === id);
+  if (ci === -1) return res.status(404).json({ error: "Curso no encontrado" });
+  const mi = courses[ci].modulos.findIndex((m: any) => m.id === moduloId);
+  if (mi === -1) return res.status(404).json({ error: "Modulo no encontrado" });
+  const { titulo, pdf_url, orden } = req.body;
+  if (titulo !== undefined) courses[ci].modulos[mi].titulo = titulo;
+  if (pdf_url !== undefined) courses[ci].modulos[mi].pdf_url = pdf_url;
+  if (orden !== undefined) { courses[ci].modulos[mi].orden = orden; courses[ci].modulos.sort((a: any, b: any) => a.orden - b.orden); }
+  savePdfCourses(courses);
+  res.json({ status: "ok", modulo: courses[ci].modulos[mi] });
+});
+
+app.delete("/api/admin/cursos-pdf/:id/modulos/:moduloId", requireAdmin, (req, res) => {
+  const id = parseInt(req.params.id);
+  const { moduloId } = req.params;
+  const courses = getPdfCourses();
+  const ci = courses.findIndex((c: any) => c.id === id);
+  if (ci === -1) return res.status(404).json({ error: "Curso no encontrado" });
+  const mi = courses[ci].modulos.findIndex((m: any) => m.id === moduloId);
+  if (mi === -1) return res.status(404).json({ error: "Modulo no encontrado" });
+  courses[ci].modulos.splice(mi, 1);
+  savePdfCourses(courses);
+  res.json({ status: "ok" });
+});
+
 // CURSOS
 app.get("/api/cursos/mis-cursos", requireAuth, async (req: any, res) => {
   await loadVimeo();
@@ -262,12 +351,31 @@ app.get("/api/cursos/mis-cursos", requireAuth, async (req: any, res) => {
     return { ...c, lecciones_completadas: completadas, progreso: total > 0 ? Math.round((completadas / total) * 100) : 0 };
   });
 
-  res.json({ cursos });
+  const pdfAll = getPdfCourses();
+  const cursosIdentifiers = cursosActualizados.split("|").filter(Boolean);
+  const cursosPdf = (user.role === "admin" ? pdfAll : pdfAll.filter((c: any) => c.activo !== false && cursosIdentifiers.includes(c.slug)))
+    .map((c: any) => {
+      const completadas = (progreso[`pdf_${c.id}`] || []).length;
+      const total = c.modulos.length;
+      return { id: c.id, nombre: c.nombre, descripcion: c.descripcion, imagen_url: c.imagen_url, tipo: "pdf", slug: c.slug, activo: c.activo, lecciones_completadas: completadas, total_lecciones: total, progreso: total > 0 ? Math.round((completadas / total) * 100) : 0 };
+    });
+
+  res.json({ cursos: [...cursos, ...cursosPdf] });
 });
 
 app.get("/api/cursos/:id", requireAuth, async (req: any, res) => {
-  await loadVimeo();
   const id = parseInt(req.params.id);
+
+  const pdfCourse = getPdfCourses().find((c: any) => c.id === id);
+  if (pdfCourse) {
+    const completadas: string[] = getUserProgress(req.user.email)[`pdf_${id}`] || [];
+    const lecciones = pdfCourse.modulos.map((m: any) => ({ id: m.id, titulo: m.titulo, pdf_url: m.pdf_url, vimeo_id: "", duracion: 0, completada: completadas.includes(m.id), tipo: "pdf", orden: m.orden }));
+    const completadasCount = lecciones.filter((l: any) => l.completada).length;
+    const total = lecciones.length;
+    return res.json({ curso: { ...pdfCourse, lecciones_completadas: completadasCount, total_lecciones: total, progreso: total > 0 ? Math.round((completadasCount / total) * 100) : 0 }, lecciones });
+  }
+
+  await loadVimeo();
   const curso = vimeoCourses.find(c => c.id === id);
   if (!curso) return res.status(404).json({ error: "Curso no encontrado" });
 
@@ -291,7 +399,15 @@ app.post("/api/cursos/progreso/:leccionId", requireAuth, async (req: any, res) =
   for (const [cid, lessons] of Object.entries(vimeoLessons)) {
     if ((lessons as any[]).some((l: any) => l.id === leccionId)) { courseId = cid; break; }
   }
-  if (!courseId) return res.json({ status: "ok", leccionId });
+  if (!courseId) {
+    for (const c of getPdfCourses()) {
+      if (c.modulos.some((m: any) => m.id === leccionId)) {
+        saveUserProgress(req.user.email, `pdf_${c.id}`, leccionId);
+        return res.json({ status: "ok", leccionId });
+      }
+    }
+    return res.json({ status: "ok", leccionId });
+  }
 
   saveUserProgress(req.user.email, courseId, leccionId);
   res.json({ status: "ok", leccionId });
