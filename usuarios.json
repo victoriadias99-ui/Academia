@@ -1,5 +1,15 @@
 [
   {
+    "id": 1,
+    "email": "victoria.pdias99@gmail.com",
+    "password": "$2b$10$G9sQVlvTHFO4JMz2M363B.zS1SBcgvL10Kyg9I5.qM.DStJJ1ZZhC",
+    "nombre": "Victoria",
+    "apellido": "Dias",
+    "cursos": "",
+    "activo": 1,
+    "fecha_creacion": "2024-03-01"
+  },
+  {
     "id": 100,
     "email": "test@aprendee.com",
     "password": "$2b$10$7p6Z8E.vGvX.X.X.X.X.X.X.X.X.X.X.X.X.X.X.X.X.X.X.X.X.X.",

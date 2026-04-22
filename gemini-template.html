@@ -1,0 +1,628 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Curso de Gemini desde Cero | Aprende IA con Google Gemini</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<link href="https://fonts.googleapis.com/css2?family=Raleway:wght@300;400;500;600;700;800;900&family=Montserrat:wght@400;700;900&display=swap" rel="stylesheet">
+<style>
+:root{
+  --navy:#1A1046;
+  --primary:#7B3FF2;
+  --primary-dark:#5B2FD1;
+  --accent:#E94F94;
+  --accent-2:#F29C38;
+  --yellow:#F7AC3B;
+  --red:#E74C3C;
+  --bg-page:#FAF7FF;
+  --bg-soft:#F1EAFE;
+  --gemini-blue:#4285F4;
+  --gemini-purple:#9B72F2;
+  --gemini-pink:#E94F94;
+  --gemini-orange:#F29C38;
+  --text-muted:#6B6480;
+}
+*{box-sizing:border-box}
+body{font-family:'Raleway',sans-serif;color:#2A1F4D;overflow-x:hidden;background:var(--bg-page)}
+h1,h2,h3,h4,h5{font-family:'Raleway',sans-serif}
+.font-black{font-family:'Raleway',sans-serif;font-weight:900}
+.font-bold{font-weight:700}
+.font-semi{font-weight:600}
+
+/* Header */
+.topbar{background:var(--navy);color:#fff;padding:10px 0;font-size:.85em;text-align:center}
+.topbar .gemini-gradient{background:linear-gradient(90deg,var(--gemini-blue),var(--gemini-purple),var(--gemini-pink),var(--gemini-orange));-webkit-background-clip:text;-webkit-text-fill-color:transparent;font-weight:900}
+.navbar-brand{padding:0}
+.navbar-brand img{height:40px;width:auto;display:block}
+.navbar{border-bottom:1px solid #eee;padding:15px 0}
+
+/* Header banner */
+.header-banner{background:linear-gradient(120deg,var(--navy) 0%,#2a1264 40%,var(--primary) 80%,var(--accent) 100%);color:#fff;padding:50px 20px;text-align:center;position:relative;overflow:hidden}
+.header-banner::before{content:"";position:absolute;top:-50%;left:-10%;width:50%;height:200%;background:radial-gradient(circle,rgba(255,255,255,.15),transparent 70%);transform:rotate(25deg)}
+.header-banner h2{font-weight:900;font-size:1.8em;position:relative}
+.header-banner .spark-gem{display:inline-block;background:linear-gradient(90deg,#8ab4ff,#c9a6ff,#ff9cc9,#ffc48a);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+
+/* Hero */
+.texto-header{color:var(--navy);font-weight:600;font-size:1em}
+.texto-precio-head{font-family:Montserrat,sans-serif;font-weight:900;background:linear-gradient(90deg,var(--primary),var(--accent));-webkit-background-clip:text;-webkit-text-fill-color:transparent;font-size:2.2em;line-height:1}
+.texto-moneda-head{font-weight:300;color:var(--primary);font-size:1em}
+.btn-cta{background:linear-gradient(90deg,var(--primary),var(--accent))!important;color:#fff!important;font-weight:700;border:0;border-radius:8px;padding:12px 30px;width:100%;transition:.25s;box-shadow:0 6px 18px rgba(123,63,242,.25)}
+.btn-cta:hover{filter:brightness(1.08);transform:translateY(-2px);box-shadow:0 10px 28px rgba(233,79,148,.35);color:#fff!important}
+.lista-header li{padding:4px 0;font-size:.95em}
+.item-sec2{font-size:.95em;color:#555;margin-bottom:12px;display:flex;align-items:center}
+.item-sec2 .ico{width:26px;height:26px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;margin-right:10px;color:#fff;font-size:.8em;background:linear-gradient(135deg,var(--gemini-blue),var(--gemini-purple))}
+
+/* Sticky price card */
+.card-madre{position:fixed;border-radius:12px;box-shadow:0 20px 50px rgba(0,0,0,.12);background:#fff;width:calc(100% - 40px);max-width:380px;top:120px}
+.badge-offer{display:inline-block;background:linear-gradient(90deg,var(--gemini-pink),var(--gemini-orange));color:#fff;padding:4px 12px;border-radius:20px;font-size:.75em;font-weight:700;margin-bottom:10px}
+
+/* Countdown */
+.countdown{display:flex;gap:8px;justify-content:center;margin:15px 0}
+.countdown .unit{background:var(--navy);color:#fff;border-radius:8px;padding:8px 6px;min-width:55px;text-align:center}
+.countdown .unit b{display:block;font-family:Montserrat,sans-serif;font-size:1.3em;line-height:1}
+.countdown .unit span{font-size:.65em;opacity:.8}
+
+/* Banner secondary */
+.banner-cta-gradient{background:linear-gradient(120deg,#1a2d6b 0%,#5934a8 60%,#c94b8a 100%);border-radius:12px;padding:24px;color:#fff;background-size:cover;background-position:center}
+.banner-cta-gradient h5{color:#fff!important}
+
+/* Cards */
+.card-box{border:2px solid #e6e6e6;border-radius:12px;padding:24px;text-align:center;height:100%;transition:.2s;background:#fff}
+.card-box:hover{border-color:var(--gemini-purple);transform:translateY(-4px);box-shadow:0 10px 30px rgba(155,114,242,.15)}
+.card-box .icon-circle{width:60px;height:60px;margin:0 auto 15px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-size:1.5em;background:linear-gradient(135deg,var(--gemini-blue),var(--gemini-purple))}
+
+/* Bonus banners */
+.bonus-box{border-radius:12px;padding:20px;margin-bottom:14px;color:#fff;display:flex;gap:16px;align-items:flex-start;position:relative;overflow:hidden}
+.bonus-1{background:linear-gradient(120deg,var(--gemini-blue),var(--primary))}
+.bonus-2{background:linear-gradient(120deg,var(--primary),var(--accent))}
+.bonus-3{background:linear-gradient(120deg,var(--accent),var(--accent-2))}
+.bonus-box .bico{font-size:2.2em;min-width:60px;text-align:center;padding-top:4px}
+.bonus-box h5{margin:0;color:#fff;font-weight:800}
+
+/* Green review section */
+.reviews-sec{background:linear-gradient(120deg,#3a1f7a 0%,var(--primary) 45%,var(--accent) 100%);padding:60px 20px;color:#fff;margin-top:40px}
+.review-card{background:#fff;color:#222;border-radius:12px;padding:20px;box-shadow:0 10px 30px rgba(0,0,0,.15);text-align:left;height:100%}
+.review-card .stars{color:var(--yellow);text-align:center;margin-bottom:10px}
+.review-card .quote{font-size:.9em;color:#555;min-height:72px}
+.review-card .who{font-weight:700;color:var(--navy);margin-top:10px}
+
+/* Curriculum accordion */
+.faq-btn{color:var(--navy);font-weight:700;text-decoration:none;width:100%;text-align:left;padding:15px}
+.faq-btn:hover{color:var(--gemini-purple)}
+.card-faq{border:1px solid #e6e6e6;border-radius:8px;margin-bottom:10px;overflow:hidden}
+
+/* Instructor */
+.teacher-card{background:linear-gradient(120deg,#f6f3ff,#fef0f5);border-radius:16px;padding:30px;display:flex;gap:24px;align-items:center;flex-wrap:wrap}
+.teacher-photo{width:140px;height:140px;border-radius:50%;background:linear-gradient(135deg,var(--gemini-blue),var(--gemini-purple),var(--gemini-pink));display:flex;align-items:center;justify-content:center;color:#fff;font-size:3em;font-weight:900;flex-shrink:0;box-shadow:0 10px 25px rgba(155,114,242,.3)}
+
+/* For-who section */
+.forwho-card{background:#fff;border-radius:12px;padding:22px;border-left:5px solid var(--gemini-purple);box-shadow:0 4px 20px rgba(0,0,0,.05);height:100%}
+.forwho-card i{color:var(--gemini-purple);font-size:1.6em;margin-bottom:10px}
+
+/* Use cases */
+.uc-card{background:#fff;border-radius:12px;padding:22px;box-shadow:0 4px 20px rgba(0,0,0,.06);height:100%;border-top:4px solid transparent;transition:.2s}
+.uc-card:hover{border-top-color:var(--gemini-pink);transform:translateY(-4px)}
+.uc-card .emoji{font-size:2em;margin-bottom:10px}
+.uc-card h6{font-weight:800;color:var(--navy)}
+
+/* Final CTA */
+.final-cta{background:linear-gradient(90deg,#2a1264 0%,var(--primary) 45%,var(--accent) 85%,var(--accent-2) 100%);border-radius:0;padding:50px 20px;color:#fff}
+.final-cta .btn-cta-white{background:#fff;color:var(--gemini-purple);font-weight:800;border:0;padding:14px 36px;border-radius:6px}
+
+/* Guarantee box */
+.guarantee-box{display:flex;gap:14px;align-items:center;background:var(--bg-soft);border-radius:10px;padding:14px;font-size:.85em}
+.guarantee-box .gico{width:50px;height:50px;flex-shrink:0;border-radius:50%;background:linear-gradient(135deg,var(--primary),var(--accent));color:#fff;display:flex;align-items:center;justify-content:center;font-size:1.4em}
+
+/* Feature strip */
+.feat-card{border-radius:12px;box-shadow:0 6px 20px rgba(0,0,0,.08);background:#fff;padding:22px 10px;text-align:center;height:100%}
+.feat-card i{font-size:2em;background:linear-gradient(135deg,var(--gemini-blue),var(--gemini-purple));-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:10px;display:block}
+
+/* Footer */
+footer{background:var(--navy);color:#fff;padding:40px 20px;text-align:center;margin-top:40px}
+footer a{color:#fff;opacity:.8}
+
+/* Hero mosaic */
+.hero-mosaic{border-radius:16px;background:linear-gradient(120deg,#eaf0ff,#f6ecff,#fde8f1);padding:40px;text-align:center;position:relative;overflow:hidden;min-height:260px;display:flex;align-items:center;justify-content:center}
+.hero-mosaic::before{content:"";position:absolute;width:200px;height:200px;background:radial-gradient(circle,var(--gemini-purple),transparent 70%);top:-40px;right:-40px;opacity:.4}
+.hero-mosaic::after{content:"";position:absolute;width:220px;height:220px;background:radial-gradient(circle,var(--gemini-pink),transparent 70%);bottom:-60px;left:-60px;opacity:.3}
+.hero-mosaic .gem-logo{font-size:5em;background:linear-gradient(135deg,var(--gemini-blue),var(--gemini-purple),var(--gemini-pink),var(--gemini-orange));-webkit-background-clip:text;-webkit-text-fill-color:transparent;z-index:2;position:relative}
+.hero-mosaic .play{position:absolute;width:80px;height:80px;border-radius:50%;background:rgba(255,255,255,.95);display:flex;align-items:center;justify-content:center;z-index:3;box-shadow:0 10px 30px rgba(0,0,0,.15);color:var(--gemini-purple);font-size:1.5em;cursor:pointer}
+
+h1.hero-title{font-family:'Raleway';font-weight:900;color:var(--navy);font-size:2.8em;line-height:1.1}
+h1.hero-title .g{background:linear-gradient(90deg,var(--gemini-blue),var(--gemini-purple),var(--gemini-pink));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+
+/* Global accent override — sustituye todos los text-success verdes del Bootstrap */
+.fa-check,.text-success{color:var(--primary)!important}
+
+@media (max-width:768px){
+  .card-madre{position:static;width:100%;max-width:100%;margin:20px 0}
+  h1.hero-title{font-size:2em}
+}
+</style>
+</head>
+<body>
+
+<!-- Topbar -->
+<div class="topbar">
+  🚀 <span class="gemini-gradient">NUEVO CURSO</span> · Domina Google Gemini y Gemini 2.0 Pro · Cupos limitados
+</div>
+
+<!-- Navbar -->
+<nav class="navbar navbar-light bg-white">
+  <div class="container">
+    <a class="navbar-brand" href="#"><img src="../n-assets/img/logo-excel.png" alt="Aprende Excel"></a>
+    <div class="d-none d-md-flex">
+      <a href="#" class="mr-3 text-dark">Inicio</a>
+      <a href="#temario" class="mr-3 text-dark">Temario</a>
+      <a href="#faq" class="mr-3 text-dark">FAQ</a>
+      <a href="#comprar" class="btn btn-sm btn-cta px-3">Inscribirme</a>
+    </div>
+  </div>
+</nav>
+
+<!-- Header banner -->
+<section class="header-banner">
+  <h2>Aprende a usar <span class="spark-gem">Google Gemini</span> para trabajar, crear y automatizar 10× más rápido</h2>
+</section>
+
+<!-- HERO -->
+<section class="container-fluid mt-4">
+  <div class="row">
+    <!-- LEFT column -->
+    <div class="col-md-7 px-4 px-md-5">
+
+      <!-- Mobile-only hero image -->
+      <div class="hero-mosaic d-block d-md-none mb-4">
+        <i class="fa-solid fa-gem gem-logo"></i>
+      </div>
+
+      <h5 class="texto-header">4.9/5 <i class="fa fa-star" style="color:var(--yellow)"></i>&nbsp;Basado en +8.500 estudiantes</h5>
+      <h1 class="hero-title">Curso de <span class="g">Gemini</span> desde cero</h1>
+      <h5 class="mt-3 font-bold" style="color:var(--navy)">Convertite en el especialista en IA que las empresas están buscando</h5>
+
+      <!-- Mobile price block -->
+      <div class="d-block d-md-none mt-4">
+        <span class="badge-offer">🔥 Oferta de lanzamiento</span>
+        <p class="d-flex align-items-center m-0 mt-2">
+          <span class="texto-precio-head mr-2">AR$ 12.999</span>
+          <span class="texto-moneda-head">ARS</span>
+        </p>
+        <p style="color:var(--red);font-weight:600"><strike>AR$ 56.499 ARS</strike> · 77% OFF</p>
+
+        <!-- Countdown -->
+        <div class="countdown">
+          <div class="unit"><b>02</b><span>DÍAS</span></div>
+          <div class="unit"><b>14</b><span>HORAS</span></div>
+          <div class="unit"><b>37</b><span>MIN</span></div>
+          <div class="unit"><b>52</b><span>SEG</span></div>
+        </div>
+
+        <a href="#comprar" class="btn btn-cta">Quiero este curso</a>
+        <p class="mt-3" style="color:#555">Aprende Gemini en 4 horas con prompts reales, casos aplicados y soporte siempre que lo necesites.</p>
+        <ul class="lista-header pl-3" style="list-style:none">
+          <li><i class="fa fa-check text-success"></i>&nbsp;Hacelo a tu propio ritmo, donde y cuando quieras</li>
+          <li><i class="fa fa-check text-success"></i>&nbsp;Consultá cualquier duda 24/7</li>
+          <li><i class="fa fa-check text-success"></i>&nbsp;Sin requisitos previos</li>
+          <li><i class="fa fa-check text-success"></i>&nbsp;Otorgamos Certificado Oficial</li>
+          <li><i class="fa fa-check text-success"></i>&nbsp;+50 prompts profesionales descargables</li>
+        </ul>
+        <div class="guarantee-box">
+          <div class="gico"><i class="fa fa-shield-halved"></i></div>
+          <p class="m-0">Estamos tan seguros de que te va a encantar que te ofrecemos <b>7 días para ver el contenido</b>. Si no te gusta te devolvemos el 100% de tu dinero.</p>
+        </div>
+      </div>
+
+      <!-- Desktop hero mosaic -->
+      <div class="hero-mosaic d-none d-md-flex mt-3">
+        <i class="fa-solid fa-gem gem-logo"></i>
+        <div class="play"><i class="fa fa-play"></i></div>
+      </div>
+
+      <p class="d-none d-md-block mt-4" style="color:#555">Aprende Gemini en 4 horas con prompts reales, casos aplicados y soporte siempre que lo necesites.</p>
+      <a href="#comprar" class="d-none d-md-inline-block btn btn-cta" style="width:auto">Quiero este curso</a>
+
+      <hr class="my-4">
+
+      <h5 class="font-bold" style="color:var(--navy)">Aprende Gemini con nuestro método dinámico y aplicado</h5>
+      <p style="color:#555">Prompts reales, ejemplos laborales y creativos, desde un nivel inicial y con soporte cada vez que lo necesites… sin requisitos previos.</p>
+
+      <p class="item-sec2"><span class="ico"><i class="fa fa-clock"></i></span> 4 horas de contenido on-demand para verlos donde y cuando quieras</p>
+      <p class="item-sec2"><span class="ico"><i class="fa fa-infinity"></i></span> Acceso al curso y al soporte de por vida con un único pago</p>
+      <p class="item-sec2"><span class="ico"><i class="fa fa-award"></i></span> Certificado y Garantía de 100% de satisfacción</p>
+      <p class="item-sec2"><span class="ico"><i class="fa fa-bolt"></i></span> Actualizaciones gratis con las nuevas versiones de Gemini</p>
+
+      <!-- Promo banner -->
+      <div class="banner-cta-gradient mt-4">
+        <h5 class="font-bold">🎓 Este curso está valorado en AR$ 56.499</h5>
+        <p class="m-0">…pero puede ser tuyo con esta oferta limitada por sólo <b>AR$ 12.999 ARS</b>.</p>
+      </div>
+
+      <!-- For who -->
+      <h3 class="font-black mt-5" style="color:var(--navy)">¿Para quién es este curso?</h3>
+      <div class="row mt-3">
+        <div class="col-md-6 mb-3">
+          <div class="forwho-card">
+            <i class="fa fa-briefcase"></i>
+            <h5 class="font-bold">Profesionales y empleados</h5>
+            <p class="m-0 small">Que quieren multiplicar su productividad: mails, reportes, análisis y presentaciones en minutos.</p>
+          </div>
+        </div>
+        <div class="col-md-6 mb-3">
+          <div class="forwho-card">
+            <i class="fa fa-pen-nib"></i>
+            <h5 class="font-bold">Creadores y marketers</h5>
+            <p class="m-0 small">Que necesitan contenido, imágenes, ideas y copys de alta calidad con IA todos los días.</p>
+          </div>
+        </div>
+        <div class="col-md-6 mb-3">
+          <div class="forwho-card">
+            <i class="fa fa-store"></i>
+            <h5 class="font-bold">Emprendedores y PyMEs</h5>
+            <p class="m-0 small">Que quieren automatizar tareas, responder clientes y analizar datos sin contratar un equipo técnico.</p>
+          </div>
+        </div>
+        <div class="col-md-6 mb-3">
+          <div class="forwho-card">
+            <i class="fa fa-graduation-cap"></i>
+            <h5 class="font-bold">Estudiantes y curiosos</h5>
+            <p class="m-0 small">Que quieren entender cómo funciona la IA y llevar sus trabajos y proyectos al siguiente nivel.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- What you'll learn -->
+      <div class="d-flex align-items-center mt-5 p-3">
+        <span class="icon-circle" style="width:50px;height:50px;background:linear-gradient(135deg,var(--gemini-blue),var(--gemini-purple));color:#fff;display:inline-flex;align-items:center;justify-content:center;border-radius:50%;font-size:1.2em"><i class="fa fa-book-open"></i></span>
+        <h3 class="ml-3 font-bold m-0" style="color:var(--navy)">Aprenderás</h3>
+      </div>
+      <ul class="lista-header pl-3 mt-2" style="list-style:none">
+        <li><i class="fa fa-check text-success"></i>&nbsp;Qué es Gemini y cómo funcionan los modelos de IA de Google</li>
+        <li><i class="fa fa-check text-success"></i>&nbsp;Escribir prompts profesionales que devuelven resultados útiles</li>
+        <li><i class="fa fa-check text-success"></i>&nbsp;Generar texto, imágenes y audio desde Gemini</li>
+        <li><i class="fa fa-check text-success"></i>&nbsp;Analizar PDFs, planillas y documentos largos en segundos</li>
+        <li><i class="fa fa-check text-success"></i>&nbsp;Usar Gemini integrado con Gmail, Docs, Sheets y Drive</li>
+        <li><i class="fa fa-check text-success"></i>&nbsp;Construir Gems personalizados (tu propio asistente de IA)</li>
+        <li><i class="fa fa-check text-success"></i>&nbsp;Automatizar tareas repetitivas en tu trabajo</li>
+        <li><i class="fa fa-check text-success"></i>&nbsp;Usar Gemini para programar sin saber programar</li>
+        <li><i class="fa fa-check text-success"></i>&nbsp;Buenas prácticas de seguridad, privacidad y ética en IA</li>
+        <li>• No requiere conocimientos previos de programación ni de IA</li>
+      </ul>
+
+      <!-- Secondary banner -->
+      <div class="banner-cta-gradient mt-4 p-4">
+        <p class="font-bold" style="font-size:1.2em">✨ Serás el especialista en IA que las empresas están buscando</p>
+        <p class="m-0">Abrí tus puertas a nuevas oportunidades. Domina Gemini por completo en sólo 4 horas y con soporte 24/7.</p>
+        <p class="mt-2 mb-0">Más de 8.500 estudiantes ya eligieron nuestra academia</p>
+        <p style="font-size:1.2em" class="mb-0">
+          <i class="fa fa-star" style="color:var(--yellow)"></i>
+          <i class="fa fa-star" style="color:var(--yellow)"></i>
+          <i class="fa fa-star" style="color:var(--yellow)"></i>
+          <i class="fa fa-star" style="color:var(--yellow)"></i>
+          <i class="fa fa-star" style="color:var(--yellow)"></i>
+        </p>
+      </div>
+
+      <!-- Feature cards -->
+      <h5 class="mt-5 font-bold" style="color:var(--navy)">Aprender IA desde casa nunca fue tan simple</h5>
+      <div class="row mt-3">
+        <div class="col-md-4 mb-3">
+          <div class="card-box">
+            <div class="icon-circle"><i class="fa fa-certificate"></i></div>
+            <h5 class="font-bold" style="color:var(--navy)">Certificado</h5>
+            <p class="small m-0">Sumá un certificado oficial a tu Currículum y LinkedIn.</p>
+          </div>
+        </div>
+        <div class="col-md-4 mb-3">
+          <div class="card-box">
+            <div class="icon-circle"><i class="fa fa-headset"></i></div>
+            <h5 class="font-bold" style="color:var(--navy)">Soporte 24/7</h5>
+            <p class="small m-0">Obtené ayuda por WhatsApp y email siempre que lo necesites.</p>
+          </div>
+        </div>
+        <div class="col-md-4 mb-3">
+          <div class="card-box">
+            <div class="icon-circle"><i class="fa fa-infinity"></i></div>
+            <h5 class="font-bold" style="color:var(--navy)">Acceso de por vida</h5>
+            <p class="small m-0">Aprende a tu ritmo. Incluye futuras actualizaciones gratis.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Use cases -->
+      <h3 class="font-black mt-5 mb-3" style="color:var(--navy)">Casos reales que vas a resolver con Gemini</h3>
+      <div class="row">
+        <div class="col-md-4 mb-3"><div class="uc-card"><div class="emoji">📧</div><h6>Emails en 30 seg</h6><p class="small m-0 text-muted">Redactá respuestas profesionales, resumen de hilos y follow-ups en Gmail.</p></div></div>
+        <div class="col-md-4 mb-3"><div class="uc-card"><div class="emoji">📊</div><h6>Análisis de Excel</h6><p class="small m-0 text-muted">Extraé insights, fórmulas y gráficos desde planillas complejas sin ser experto.</p></div></div>
+        <div class="col-md-4 mb-3"><div class="uc-card"><div class="emoji">🖼️</div><h6>Imágenes con IA</h6><p class="small m-0 text-muted">Creá banners, mockups y arte para redes sociales directamente desde Gemini.</p></div></div>
+        <div class="col-md-4 mb-3"><div class="uc-card"><div class="emoji">📄</div><h6>Resumen de PDFs</h6><p class="small m-0 text-muted">Subí contratos, libros o informes de 200 páginas y obtené el resumen al instante.</p></div></div>
+        <div class="col-md-4 mb-3"><div class="uc-card"><div class="emoji">🤖</div><h6>Tu propio Gem</h6><p class="small m-0 text-muted">Creá un asistente personalizado para tu trabajo, marca o negocio.</p></div></div>
+        <div class="col-md-4 mb-3"><div class="uc-card"><div class="emoji">💡</div><h6>Ideas y copywriting</h6><p class="small m-0 text-muted">Scripts para YouTube, posteos, guiones y campañas de marketing.</p></div></div>
+      </div>
+
+      <!-- Bonuses -->
+      <div class="d-flex align-items-center mt-5 p-3">
+        <span class="icon-circle" style="width:50px;height:50px;background:linear-gradient(135deg,var(--gemini-pink),var(--gemini-orange))"><i class="fa fa-gift"></i></span>
+        <h3 class="ml-3 font-bold m-0" style="color:var(--navy)">¡Y aún hay más!</h3>
+      </div>
+
+      <div class="bonus-box bonus-1">
+        <div class="bico"><i class="fa fa-lightbulb"></i></div>
+        <div>
+          <h5>Bonus #1</h5>
+          <h5>+ 50 Prompts Profesionales</h5>
+          <p class="small m-0" style="opacity:.9">Prompts listos para copiar y pegar en productividad, ventas, marketing, diseño y atención al cliente.</p>
+        </div>
+      </div>
+      <div class="bonus-box bonus-2">
+        <div class="bico"><i class="fa fa-diagram-project"></i></div>
+        <div>
+          <h5>Bonus #2</h5>
+          <h5>+ 15 Workflows aplicados</h5>
+          <p class="small m-0" style="opacity:.9">Flujos paso a paso para integrar Gemini con Gmail, Docs, Sheets y Drive en tu rutina diaria.</p>
+        </div>
+      </div>
+      <div class="bonus-box bonus-3">
+        <div class="bico"><i class="fa fa-graduation-cap"></i></div>
+        <div>
+          <h5>Bonus #3</h5>
+          <h5>+ Examen Integrador y Comunidad</h5>
+          <p class="small m-0" style="opacity:.9">Validá lo aprendido y accedé a una comunidad privada de Telegram con actualizaciones semanales.</p>
+        </div>
+      </div>
+
+      <!-- Instructor -->
+      <h3 class="font-black mt-5 mb-3" style="color:var(--navy)">Tu instructor</h3>
+      <div class="teacher-card">
+        <div class="teacher-photo">FC</div>
+        <div style="flex:1;min-width:220px">
+          <h4 class="font-bold m-0" style="color:var(--navy)">Facundo Correa</h4>
+          <p class="small text-muted mb-2">Especialista en IA Aplicada · +8.500 estudiantes</p>
+          <p class="small m-0">Consultor en automatización e IA para empresas. Trabajó con marcas como Mercado Libre, Globant y PyMEs de LATAM implementando soluciones con Gemini, ChatGPT y agentes de IA. Enseña con ejemplos reales, sin tecnicismos.</p>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- RIGHT column: sticky card -->
+    <div class="d-none d-md-block col-md-5">
+      <div class="card-madre p-4">
+        <span class="badge-offer">🔥 Oferta de lanzamiento</span>
+        <h5 class="font-semi" style="color:var(--navy)">Acceso completo al curso</h5>
+        <p class="d-flex align-items-center m-0">
+          <span class="texto-precio-head mr-2">AR$ 12.999</span>
+          <span class="texto-moneda-head">ARS</span>
+        </p>
+        <p style="color:var(--red);font-weight:600"><strike>AR$ 56.499 ARS</strike> · 77% OFF</p>
+
+        <div class="countdown">
+          <div class="unit"><b>02</b><span>DÍAS</span></div>
+          <div class="unit"><b>14</b><span>HS</span></div>
+          <div class="unit"><b>37</b><span>MIN</span></div>
+          <div class="unit"><b>52</b><span>SEG</span></div>
+        </div>
+
+        <a href="#comprar" class="btn btn-cta">Quiero este curso</a>
+
+        <ul class="lista-header pl-3 mt-3" style="list-style:none;font-size:.9em">
+          <li><i class="fa fa-check text-success"></i>&nbsp;Hacelo a tu propio ritmo</li>
+          <li><i class="fa fa-check text-success"></i>&nbsp;Consultá cualquier duda 24/7</li>
+          <li><i class="fa fa-check text-success"></i>&nbsp;Sin requisitos previos</li>
+          <li><i class="fa fa-check text-success"></i>&nbsp;Certificado Oficial</li>
+          <li><i class="fa fa-check text-success"></i>&nbsp;+50 prompts descargables</li>
+          <li><i class="fa fa-check text-success"></i>&nbsp;Actualizaciones gratis de por vida</li>
+        </ul>
+
+        <div class="guarantee-box">
+          <div class="gico"><i class="fa fa-shield-halved"></i></div>
+          <p class="m-0 small">Garantía de 7 días. Si no te gusta, te devolvemos el 100% de tu dinero.</p>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Reviews -->
+  <div class="reviews-sec">
+    <div class="container-fluid">
+      <div class="row">
+        <div class="col-md-3 d-flex align-items-center">
+          <h3 class="font-black" style="font-size:1.6em">Lo que opinan nuestros estudiantes</h3>
+        </div>
+        <div class="col-md-9">
+          <div id="carouselReviews" class="carousel slide" data-ride="carousel">
+            <div class="carousel-inner">
+              <div class="carousel-item active">
+                <div class="row">
+                  <div class="col-md-4 mb-3"><div class="review-card"><p class="stars"><i class="fa fa-star"></i><i class="fa fa-star"></i><i class="fa fa-star"></i><i class="fa fa-star"></i><i class="fa fa-star"></i></p><p class="quote">"Nunca había usado IA y ahora la aplico todos los días en mi trabajo. Me ahorra horas."</p><p class="who">Sofía Martinez</p></div></div>
+                  <div class="col-md-4 mb-3"><div class="review-card"><p class="stars"><i class="fa fa-star"></i><i class="fa fa-star"></i><i class="fa fa-star"></i><i class="fa fa-star"></i><i class="fa fa-star"></i></p><p class="quote">"Los prompts del curso son oro. Los uso en mi agencia todos los días para mis clientes."</p><p class="who">Tomás López</p></div></div>
+                  <div class="col-md-4 mb-3"><div class="review-card"><p class="stars"><i class="fa fa-star"></i><i class="fa fa-star"></i><i class="fa fa-star"></i><i class="fa fa-star"></i><i class="fa fa-star"></i></p><p class="quote">"Explicación clara y directa, sin vueltas. Ideal para arrancar en IA desde cero."</p><p class="who">Camila Ortiz</p></div></div>
+                </div>
+              </div>
+              <div class="carousel-item">
+                <div class="row">
+                  <div class="col-md-4 mb-3"><div class="review-card"><p class="stars"><i class="fa fa-star"></i><i class="fa fa-star"></i><i class="fa fa-star"></i><i class="fa fa-star"></i><i class="fa fa-star"></i></p><p class="quote">"Lo que más me gustó: los workflows con Docs y Sheets. Aumentaron mi productividad 3×."</p><p class="who">Alan Rodríguez</p></div></div>
+                  <div class="col-md-4 mb-3"><div class="review-card"><p class="stars"><i class="fa fa-star"></i><i class="fa fa-star"></i><i class="fa fa-star"></i><i class="fa fa-star"></i><i class="fa fa-star"></i></p><p class="quote">"Soy adulto mayor y aprendí sin problemas. Muy bien explicado, paso a paso."</p><p class="who">Mariano Pintos</p></div></div>
+                  <div class="col-md-4 mb-3"><div class="review-card"><p class="stars"><i class="fa fa-star"></i><i class="fa fa-star"></i><i class="fa fa-star"></i><i class="fa fa-star"></i><i class="fa fa-star"></i></p><p class="quote">"Súper recomendable. La sección de Gems personalizados me voló la cabeza."</p><p class="who">Julia Vieytes</p></div></div>
+                </div>
+              </div>
+            </div>
+            <ol class="carousel-indicators" style="bottom:-30px">
+              <li data-target="#carouselReviews" data-slide-to="0" class="active"></li>
+              <li data-target="#carouselReviews" data-slide-to="1"></li>
+            </ol>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FAQ + Temario -->
+  <div class="row mt-5 p-4 p-md-5" id="faq">
+    <div class="col-md-8 offset-md-2">
+      <h1 class="font-black" style="color:var(--navy)">Somos expertos despejando cualquier duda</h1>
+      <div class="accordion mt-4" id="faqAcc">
+        <div class="card-faq">
+          <div class="card-header bg-white border-0 p-0"><button class="btn faq-btn" data-toggle="collapse" data-target="#q1">#1 ¿Necesito saber programar o usar IA antes?</button></div>
+          <div id="q1" class="collapse" data-parent="#faqAcc"><div class="card-body">No. El curso arranca desde cero. Si nunca usaste Gemini, ChatGPT ni IA, no hay problema — te acompañamos paso a paso.</div></div>
+        </div>
+        <div class="card-faq">
+          <div class="card-header bg-white border-0 p-0"><button class="btn faq-btn" data-toggle="collapse" data-target="#q2">#2 ¿Incluye certificado?</button></div>
+          <div id="q2" class="collapse" data-parent="#faqAcc"><div class="card-body">Sí. Al terminar recibís un certificado oficial que podés sumar a tu CV y LinkedIn.</div></div>
+        </div>
+        <div class="card-faq">
+          <div class="card-header bg-white border-0 p-0"><button class="btn faq-btn" data-toggle="collapse" data-target="#q3">#3 ¿Gemini es gratis?</button></div>
+          <div id="q3" class="collapse" data-parent="#faqAcc"><div class="card-body">Sí, Gemini tiene una versión gratuita muy potente. En el curso también te mostramos Gemini Advanced y cuándo conviene pagarlo.</div></div>
+        </div>
+        <div class="card-faq">
+          <div class="card-header bg-white border-0 p-0"><button class="btn faq-btn" data-toggle="collapse" data-target="#q4">#4 ¿Cuánto tiempo tengo para hacer el curso?</button></div>
+          <div id="q4" class="collapse" data-parent="#faqAcc"><div class="card-body">Tenés acceso <b>de por vida</b>, incluyendo actualizaciones gratis a medida que Google lanza nuevas versiones.</div></div>
+        </div>
+        <div class="card-faq">
+          <div class="card-header bg-white border-0 p-0"><button class="btn faq-btn" data-toggle="collapse" data-target="#q5">#5 ¿Dan soporte si me trabo?</button></div>
+          <div id="q5" class="collapse" data-parent="#faqAcc"><div class="card-body">Sí. Tenés soporte por WhatsApp y email 24/7, y acceso a una comunidad privada donde resolvemos dudas.</div></div>
+        </div>
+        <div class="card-faq">
+          <div class="card-header bg-white border-0 p-0"><button class="btn faq-btn" data-toggle="collapse" data-target="#q6">#6 ¿Qué pasa si no me gusta?</button></div>
+          <div id="q6" class="collapse" data-parent="#faqAcc"><div class="card-body">Tenés 7 días para ver el contenido. Si no te convence, te devolvemos el 100% de tu dinero sin preguntas.</div></div>
+        </div>
+      </div>
+
+      <h2 class="font-black text-center mt-5 pb-3 pt-3" id="temario">¿Querés conocer el temario completo?</h2>
+      <div class="card-faq">
+        <div class="card-header bg-white border-0 p-0"><button class="btn faq-btn" data-toggle="collapse" data-target="#temarioCol">👉 Click acá para ver el temario</button></div>
+        <div id="temarioCol" class="collapse"><div class="card-body">
+          <p class="lead font-bold">Módulo 1 · Introducción a Gemini</p>
+          <ul>
+            <li>Clase 1: Qué es Gemini y qué lo diferencia de ChatGPT</li>
+            <li>Clase 2: Crear tu cuenta y configurar el espacio de trabajo</li>
+            <li>Clase 3: Tour por la interfaz de Gemini (web y app)</li>
+            <li>Clase 4: Gemini vs Gemini Advanced: cuándo pagar</li>
+          </ul>
+          <p class="lead font-bold mt-3">Módulo 2 · Prompts profesionales</p>
+          <ul>
+            <li>Clase 5: Anatomía de un buen prompt</li>
+            <li>Clase 6: Fórmulas de prompt (Rol + Tarea + Contexto + Formato)</li>
+            <li>Clase 7: Prompts con ejemplos (few-shot)</li>
+            <li>Clase 8: Cómo iterar y mejorar una respuesta</li>
+          </ul>
+          <p class="lead font-bold mt-3">Módulo 3 · Contenido multimodal</p>
+          <ul>
+            <li>Clase 9: Generar imágenes con Gemini</li>
+            <li>Clase 10: Analizar fotos, capturas y diagramas</li>
+            <li>Clase 11: Resumir videos de YouTube</li>
+            <li>Clase 12: Convertir audio a texto y viceversa</li>
+          </ul>
+          <p class="lead font-bold mt-3">Módulo 4 · Productividad con Google Workspace</p>
+          <ul>
+            <li>Clase 13: Gemini en Gmail: redactar y resumir emails</li>
+            <li>Clase 14: Gemini en Docs: escribir, corregir y reescribir</li>
+            <li>Clase 15: Gemini en Sheets: fórmulas, análisis y tablas</li>
+            <li>Clase 16: Gemini en Drive: buscar y resumir archivos</li>
+          </ul>
+          <p class="lead font-bold mt-3">Módulo 5 · Casos de negocio</p>
+          <ul>
+            <li>Clase 17: Plan de marketing completo en 20 minutos</li>
+            <li>Clase 18: Atención al cliente automatizada</li>
+            <li>Clase 19: Investigación de mercado con Deep Research</li>
+            <li>Clase 20: Análisis financiero básico</li>
+          </ul>
+          <p class="lead font-bold mt-3">Módulo 6 · Gems y automatización</p>
+          <ul>
+            <li>Clase 21: ¿Qué son los Gems? Tu propio asistente</li>
+            <li>Clase 22: Crear un Gem paso a paso</li>
+            <li>Clase 23: Gems para equipos de trabajo</li>
+            <li>Clase 24: Automatizar con Apps Script + Gemini</li>
+          </ul>
+          <p class="lead font-bold mt-3">Módulo 7 · Seguridad, privacidad y ética</p>
+          <ul>
+            <li>Clase 25: Qué datos NO compartir con IA</li>
+            <li>Clase 26: Alucinaciones y cómo verificar</li>
+            <li>Clase 27: Ética profesional en el uso de IA</li>
+            <li>Clase 28: Examen integrador final</li>
+          </ul>
+        </div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CTA section -->
+  <div class="row p-4 p-md-5">
+    <div class="col-md-6 d-flex align-items-center">
+      <div>
+        <h1 class="font-black">¿Qué estás esperando?</h1>
+        <p>Sumate a +8.500 estudiantes que ya aprendieron a sacarle provecho a la IA con nuestro método.</p>
+        <a href="#comprar" class="btn btn-cta" style="width:auto">¡Comenzar ahora!</a>
+      </div>
+    </div>
+    <div class="col-md-6 text-center">
+      <div class="hero-mosaic">
+        <i class="fa-solid fa-gem gem-logo"></i>
+      </div>
+    </div>
+  </div>
+
+  <!-- Feature strip -->
+  <div class="row mx-0 mx-md-5" style="gap:10px 0">
+    <div class="col-md-2 offset-md-1"><div class="feat-card"><i class="fa fa-clock"></i><h6 class="font-bold" style="color:var(--navy)">4 hs de contenido</h6></div></div>
+    <div class="col-md-2"><div class="feat-card"><i class="fa fa-headset"></i><h6 class="font-bold" style="color:var(--navy)">Soporte 24/7</h6></div></div>
+    <div class="col-md-2"><div class="feat-card"><i class="fa fa-certificate"></i><h6 class="font-bold" style="color:var(--navy)">Certificado</h6></div></div>
+    <div class="col-md-2"><div class="feat-card"><i class="fa fa-cloud-arrow-down"></i><h6 class="font-bold" style="color:var(--navy)">Online y descargable</h6></div></div>
+    <div class="col-md-2"><div class="feat-card"><i class="fa fa-shield-halved"></i><h6 class="font-bold" style="color:var(--navy)">Garantía 100%</h6></div></div>
+  </div>
+
+  <!-- Final gradient CTA -->
+  <div class="final-cta mt-5" id="comprar">
+    <div class="row">
+      <div class="col-md-7 p-4 p-md-5">
+        <p class="m-0">Adquirí un conocimiento clave en 4hs</p>
+        <h1 class="font-black">Gemini desde Cero</h1>
+        <p class="mt-4 mb-2">Accedé hoy y tenelo de por vida. Pago por única vez (sin suscripciones ni pagos mensuales).</p>
+        <p class="mb-4">🛡️ Garantía de devolución de 7 días</p>
+        <p class="d-flex align-items-center m-0">
+          <span style="font-family:Montserrat;font-weight:900;font-size:2.4em">AR$ 12.999</span>
+          <span class="ml-2 font-bold">ARS</span>
+        </p>
+        <p><strike style="opacity:.7">AR$ 56.499 ARS</strike> · 77% OFF</p>
+        <a href="#" class="btn btn-cta-white mt-2">Quiero este curso</a>
+      </div>
+      <div class="col-md-5 d-flex align-items-center justify-content-center p-4">
+        <div style="font-size:10em;background:linear-gradient(135deg,#fff,#ffd0e9);-webkit-background-clip:text;-webkit-text-fill-color:transparent;filter:drop-shadow(0 10px 30px rgba(0,0,0,.25))"><i class="fa-solid fa-gem"></i></div>
+      </div>
+    </div>
+  </div>
+
+</section>
+
+<footer>
+  <p class="m-0">© 2026 Aprende·IA · Curso de Gemini desde Cero</p>
+  <p class="small mt-2"><a href="#">Términos</a> · <a href="#">Privacidad</a> · <a href="#">Soporte</a></p>
+</footer>
+
+<script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+// Simple countdown simulation
+(function(){
+  const el=document.querySelectorAll('.countdown');
+  let d=2,h=14,m=37,s=52;
+  setInterval(()=>{
+    s--;
+    if(s<0){s=59;m--}
+    if(m<0){m=59;h--}
+    if(h<0){h=23;d--}
+    el.forEach(c=>{
+      const units=c.querySelectorAll('.unit b');
+      if(units.length===4){
+        units[0].textContent=String(d).padStart(2,'0');
+        units[1].textContent=String(h).padStart(2,'0');
+        units[2].textContent=String(m).padStart(2,'0');
+        units[3].textContent=String(s).padStart(2,'0');
+      }
+    });
+  },1000);
+})();
+</script>
+</body>
+</html>

@@ -166,7 +166,7 @@ export default function App() {
   }
 
   if (view === 'admin') {
-    return <AdminDashboard />;
+    return <AdminDashboard onLogout={handleLogout} />;
   }
 
   if (view === 'player' && selectedCourseId) {
@@ -391,40 +391,35 @@ const CourseCard: React.FC<{ course: Course, onClick: () => void }> = ({ course,
   );
 };
 
-// --- Mock PDF resources per course ---
-const COURSE_RESOURCES: Record<number, { nombre: string; url: string; size: string }[]> = {
-  12286845: [
-    { nombre: 'Modulo 1 - Estructuras basicas.pdf', url: '#', size: '1.2 MB' },
-    { nombre: 'Ejercicios practicos clase 3.pdf', url: '#', size: '840 KB' },
-    { nombre: 'Resumen formulas esenciales.pdf', url: '#', size: '560 KB' },
-  ],
-  12286854: [
-    { nombre: 'Guia tablas dinamicas.pdf', url: '#', size: '1.4 MB' },
-    { nombre: 'Ejercicios funciones avanzadas.pdf', url: '#', size: '920 KB' },
-  ],
-};
-
 // --- Player View Component ---
+interface Recurso { id: number; tipo: "pdf" | "link" | "comentario"; titulo: string; contenido: string; }
+
 function PlayerView({ courseId, onBack }: { courseId: number, onBack: () => void }) {
   const [course, setCourse] = useState<Course | null>(null);
   const [lessons, setLessons] = useState<Lesson[]>([]);
   const [currentLessonIndex, setCurrentLessonIndex] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [panelOpen, setPanelOpen] = useState(false);
+  const [recursos, setRecursos] = useState<Recurso[]>([]);
 
   useEffect(() => {
     const fetchCourseData = async () => {
       setIsLoading(true);
       try {
-        const res = await authFetch(`/api/cursos/${courseId}`);
-        if (res.ok) {
-          const data = await res.json();
+        const [courseRes, recursosRes] = await Promise.all([
+          authFetch(`/api/cursos/${courseId}`),
+          authFetch(`/api/cursos/${courseId}/recursos`),
+        ]);
+        if (courseRes.ok) {
+          const data = await courseRes.json();
           setCourse(data.curso);
           setLessons(data.lecciones);
-          
-          // Find first incomplete lesson
           const firstIncomplete = data.lecciones.findIndex((l: Lesson) => !l.completada);
           setCurrentLessonIndex(firstIncomplete !== -1 ? firstIncomplete : 0);
+        }
+        if (recursosRes.ok) {
+          const rData = await recursosRes.json();
+          setRecursos(rData.recursos || []);
         }
       } catch (err) {
         console.error("Failed to fetch course details", err);
@@ -442,13 +437,15 @@ function PlayerView({ courseId, onBack }: { courseId: number, onBack: () => void
     try {
       const res = await authFetch(`/api/cursos/progreso/${lesson.id}`, {
         method: 'POST',
-        body: JSON.stringify({ completada: true, porcentaje_visto: 100 })
+        body: JSON.stringify({ completada: true, porcentaje_visto: 100, courseId })
       });
 
       if (res.ok) {
         const updatedLessons = [...lessons];
         updatedLessons[currentLessonIndex].completada = true;
         setLessons(updatedLessons);
+      } else {
+        console.error("Failed to mark lesson as completed", res.status);
       }
     } catch (err) {
       console.error("Failed to mark lesson as completed", err);
@@ -614,23 +611,40 @@ function PlayerView({ courseId, onBack }: { courseId: number, onBack: () => void
               </button>
             </div>
             <div className="flex-1 overflow-y-auto p-4">
-              {(COURSE_RESOURCES[courseId] || []).length > 0 ? (
+              {recursos.length > 0 ? (
                 <div className="space-y-2">
-                  {(COURSE_RESOURCES[courseId] || []).map((pdf, i) => (
-                    <a
-                      key={i}
-                      href={pdf.url}
-                      className="flex items-center gap-3 p-3 border border-dee2e6 rounded-lg hover:bg-[#f0faf5] hover:border-verde-brillante transition-all group"
-                    >
-                      <div className="w-9 h-9 bg-[#eaf4ee] rounded-lg flex items-center justify-center shrink-0 group-hover:bg-verde-brillante/20 transition-colors">
-                        <BookOpen size={16} className="text-verde-boton" />
+                  {recursos.map(r => (
+                    r.tipo === "link" ? (
+                      <a key={r.id} href={r.contenido} target="_blank" rel="noopener noreferrer"
+                        className="flex items-center gap-3 p-3 border border-dee2e6 rounded-lg hover:bg-[#f0faf5] hover:border-verde-brillante transition-all group">
+                        <div className="w-9 h-9 bg-blue-100 rounded-lg flex items-center justify-center shrink-0">
+                          <BookOpen size={16} className="text-blue-600" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-azul-marino truncate">{r.titulo}</p>
+                          <p className="text-xs text-texto-gris mt-0.5">Link externo</p>
+                        </div>
+                        <ChevronRight size={14} className="text-texto-gris group-hover:text-verde-brillante shrink-0" />
+                      </a>
+                    ) : r.tipo === "pdf" ? (
+                      <a key={r.id} href={r.contenido} download={r.titulo}
+                        className="flex items-center gap-3 p-3 border border-dee2e6 rounded-lg hover:bg-[#f0faf5] hover:border-verde-brillante transition-all group">
+                        <div className="w-9 h-9 bg-red-100 rounded-lg flex items-center justify-center shrink-0">
+                          <BookOpen size={16} className="text-red-600" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-azul-marino truncate">{r.titulo}</p>
+                          <p className="text-xs text-texto-gris mt-0.5">PDF · Descargar</p>
+                        </div>
+                        <ChevronRight size={14} className="text-texto-gris group-hover:text-verde-brillante shrink-0" />
+                      </a>
+                    ) : (
+                      <div key={r.id} className="p-3 border border-dee2e6 rounded-lg bg-yellow-50">
+                        <p className="text-xs font-bold text-yellow-700 uppercase mb-1">Nota</p>
+                        <p className="text-sm text-azul-marino whitespace-pre-wrap">{r.titulo}</p>
+                        {r.contenido && <p className="text-xs text-texto-gris mt-1 whitespace-pre-wrap">{r.contenido}</p>}
                       </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-azul-marino truncate">{pdf.nombre}</p>
-                        <p className="text-xs text-texto-gris mt-0.5">{pdf.size}</p>
-                      </div>
-                      <ChevronRight size={14} className="text-texto-gris group-hover:text-verde-brillante transition-colors shrink-0" />
-                    </a>
+                    )
                   ))}
                 </div>
               ) : (
@@ -639,7 +653,7 @@ function PlayerView({ courseId, onBack }: { courseId: number, onBack: () => void
                     <BookOpen size={20} className="text-texto-gris" />
                   </div>
                   <p className="text-sm font-medium text-azul-marino mb-1">Sin materiales por ahora</p>
-                  <p className="text-xs text-texto-gris">Los PDFs de este curso se agregaran pronto</p>
+                  <p className="text-xs text-texto-gris">Los recursos de este curso se agregarán pronto</p>
                 </div>
               )}
             </div>
@@ -882,10 +896,101 @@ function LoginView({ onLoginSuccess }: { onLoginSuccess: (role: string, usuario:
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [showForgotModal, setShowForgotModal] = useState(false);
+  const [forgotEmail, setForgotEmail] = useState('');
+  const [forgotLoading, setForgotLoading] = useState(false);
+  const [forgotMessage, setForgotMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
+  const [showSupportModal, setShowSupportModal] = useState(false);
+  const [supportForm, setSupportForm] = useState({ nombre: '', email: '', telefono: '', consulta: '' });
+  const [supportLoading, setSupportLoading] = useState(false);
+  const [supportMessage, setSupportMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
+
+  const isIdiomas = typeof window !== 'undefined' && window.location.hostname === 'academia-idiomas.up.railway.app';
+  const ctaGradient = isIdiomas
+    ? 'linear-gradient(135deg, #ec4899 0%, #3b82f6 100%)'
+    : 'linear-gradient(135deg, #22c55e 0%, #4ade80 100%)';
+  const ctaTextColor = isIdiomas ? '#ffffff' : '#0e2318';
+
+  const handleSupportSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const { nombre, email, telefono, consulta } = supportForm;
+    if (!nombre.trim() || !email.trim() || !consulta.trim()) {
+      setSupportMessage({ type: 'error', text: 'Nombre, email y consulta son obligatorios.' });
+      return;
+    }
+    setSupportLoading(true);
+    setSupportMessage(null);
+    try {
+      const res = await authFetch('/api/soporte', {
+        method: 'POST',
+        body: JSON.stringify({ nombre: nombre.trim(), email: email.trim(), telefono: telefono.trim(), consulta: consulta.trim() }),
+      });
+      if (res.ok) {
+        setSupportMessage({ type: 'success', text: 'Recibimos tu consulta. Te vamos a responder pronto.' });
+        setSupportForm({ nombre: '', email: '', telefono: '', consulta: '' });
+      } else {
+        const data = await res.json().catch(() => ({}));
+        setSupportMessage({ type: 'error', text: data.error || 'No se pudo enviar la consulta.' });
+      }
+    } catch {
+      setSupportMessage({ type: 'error', text: 'Error de conexión. Intentá más tarde.' });
+    } finally {
+      setSupportLoading(false);
+    }
+  };
+
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const target = (forgotEmail || '').trim();
+    if (!target) {
+      setForgotMessage({ type: 'error', text: 'Ingresa tu email.' });
+      return;
+    }
+    setForgotLoading(true);
+    setForgotMessage(null);
+    // Timeout duro de 25s para que el boton no quede tildado si el server se cuelga.
+    const ctrl = new AbortController();
+    const timeoutId = setTimeout(() => ctrl.abort(), 25000);
+    try {
+      const res = await authFetch('/api/auth/reset-password', {
+        method: 'POST',
+        body: JSON.stringify({ email: target }),
+        signal: ctrl.signal,
+      });
+      if (res.ok) {
+        setForgotMessage({
+          type: 'success',
+          text: 'Si el email esta registrado, te enviamos una nueva contrasena a tu casilla. Revisa tambien spam/promociones.',
+        });
+      } else {
+        // Si el body no es JSON (ej. un HTML de error de proxy) leemos como texto
+        // para poder mostrar algo util al usuario y loguear el detalle en consola.
+        const raw = await res.text().catch(() => '');
+        let errMsg = '';
+        try {
+          errMsg = raw ? (JSON.parse(raw).error || '') : '';
+        } catch { /* no era JSON */ }
+        console.error('reset-password fallo:', res.status, raw);
+        setForgotMessage({
+          type: 'error',
+          text: errMsg || `Error del servidor (HTTP ${res.status}). Intenta mas tarde o contacta a soporte.`,
+        });
+      }
+    } catch (err: any) {
+      if (err?.name === 'AbortError') {
+        setForgotMessage({ type: 'error', text: 'El servidor tardo demasiado en responder. Intenta de nuevo.' });
+      } else {
+        setForgotMessage({ type: 'error', text: 'Error de conexion con el servidor.' });
+      }
+    } finally {
+      clearTimeout(timeoutId);
+      setForgotLoading(false);
+    }
+  };
 
   useEffect(() => {
     const link = document.createElement('link');
-    link.href = 'https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700;800&display=swap';
+    link.href = 'https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800;900&display=swap';
     link.rel = 'stylesheet';
     document.head.appendChild(link);
   }, []);
@@ -933,111 +1038,374 @@ function LoginView({ onLoginSuccess }: { onLoginSuccess: (role: string, usuario:
     }
   };
 
-  const RobotoStyle = { fontFamily: "'Roboto', Arial, sans-serif" };
+  const openForgotModal = () => {
+    setForgotEmail(email);
+    setForgotMessage(null);
+    setShowForgotModal(true);
+  };
 
   return (
-    <div className="flex min-h-screen overflow-hidden" style={RobotoStyle}>
-      {/* Sidebar izquierda */}
-      <aside className="hidden md:flex flex-col w-[300px] shrink-0 justify-between" style={{ ...RobotoStyle, background: '#0e2318', padding: '40px 36px' }}>
-        <div style={{ fontWeight: 700, fontSize: 15, color: '#fff' }}>
-          Aprende<span style={{ color: '#22c55e' }}>Excel</span>
-        </div>
-        <div>
-          <h2 style={{ fontSize: 27, fontWeight: 800, color: '#fff', lineHeight: 1.2, letterSpacing: '-0.5px', marginBottom: 8 }}>
-            Tu carrera,<br /><span style={{ color: '#22c55e' }}>en tus manos</span>
-          </h2>
-          <p style={{ fontSize: 12, color: 'rgba(255,255,255,.35)', lineHeight: 1.55, fontWeight: 300 }}>
-            Excel, Power BI y SQL para el mercado laboral.
-          </p>
-        </div>
-        <div style={{ display: 'flex', gap: 20, paddingTop: 20, borderTop: '1px solid rgba(255,255,255,.08)' }}>
-          {[{ num: '+270', label: 'Empresas' }, { num: '4.9★', label: 'Valoracion' }, { num: '100%', label: 'Online' }].map((s, i) => (
-            <div key={i}>
-              <div style={{ fontSize: 17, fontWeight: 800, color: '#fff', letterSpacing: '-0.3px' }}>{s.num}</div>
-              <div style={{ fontSize: 10, color: 'rgba(255,255,255,.3)', textTransform: 'uppercase', letterSpacing: '0.07em' }}>{s.label}</div>
-            </div>
-          ))}
-        </div>
-      </aside>
+    <>
+      <style>{`
+        .login-root { font-family: 'Poppins', system-ui, sans-serif; height: 100vh; display: flex; flex-direction: column; color: #fff; position: relative; overflow: hidden;
+          background: radial-gradient(circle at 15% 20%, rgba(34,197,94,0.10), transparent 55%), radial-gradient(circle at 85% 80%, rgba(74,222,128,0.08), transparent 50%), linear-gradient(135deg, #0a1f14 0%, #0e2318 50%, #14352a 100%); }
+        .login-root * { box-sizing: border-box; }
+        .login-bubble { position: absolute; border-radius: 50%; pointer-events: none; background: radial-gradient(circle, rgba(74,222,128,0.10), transparent 70%); filter: blur(20px); }
+        .login-b1 { width: 380px; height: 380px; top: -120px; left: -120px; }
+        .login-b2 { width: 420px; height: 420px; bottom: -150px; right: -150px; }
+        .login-b3 { width: 200px; height: 200px; top: 40%; left: 50%; opacity: .5; }
+        .login-header { padding: 28px 48px 28px calc(50vw + 48px); display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; position: relative; z-index: 5; }
+        .login-logo-text { font-size: 13px; font-weight: 700; letter-spacing: 0.04em; line-height: 1.15; }
+        .login-logo-text .sub { display: block; color: rgba(255,255,255,0.45); font-size: 9px; font-weight: 500; letter-spacing: 0.22em; margin-top: 2px; }
+        .login-header-help { font-size: 12px; color: rgba(255,255,255,0.5); }
+        .login-header-help a { color: rgba(255,255,255,0.85); text-decoration: none; font-weight: 500; border-bottom: 1px solid rgba(255,255,255,0.2); padding-bottom: 1px; transition: border-color .2s; }
+        .login-header-help a:hover { border-color: #4ade80; color: #4ade80; }
+        .support-link { background: none; border: none; padding: 0 0 1px 0; font-family: inherit; font-size: inherit; cursor: pointer; color: rgba(255,255,255,0.85); font-weight: 500; border-bottom: 1px solid rgba(255,255,255,0.2); transition: border-color .2s, color .2s; }
+        .support-link:hover { border-color: #4ade80; color: #4ade80; }
+        .login-main { flex: 1; display: flex; align-items: center; justify-content: center; padding: 20px 80px 40px calc(50vw + 60px); position: relative; z-index: 2; width: 100%; }
+        .art-side { position: fixed; top: 0; left: 0; bottom: 0; width: 50vw; height: 100vh; overflow: hidden; z-index: 1; }
+        .art-img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; }
+        .art-frost { position: absolute; inset: 0; background: linear-gradient(180deg, rgba(0,0,0,0.7) 0%, rgba(0,0,0,0.35) 45%, rgba(0,0,0,0.2) 75%, rgba(0,0,0,0.45) 100%); pointer-events: none; }
+        .rings { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; }
+        .ring { position: absolute; border-radius: 50%; border: 1px solid rgba(74,222,128,0.12); animation: pulseRing 6s ease-in-out infinite; }
+        .ring.r1 { width: 100%; height: 100%; }
+        .ring.r2 { width: 80%; height: 80%; animation-delay: -2s; border-color: rgba(74,222,128,0.16); }
+        .ring.r3 { width: 60%; height: 60%; animation-delay: -4s; border-color: rgba(74,222,128,0.22); }
+        @keyframes pulseRing { 0%,100% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.05); opacity: .55; } }
+        .art-glow { position: absolute; inset: 15%; border-radius: 50%; background: radial-gradient(circle, rgba(74,222,128,0.28) 0%, rgba(34,197,94,0.10) 40%, transparent 70%); filter: blur(35px); animation: glowPulse 4s ease-in-out infinite; }
+        @keyframes glowPulse { 0%,100% { opacity: .85; transform: scale(1); } 50% { opacity: 1; transform: scale(1.1); } }
+        .floating-dot { position: absolute; width: 6px; height: 6px; border-radius: 50%; background: #4ade80; box-shadow: 0 0 12px #22c55e; animation: floatDot 8s ease-in-out infinite; z-index: 4; }
+        .fd1 { top: 8%; left: 15%; } .fd2 { top: 12%; right: 10%; animation-delay: -2s; background: #86efac; } .fd3 { bottom: 15%; left: 8%; animation-delay: -4s; } .fd4 { bottom: 10%; right: 18%; animation-delay: -6s; background: #86efac; }
+        @keyframes floatDot { 0%,100% { transform: translate(0,0); } 33% { transform: translate(15px,-12px); } 66% { transform: translate(-10px,8px); } }
+        .scenes { position: absolute; inset: 6%; display: flex; align-items: center; justify-content: center; z-index: 2; }
+        .scene { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; opacity: 0; transform: scale(.88); animation: cycle 24s infinite; }
+        .scene:nth-child(1) { animation-delay: 0s; } .scene:nth-child(2) { animation-delay: 6s; } .scene:nth-child(3) { animation-delay: 12s; } .scene:nth-child(4) { animation-delay: 18s; }
+        @keyframes cycle { 0%, 22% { opacity: 1; transform: scale(1); } 25%, 100% { opacity: 0; transform: scale(.88); } }
+        .scene svg { width: 95%; max-width: 440px; height: auto; filter: drop-shadow(0 20px 30px rgba(0,0,0,0.35)); animation: floatSvg 5s ease-in-out infinite; }
+        @keyframes floatSvg { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+        .scene-label { position: absolute; bottom: -24px; font-size: 11px; font-weight: 600; letter-spacing: 0.25em; text-transform: uppercase; color: rgba(255,255,255,0.85); padding: 8px 22px; border: 1px solid rgba(74,222,128,0.35); border-radius: 30px; background: rgba(34,197,94,0.15); backdrop-filter: blur(10px); white-space: nowrap; }
+        .scene-label .accent { color: #4ade80; margin-right: 6px; }
+        .scene-indicator { position: absolute; bottom: -70px; left: 50%; transform: translateX(-50%); display: flex; gap: 10px; }
+        .scene-indicator span { width: 6px; height: 6px; border-radius: 50%; background: rgba(255,255,255,0.2); animation: dotActive 24s infinite; }
+        .scene-indicator span:nth-child(1) { animation-delay: 0s; } .scene-indicator span:nth-child(2) { animation-delay: 6s; } .scene-indicator span:nth-child(3) { animation-delay: 12s; } .scene-indicator span:nth-child(4) { animation-delay: 18s; }
+        @keyframes dotActive { 0%, 22% { background: #4ade80; transform: scale(1.3); box-shadow: 0 0 10px #22c55e; width: 24px; border-radius: 4px; } 25%, 100% { background: rgba(255,255,255,0.2); transform: scale(1); } }
+        .cap-sway { animation: sway 4s ease-in-out infinite; transform-origin: 200px 120px; }
+        .tassel { animation: tassel 2.5s ease-in-out infinite; transform-origin: 200px 140px; }
+        .medal-pulse { animation: medalPulse 2s ease-in-out infinite; transform-origin: 200px 290px; }
+        .star-tw-1 { animation: twinkle 2.4s ease-in-out infinite; transform-origin: center; }
+        .star-tw-2 { animation: twinkle 2.4s ease-in-out .8s infinite; transform-origin: center; }
+        .star-tw-3 { animation: twinkle 2.4s ease-in-out 1.6s infinite; transform-origin: center; }
+        .rocket-fly { animation: rocketFly 3.5s ease-in-out infinite; }
+        @keyframes sway { 0%,100% { transform: rotate(-3deg); } 50% { transform: rotate(3deg); } }
+        @keyframes tassel { 0%,100% { transform: rotate(0deg); } 50% { transform: rotate(12deg); } }
+        @keyframes medalPulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.08); filter: drop-shadow(0 0 8px #4ade80); } }
+        @keyframes twinkle { 0%,100% { opacity: 0.3; transform: scale(0.7); } 50% { opacity: 1; transform: scale(1.2); } }
+        @keyframes rocketFly { 0%,100% { transform: translate(0,0) rotate(-15deg); } 50% { transform: translate(8px,-10px) rotate(-8deg); } }
+        .globe-rotate { animation: globeRotate 14s linear infinite; transform-origin: 220px 220px; }
+        .bubble-float-1 { animation: bubbleFloat 3s ease-in-out infinite; transform-origin: center; }
+        .bubble-float-2 { animation: bubbleFloat 3.4s ease-in-out .4s infinite; transform-origin: center; }
+        .bubble-float-3 { animation: bubbleFloat 3.2s ease-in-out .8s infinite; transform-origin: center; }
+        .bubble-float-4 { animation: bubbleFloat 3.6s ease-in-out 1.2s infinite; transform-origin: center; }
+        .bubble-float-5 { animation: bubbleFloat 3.1s ease-in-out 1.6s infinite; transform-origin: center; }
+        .bubble-float-6 { animation: bubbleFloat 3.5s ease-in-out 2s infinite; transform-origin: center; }
+        .orbit-dot { animation: orbitFade 2s ease-in-out infinite; }
+        @keyframes globeRotate { to { transform: rotate(360deg); } }
+        @keyframes bubbleFloat { 0%,100% { transform: translateY(0) scale(1); } 50% { transform: translateY(-8px) scale(1.05); } }
+        @keyframes orbitFade { 0%,100% { opacity: 0.3; } 50% { opacity: 1; } }
+        .laptop-float { animation: laptopFloat 4s ease-in-out infinite; transform-origin: center; }
+        .bar-grow-1 { animation: barGrow 3s ease-in-out infinite; transform-origin: bottom; }
+        .bar-grow-2 { animation: barGrow 3s ease-in-out .3s infinite; transform-origin: bottom; }
+        .bar-grow-3 { animation: barGrow 3s ease-in-out .6s infinite; transform-origin: bottom; }
+        .bar-grow-4 { animation: barGrow 3s ease-in-out .9s infinite; transform-origin: bottom; }
+        .arrow-slide { animation: arrowSlide 2.8s ease-in-out infinite; }
+        .check-pop-1 { animation: checkPop 2.5s ease-in-out infinite; transform-origin: center; }
+        .check-pop-2 { animation: checkPop 2.5s ease-in-out 1s infinite; transform-origin: center; }
+        .cell-float-1 { animation: cellFloat 3.4s ease-in-out infinite; }
+        .cell-float-2 { animation: cellFloat 3.4s ease-in-out .7s infinite; }
+        .cell-float-3 { animation: cellFloat 3.4s ease-in-out 1.4s infinite; }
+        .cell-float-4 { animation: cellFloat 3.4s ease-in-out 2.1s infinite; }
+        @keyframes laptopFloat { 0%,100% { transform: translateY(0) rotate(0deg); } 50% { transform: translateY(-6px) rotate(-1deg); } }
+        @keyframes barGrow { 0%,100% { transform: scaleY(1); } 50% { transform: scaleY(1.25); } }
+        @keyframes arrowSlide { 0%,100% { transform: translate(0,0); opacity: 1; } 50% { transform: translate(8px,-8px); opacity: .7; } }
+        @keyframes checkPop { 0%,100% { transform: scale(0.8); opacity: 0.6; } 20% { transform: scale(1.2); opacity: 1; } 40% { transform: scale(1); opacity: 1; } }
+        @keyframes cellFloat { 0%,100% { transform: translateY(0); opacity: .9; } 50% { transform: translateY(-6px); opacity: 1; } }
+        .chip-glow { animation: chipGlow 2s ease-in-out infinite; transform-origin: center; }
+        .circuit-line { stroke-dasharray: 4 3; animation: dashFlow 1.2s linear infinite; }
+        .circuit-line-2 { stroke-dasharray: 6 4; animation: dashFlow 1.5s linear infinite reverse; }
+        .data-point { animation: dataPointPulse 1.8s ease-in-out infinite; }
+        .data-point-1 { animation-delay: 0s; } .data-point-2 { animation-delay: .3s; } .data-point-3 { animation-delay: .6s; } .data-point-4 { animation-delay: .9s; } .data-point-5 { animation-delay: 1.2s; } .data-point-6 { animation-delay: 1.5s; }
+        .binary-rise-1 { animation: binaryRise 4s ease-in-out infinite; }
+        .binary-rise-2 { animation: binaryRise 4s ease-in-out 1.3s infinite; }
+        .binary-rise-3 { animation: binaryRise 4s ease-in-out 2.6s infinite; }
+        .brain-pulse { animation: brainPulse 2.2s ease-in-out infinite; transform-origin: center; }
+        @keyframes chipGlow { 0%,100% { filter: drop-shadow(0 0 6px #22c55e); transform: scale(1); } 50% { filter: drop-shadow(0 0 16px #4ade80); transform: scale(1.05); } }
+        @keyframes dashFlow { to { stroke-dashoffset: -40; } }
+        @keyframes dataPointPulse { 0%,100% { opacity: 0.3; r: 2; } 50% { opacity: 1; r: 4; } }
+        @keyframes binaryRise { 0% { transform: translateY(20px); opacity: 0; } 20% { opacity: 1; } 80% { opacity: 1; } 100% { transform: translateY(-40px); opacity: 0; } }
+        @keyframes brainPulse { 0%,100% { opacity: 0.6; transform: scale(0.95); } 50% { opacity: 1; transform: scale(1.05); } }
+        .form-side { max-width: 380px; width: 100%; margin: 0 auto; }
+        .welcome-tag { display: inline-block; font-size: 11px; font-weight: 600; color: #4ade80; letter-spacing: 0.18em; text-transform: uppercase; margin-bottom: 14px; }
+        .welcome-tag::before { content: ""; display: inline-block; width: 24px; height: 1px; background: #4ade80; margin-right: 10px; vertical-align: middle; }
+        .form-side h1 { font-size: 44px; font-weight: 800; letter-spacing: -0.025em; line-height: 1.05; margin-bottom: 12px; }
+        .form-side .lead { font-size: 13px; color: rgba(255,255,255,0.55); margin-bottom: 28px; line-height: 1.55; }
+        .login-alert { padding: 10px 14px; border-radius: 8px; font-size: 12px; margin-bottom: 18px; }
+        .login-alert.err { background: rgba(220,38,38,0.12); color: #fca5a5; border: 1px solid rgba(220,38,38,0.3); }
+        .login-alert.ok { background: rgba(34,197,94,0.12); color: #86efac; border: 1px solid rgba(34,197,94,0.3); }
+        .field { margin-bottom: 22px; }
+        .field label { display: block; font-size: 10px; font-weight: 600; color: rgba(255,255,255,0.5); letter-spacing: 0.18em; text-transform: uppercase; margin-bottom: 10px; }
+        .input-wrap { position: relative; border-bottom: 1.5px solid rgba(255,255,255,0.15); transition: border-color .25s ease; }
+        .input-wrap:focus-within { border-color: #4ade80; }
+        .input-wrap input { width: 100%; padding: 8px 0 12px 0; background: transparent; border: none; color: #fff; font-size: 15px; outline: none; font-family: inherit; font-weight: 400; }
+        .input-wrap input::placeholder { color: rgba(255,255,255,0.3); }
+        .toggle-pwd { position: absolute; right: 0; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; color: rgba(255,255,255,0.4); padding: 4px; display: flex; }
+        .toggle-pwd:hover { color: #4ade80; }
+        .forgot { text-align: right; margin: -10px 0 26px; }
+        .forgot button { background: none; border: none; cursor: pointer; font-family: inherit; font-size: 12px; color: rgba(255,255,255,0.55); transition: color .2s; }
+        .forgot button:hover { color: #4ade80; }
+        .btn-login { width: 100%; padding: 16px; border: none; border-radius: 100px; background: linear-gradient(135deg, #22c55e 0%, #4ade80 100%); color: #0e2318; font-family: inherit; font-size: 13px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; cursor: pointer; transition: all .3s ease; position: relative; overflow: hidden; box-shadow: 0 12px 30px -10px rgba(34,197,94,0.55); display: flex; align-items: center; justify-content: center; gap: 10px; }
+        .btn-login:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 18px 40px -12px rgba(34,197,94,0.7); }
+        .btn-login:disabled { opacity: 0.6; cursor: not-allowed; }
+        .btn-login::before { content: ""; position: absolute; inset: 0; background: linear-gradient(120deg, transparent 30%, rgba(255,255,255,0.4) 50%, transparent 70%); transform: translateX(-100%); transition: transform .8s ease; }
+        .btn-login:hover:not(:disabled)::before { transform: translateX(100%); }
+        .login-footer { padding: 20px 48px 20px calc(50vw + 48px); display: flex; justify-content: space-between; font-size: 11px; color: rgba(255,255,255,0.35); flex-shrink: 0; position: relative; z-index: 5; }
+        .theme-idiomas.login-root { background: radial-gradient(circle at 15% 20%, rgba(236,72,153,0.10), transparent 55%), radial-gradient(circle at 85% 80%, rgba(59,130,246,0.08), transparent 50%), linear-gradient(135deg, #ffffff 0%, #fafbff 50%, #ffffff 100%); color: #1a0a1f; }
+        .theme-idiomas .login-bubble { background: radial-gradient(circle, rgba(236,72,153,0.12), transparent 70%); }
+        .theme-idiomas .login-header-help { color: rgba(26,10,31,0.55); }
+        .theme-idiomas .login-header-help a,
+        .theme-idiomas .support-link { color: rgba(26,10,31,0.85); border-bottom-color: rgba(26,10,31,0.2); }
+        .theme-idiomas .form-side h1 { color: #1a0a1f; }
+        .theme-idiomas .form-side .lead { color: rgba(26,10,31,0.6); }
+        .theme-idiomas .field label { color: rgba(26,10,31,0.55); }
+        .theme-idiomas .input-wrap { border-bottom-color: rgba(26,10,31,0.15); }
+        .theme-idiomas .input-wrap input { color: #1a0a1f; }
+        .theme-idiomas .input-wrap input::placeholder { color: rgba(26,10,31,0.3); }
+        .theme-idiomas .toggle-pwd { color: rgba(26,10,31,0.4); }
+        .theme-idiomas .forgot button { color: rgba(26,10,31,0.55); }
+        .theme-idiomas .login-footer { color: rgba(26,10,31,0.4); }
+        .theme-idiomas .art-frost { background: linear-gradient(180deg, rgba(255,255,255,0.5) 0%, rgba(255,255,255,0.15) 45%, rgba(255,255,255,0.1) 75%, rgba(255,255,255,0.25) 100%); }
+        .theme-idiomas .art-img { object-position: center 65%; }
+        .theme-idiomas .login-header-help a:hover,
+        .theme-idiomas .support-link:hover,
+        .theme-idiomas .toggle-pwd:hover,
+        .theme-idiomas .forgot button:hover { color: #ec4899; border-color: #ec4899; }
+        .theme-idiomas .ring { border-color: rgba(236,72,153,0.14); }
+        .theme-idiomas .ring.r2 { border-color: rgba(236,72,153,0.18); }
+        .theme-idiomas .ring.r3 { border-color: rgba(59,130,246,0.24); }
+        .theme-idiomas .art-glow { background: radial-gradient(circle, rgba(236,72,153,0.28) 0%, rgba(59,130,246,0.12) 40%, transparent 70%); }
+        .theme-idiomas .floating-dot { background: #ec4899; box-shadow: 0 0 12px #ec4899; }
+        .theme-idiomas .fd2 { background: #f9a8d4; }
+        .theme-idiomas .fd4 { background: #93c5fd; }
+        .theme-idiomas .scene-label { border-color: rgba(236,72,153,0.35); background: rgba(236,72,153,0.15); }
+        .theme-idiomas .scene-label .accent { color: #ec4899; }
+        .theme-idiomas .welcome-tag { color: #ec4899; }
+        .theme-idiomas .welcome-tag::before { background: #ec4899; }
+        .theme-idiomas .input-wrap:focus-within { border-color: #ec4899; }
+        .theme-idiomas .btn-login { background: linear-gradient(135deg, #ec4899 0%, #3b82f6 100%); color: #fff; box-shadow: 0 12px 30px -10px rgba(236,72,153,0.55); }
+        .theme-idiomas .btn-login:hover:not(:disabled) { box-shadow: 0 18px 40px -12px rgba(236,72,153,0.7); }
 
-      {/* Formulario derecha */}
-      <main className="flex-1 flex items-center justify-center" style={{ background: '#fff', padding: 40 }}>
-        <div style={{ width: '100%', maxWidth: 300, ...RobotoStyle }}>
-          <div className="md:hidden" style={{ textAlign: 'center', marginBottom: 28 }}>
-            <span style={{ fontSize: 18, fontWeight: 800, color: '#0e2318' }}>Aprende<span style={{ color: '#22c55e' }}>Excel</span></span>
+        @media (max-width: 880px) {
+          .login-header { padding: 20px 24px; }
+          .login-footer { padding: 16px 24px; flex-direction: column; gap: 6px; align-items: center; text-align: center; }
+          .login-main { padding: 20px 28px 40px; }
+          .art-side { position: absolute; width: 100%; height: 100%; opacity: 0.25; }
+          .form-side h1 { font-size: 34px; }
+          .login-header-help { display: none; }
+        }
+      `}</style>
+
+      <div className={isIdiomas ? 'login-root theme-idiomas' : 'login-root'}>
+        <span className="login-bubble login-b1"></span>
+        <span className="login-bubble login-b2"></span>
+        <span className="login-bubble login-b3"></span>
+
+        <header className="login-header">
+          <div className="login-logo-text">
+            ACADEMIA
+            <span className="sub">CAMPUS VIRTUAL</span>
+          </div>
+          <div className="login-header-help">
+            ¿Necesitás ayuda? <button type="button" className="support-link" onClick={() => { setShowSupportModal(true); setSupportMessage(null); }}>Contactá soporte</button>
+          </div>
+        </header>
+
+        <main className="login-main">
+          <div className="art-side">
+            <img className="art-img" src={isIdiomas ? '/login-bg-1.png' : '/login-bg.png'} alt="" />
+            <div className="art-frost"></div>
           </div>
 
-          <h3 style={{ fontSize: 20, fontWeight: 800, color: '#0e1a13', marginBottom: 3, letterSpacing: '-0.3px' }}>
-            {isRegistering ? 'Crear cuenta' : 'Bienvenido'}
-          </h3>
-          <p style={{ fontSize: 12, color: '#aaa', marginBottom: 24, fontWeight: 300 }}>
-            {isRegistering ? 'Completa tus datos para empezar' : 'Ingresa para acceder a tus cursos'}
-          </p>
+          <div className="form-side">
+            <span className="welcome-tag">Bienvenido de nuevo</span>
+            <h1>Iniciá sesión<br/>en tu cuenta</h1>
+            <p className="lead">Ingresá con el usuario y contraseña que recibiste por mail.</p>
 
-          {error && (
-            <div style={{ marginBottom: 14, padding: '10px 14px', borderRadius: 7, fontSize: 13, background: '#fef2f2', color: '#991b1b', border: '1px solid #fecaca' }}>
-              {error}
-            </div>
-          )}
-          {success && (
-            <div style={{ marginBottom: 14, padding: '10px 14px', borderRadius: 7, fontSize: 13, background: '#f0fdf4', color: '#166534', border: '1px solid #bbf7d0' }}>
-              {success}
-            </div>
-          )}
+            {error && <div className="login-alert err">{error}</div>}
+            {success && <div className="login-alert ok">{success}</div>}
 
-          <form onSubmit={handleSubmit}>
-            {isRegistering && (
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 14 }}>
-                <div>
-                  <label style={{ display: 'block', fontSize: 10, fontWeight: 600, color: '#aaa', marginBottom: 5, textTransform: 'uppercase', letterSpacing: '0.07em' }}>Nombre</label>
-                  <input type="text" value={nombre} onChange={(e) => setNombre(e.target.value)}
-                    style={{ width: '100%', padding: '10px 12px', border: '1.5px solid #ebebeb', borderRadius: 7, fontSize: 13, outline: 'none', background: '#fafafa', fontFamily: 'Roboto, Arial, sans-serif' }} required />
-                </div>
-                <div>
-                  <label style={{ display: 'block', fontSize: 10, fontWeight: 600, color: '#aaa', marginBottom: 5, textTransform: 'uppercase', letterSpacing: '0.07em' }}>Apellido</label>
-                  <input type="text" value={apellido} onChange={(e) => setApellido(e.target.value)}
-                    style={{ width: '100%', padding: '10px 12px', border: '1.5px solid #ebebeb', borderRadius: 7, fontSize: 13, outline: 'none', background: '#fafafa', fontFamily: 'Roboto, Arial, sans-serif' }} />
+            <form onSubmit={handleSubmit}>
+              <div className="field">
+                <label>Email</label>
+                <div className="input-wrap">
+                  <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="tu@email.com" required />
                 </div>
               </div>
-            )}
-
-            <div style={{ marginBottom: 14 }}>
-              <label style={{ display: 'block', fontSize: 10, fontWeight: 600, color: '#aaa', marginBottom: 5, textTransform: 'uppercase', letterSpacing: '0.07em' }}>Email</label>
-              <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="tu@email.com"
-                style={{ width: '100%', padding: '10px 12px', border: '1.5px solid #ebebeb', borderRadius: 7, fontSize: 13, outline: 'none', background: '#fafafa', fontFamily: 'Roboto, Arial, sans-serif' }} required />
-            </div>
-
-            <div style={{ marginBottom: 6 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 5 }}>
-                <label style={{ fontSize: 10, fontWeight: 600, color: '#aaa', textTransform: 'uppercase', letterSpacing: '0.07em' }}>Contrasena</label>
-                {!isRegistering && <a href="#" style={{ fontSize: 11, color: '#1a6e3c', fontWeight: 600, textDecoration: 'none' }}>Olvidaste?</a>}
+              <div className="field">
+                <label>Contraseña</label>
+                <div className="input-wrap">
+                  <input type={showPassword ? 'text' : 'password'} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" required />
+                  <button type="button" className="toggle-pwd" onClick={() => setShowPassword(!showPassword)} aria-label="Mostrar contraseña">
+                    {showPassword ? <EyeOff size={18}/> : <Eye size={18}/>}
+                  </button>
+                </div>
               </div>
-              <div style={{ position: 'relative' }}>
-                <input type={showPassword ? 'text' : 'password'} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••"
-                  style={{ width: '100%', padding: '10px 36px 10px 12px', border: '1.5px solid #ebebeb', borderRadius: 7, fontSize: 13, outline: 'none', background: '#fafafa', fontFamily: 'Roboto, Arial, sans-serif' }} required />
-                <button type="button" onClick={() => setShowPassword(!showPassword)}
-                  style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: '#aaa' }}>
-                  {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
+              <div className="forgot">
+                <button type="button" onClick={openForgotModal}>¿Olvidaste tu contraseña?</button>
+              </div>
+              <button type="submit" disabled={isLoading} className="btn-login">
+                {isLoading ? 'Ingresando...' : (<>Ingresar <ArrowRight size={14} /></>)}
+              </button>
+            </form>
+          </div>
+        </main>
+
+        <footer className="login-footer">
+          <span>© {new Date().getFullYear()} Academia · Campus Virtual</span>
+          <span>Términos y servicios</span>
+        </footer>
+
+        {showForgotModal && (
+          <div
+            onClick={() => { if (!forgotLoading) { setShowForgotModal(false); setForgotMessage(null); } }}
+            style={{ position: 'fixed', inset: 0, background: 'rgba(10,20,14,0.75)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 20, fontFamily: "'Poppins', system-ui, sans-serif" }}
+          >
+            <div
+              onClick={(e) => e.stopPropagation()}
+              style={{ background: '#0e2318', border: '1px solid rgba(74,222,128,0.25)', color: '#fff', width: '100%', maxWidth: 420, borderRadius: 16, padding: 28, boxShadow: '0 20px 50px rgba(0,0,0,0.5)' }}
+            >
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10 }}>
+                <h3 style={{ fontSize: 20, fontWeight: 800, color: '#fff', margin: 0, letterSpacing: '-0.02em' }}>
+                  Recuperar contraseña
+                </h3>
+                <button
+                  type="button"
+                  onClick={() => { if (!forgotLoading) { setShowForgotModal(false); setForgotMessage(null); } }}
+                  style={{ background: 'none', border: 'none', fontSize: 22, color: 'rgba(255,255,255,.5)', cursor: 'pointer', lineHeight: 1, padding: 0 }}
+                  aria-label="Cerrar"
+                >
+                  ×
                 </button>
               </div>
+              <p style={{ fontSize: 13, color: 'rgba(255,255,255,.6)', margin: '0 0 20px 0', lineHeight: 1.5 }}>
+                Ingresá tu email y te enviaremos una nueva contraseña provisoria. Podrás cambiarla desde tu perfil al ingresar.
+              </p>
+
+              {forgotMessage && (
+                <div style={{
+                  marginBottom: 16, padding: '10px 14px', borderRadius: 8, fontSize: 12,
+                  background: forgotMessage.type === 'success' ? 'rgba(34,197,94,0.12)' : 'rgba(220,38,38,0.12)',
+                  color:      forgotMessage.type === 'success' ? '#86efac' : '#fca5a5',
+                  border:     forgotMessage.type === 'success' ? '1px solid rgba(34,197,94,0.3)' : '1px solid rgba(220,38,38,0.3)',
+                }}>
+                  {forgotMessage.text}
+                </div>
+              )}
+
+              <form onSubmit={handleForgotPassword}>
+                <label style={{ display: 'block', fontSize: 10, fontWeight: 600, color: 'rgba(255,255,255,.5)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.18em' }}>
+                  Email
+                </label>
+                <input
+                  type="email"
+                  value={forgotEmail}
+                  onChange={(e) => setForgotEmail(e.target.value)}
+                  placeholder="tu@email.com"
+                  autoFocus
+                  required
+                  disabled={forgotLoading}
+                  style={{ width: '100%', padding: '12px 14px', border: '1.5px solid rgba(255,255,255,0.15)', borderRadius: 10, fontSize: 14, outline: 'none', background: 'rgba(0,0,0,0.2)', color: '#fff', fontFamily: 'inherit' }}
+                />
+
+                <div style={{ display: 'flex', gap: 10, marginTop: 20 }}>
+                  <button
+                    type="button"
+                    onClick={() => { setShowForgotModal(false); setForgotMessage(null); }}
+                    disabled={forgotLoading}
+                    style={{ flex: 1, padding: '12px', background: 'transparent', color: 'rgba(255,255,255,.7)', border: '1.5px solid rgba(255,255,255,0.15)', borderRadius: 30, fontSize: 12, fontWeight: 600, cursor: forgotLoading ? 'not-allowed' : 'pointer', fontFamily: 'inherit', letterSpacing: '0.08em', textTransform: 'uppercase' }}
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={forgotLoading}
+                    style={{ flex: 1, padding: '12px', background: ctaGradient, color: ctaTextColor, border: 'none', borderRadius: 30, fontSize: 12, fontWeight: 700, cursor: forgotLoading ? 'not-allowed' : 'pointer', fontFamily: 'inherit', letterSpacing: '0.12em', textTransform: 'uppercase', opacity: forgotLoading ? 0.7 : 1 }}
+                  >
+                    {forgotLoading ? 'Enviando...' : 'Enviar'}
+                  </button>
+                </div>
+              </form>
             </div>
-
-            <button type="submit" disabled={isLoading}
-              style={{ width: '100%', padding: '12px', background: '#0e2318', color: '#fff', border: 'none', borderRadius: 7, fontSize: 13, fontWeight: 700, cursor: 'pointer', marginTop: 18, fontFamily: 'Roboto, Arial, sans-serif', letterSpacing: '0.01em' }}>
-              {isLoading ? 'Cargando...' : isRegistering ? 'Crear cuenta' : 'Ingresar'}
-            </button>
-          </form>
-
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 18, paddingTop: 16, borderTop: '1px solid #f0f0f0' }}>
-            <button onClick={() => { setIsRegistering(!isRegistering); setError(''); setSuccess(''); }}
-              style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 11, color: '#aaa', fontFamily: 'Roboto, Arial, sans-serif' }}>
-              {isRegistering ? 'Ya tenes cuenta? ' : 'Sin cuenta? '}
-              <span style={{ color: '#1a6e3c', fontWeight: 700 }}>{isRegistering ? 'Inicia sesion' : 'Registrate'}</span>
-            </button>
-            <a href="mailto:soporte@aprende-excel.com" style={{ fontSize: 11, color: '#d1d5db', textDecoration: 'none' }}>Soporte</a>
           </div>
-        </div>
-      </main>
-    </div>
+        )}
+
+        {showSupportModal && (
+          <div
+            onClick={() => { if (!supportLoading) { setShowSupportModal(false); setSupportMessage(null); } }}
+            style={{ position: 'fixed', inset: 0, background: 'rgba(10,20,14,0.75)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 20, fontFamily: "'Poppins', system-ui, sans-serif" }}
+          >
+            <div
+              onClick={(e) => e.stopPropagation()}
+              style={{ background: '#0e2318', border: '1px solid rgba(74,222,128,0.25)', color: '#fff', width: '100%', maxWidth: 460, borderRadius: 16, padding: 28, boxShadow: '0 20px 50px rgba(0,0,0,0.5)', maxHeight: '90vh', overflowY: 'auto' }}
+            >
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10 }}>
+                <h3 style={{ fontSize: 20, fontWeight: 800, color: '#fff', margin: 0, letterSpacing: '-0.02em' }}>Contactá soporte</h3>
+                <button type="button" onClick={() => { if (!supportLoading) { setShowSupportModal(false); setSupportMessage(null); } }}
+                  style={{ background: 'none', border: 'none', fontSize: 22, color: 'rgba(255,255,255,.5)', cursor: 'pointer', lineHeight: 1, padding: 0 }} aria-label="Cerrar">×</button>
+              </div>
+              <p style={{ fontSize: 13, color: 'rgba(255,255,255,.6)', margin: '0 0 20px 0', lineHeight: 1.5 }}>
+                Contanos tu consulta y te vamos a responder a la brevedad.
+              </p>
+              {supportMessage && (
+                <div style={{
+                  marginBottom: 16, padding: '10px 14px', borderRadius: 8, fontSize: 12,
+                  background: supportMessage.type === 'success' ? 'rgba(34,197,94,0.12)' : 'rgba(220,38,38,0.12)',
+                  color:      supportMessage.type === 'success' ? '#86efac' : '#fca5a5',
+                  border:     supportMessage.type === 'success' ? '1px solid rgba(34,197,94,0.3)' : '1px solid rgba(220,38,38,0.3)',
+                }}>{supportMessage.text}</div>
+              )}
+              <form onSubmit={handleSupportSubmit}>
+                {([
+                  { key: 'nombre', label: 'Nombre', type: 'text', placeholder: 'Tu nombre', required: true },
+                  { key: 'email', label: 'Email', type: 'email', placeholder: 'tu@email.com', required: true },
+                  { key: 'telefono', label: 'Teléfono', type: 'tel', placeholder: '+54 9 11 1234-5678', required: false },
+                ] as const).map((f) => (
+                  <div key={f.key} style={{ marginBottom: 14 }}>
+                    <label style={{ display: 'block', fontSize: 10, fontWeight: 600, color: 'rgba(255,255,255,.5)', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.18em' }}>{f.label}{f.required ? ' *' : ''}</label>
+                    <input type={f.type} value={(supportForm as any)[f.key]}
+                      onChange={(e) => setSupportForm({ ...supportForm, [f.key]: e.target.value })}
+                      placeholder={f.placeholder} required={f.required} disabled={supportLoading}
+                      style={{ width: '100%', padding: '11px 14px', border: '1.5px solid rgba(255,255,255,0.15)', borderRadius: 10, fontSize: 14, outline: 'none', background: 'rgba(0,0,0,0.2)', color: '#fff', fontFamily: 'inherit' }} />
+                  </div>
+                ))}
+                <div style={{ marginBottom: 14 }}>
+                  <label style={{ display: 'block', fontSize: 10, fontWeight: 600, color: 'rgba(255,255,255,.5)', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.18em' }}>Consulta *</label>
+                  <textarea value={supportForm.consulta}
+                    onChange={(e) => setSupportForm({ ...supportForm, consulta: e.target.value })}
+                    placeholder="Contanos en qué podemos ayudarte..." required disabled={supportLoading} rows={4}
+                    style={{ width: '100%', padding: '11px 14px', border: '1.5px solid rgba(255,255,255,0.15)', borderRadius: 10, fontSize: 14, outline: 'none', background: 'rgba(0,0,0,0.2)', color: '#fff', fontFamily: 'inherit', resize: 'vertical' }} />
+                </div>
+                <div style={{ display: 'flex', gap: 10, marginTop: 20 }}>
+                  <button type="button" onClick={() => { setShowSupportModal(false); setSupportMessage(null); }} disabled={supportLoading}
+                    style={{ flex: 1, padding: '12px', background: 'transparent', color: 'rgba(255,255,255,.7)', border: '1.5px solid rgba(255,255,255,0.15)', borderRadius: 30, fontSize: 12, fontWeight: 600, cursor: supportLoading ? 'not-allowed' : 'pointer', fontFamily: 'inherit', letterSpacing: '0.08em', textTransform: 'uppercase' }}>Cancelar</button>
+                  <button type="submit" disabled={supportLoading}
+                    style={{ flex: 1, padding: '12px', background: ctaGradient, color: ctaTextColor, border: 'none', borderRadius: 30, fontSize: 12, fontWeight: 700, cursor: supportLoading ? 'not-allowed' : 'pointer', fontFamily: 'inherit', letterSpacing: '0.12em', textTransform: 'uppercase', opacity: supportLoading ? 0.7 : 1 }}>
+                    {supportLoading ? 'Enviando...' : 'Enviar consulta'}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+      </div>
+    </>
   );
 }
