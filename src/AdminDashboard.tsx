@@ -341,6 +341,8 @@ export default function AdminDashboard({ onLogout }: { onLogout: () => void }) {
   const [editingPdfModulo, setEditingPdfModulo] = useState<PdfModulo | null>(null);
   const [pdfCourseForm, setPdfCourseForm] = useState({ nombre: "", descripcion: "", imagen_url: "", slug: "" });
   const [pdfModuloForm, setPdfModuloForm] = useState({ titulo: "", pdf_url: "", orden: 1 });
+  const pdfFileInputRef = useRef<HTMLInputElement>(null);
+
 
   useEffect(() => { checkAuth(); }, []);
   useEffect(() => {
