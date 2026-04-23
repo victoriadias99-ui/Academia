@@ -352,6 +352,7 @@ export default function AdminDashboard({ onLogout }: { onLogout: () => void }) {
     if (activeTab === "lecciones") { fetchCourses(); if (selectedCourseId) fetchLessons(selectedCourseId); }
     if (activeTab === "recursos") { fetchCourses(); if (selectedRecursoCursoId) fetchRecursos(selectedRecursoCursoId); }
     if (activeTab === "ventas") { fetchDashboard(); fetchCourses(); }
+    if (activeTab === "cursos-pdf") { fetchPdfCourses(); }
     if (activeTab === "soporte") fetchSupportTickets();
   }, [activeTab, selectedCourseId]);
 
@@ -1660,6 +1661,103 @@ const menuItems = [
             <button type="button" onClick={() => setIsRecursoModalOpen(false)} className="px-6 py-2 rounded-md font-medium text-gray-500 hover:bg-gray-100 transition-colors">Cancelar</button>
             <button type="submit" disabled={recursoForm.tipo === "pdf" && !recursoForm.contenido}
               className="px-6 py-2 rounded-md font-medium bg-[#1a7a5e] text-white hover:bg-[#00a86b] transition-colors disabled:opacity-50 disabled:cursor-not-allowed">Guardar</button>
+          </div>
+        </form>
+      </Modal>
+
+      {/* Modal Curso PDF */}
+      <Modal
+        isOpen={isPdfCourseModalOpen}
+        onClose={() => { setIsPdfCourseModalOpen(false); setEditingPdfCourse(null); }}
+        title={editingPdfCourse ? "Editar curso PDF" : "Nuevo curso PDF"}
+      >
+        <form onSubmit={handleSavePdfCourse} className="space-y-4">
+          <div className="space-y-1">
+            <label className="text-sm font-medium text-gray-700">Nombre *</label>
+            <input type="text" required className="w-full px-3 py-2 rounded-md border border-[#dee2e6] focus:outline-none focus:ring-2 focus:ring-[#00a86b]/50"
+              placeholder="Ej: Curso Gemini" value={pdfCourseForm.nombre}
+              onChange={e => setPdfCourseForm(f => ({ ...f, nombre: e.target.value }))} />
+          </div>
+          <div className="space-y-1">
+            <label className="text-sm font-medium text-gray-700">Slug *</label>
+            <input type="text" required className="w-full px-3 py-2 rounded-md border border-[#dee2e6] focus:outline-none focus:ring-2 focus:ring-[#00a86b]/50"
+              placeholder="Ej: gemini (sin espacios, minúsculas)" value={pdfCourseForm.slug}
+              onChange={e => setPdfCourseForm(f => ({ ...f, slug: e.target.value.toLowerCase().replace(/\s+/g, '_') }))} />
+            <p className="text-xs text-gray-400">Identificador único. Úsalo para asignar el curso a alumnos.</p>
+          </div>
+          <div className="space-y-1">
+            <label className="text-sm font-medium text-gray-700">Descripción</label>
+            <textarea rows={3} className="w-full px-3 py-2 rounded-md border border-[#dee2e6] focus:outline-none focus:ring-2 focus:ring-[#00a86b]/50"
+              placeholder="Descripción del curso..." value={pdfCourseForm.descripcion}
+              onChange={e => setPdfCourseForm(f => ({ ...f, descripcion: e.target.value }))} />
+          </div>
+          <div className="space-y-1">
+            <label className="text-sm font-medium text-gray-700">URL Imagen (opcional)</label>
+            <input type="url" className="w-full px-3 py-2 rounded-md border border-[#dee2e6] focus:outline-none focus:ring-2 focus:ring-[#00a86b]/50"
+              placeholder="https://..." value={pdfCourseForm.imagen_url}
+              onChange={e => setPdfCourseForm(f => ({ ...f, imagen_url: e.target.value }))} />
+          </div>
+          <div className="flex justify-end gap-3 pt-4">
+            <button type="button" onClick={() => { setIsPdfCourseModalOpen(false); setEditingPdfCourse(null); }}
+              className="px-6 py-2 rounded-md font-medium text-gray-500 hover:bg-gray-100 transition-colors">Cancelar</button>
+            <button type="submit" className="px-6 py-2 rounded-md font-medium bg-[#1a7a5e] text-white hover:bg-[#00a86b] transition-colors">
+              {editingPdfCourse ? "Guardar cambios" : "Crear curso"}
+            </button>
+          </div>
+        </form>
+      </Modal>
+
+      {/* Modal Módulo PDF */}
+      <Modal
+        isOpen={isPdfModuloModalOpen}
+        onClose={() => { setIsPdfModuloModalOpen(false); setEditingPdfModulo(null); }}
+        title={editingPdfModulo ? "Editar módulo" : "Nuevo módulo PDF"}
+      >
+        <form onSubmit={handleSavePdfModulo} className="space-y-4">
+          <div className="space-y-1">
+            <label className="text-sm font-medium text-gray-700">Título *</label>
+            <input type="text" required className="w-full px-3 py-2 rounded-md border border-[#dee2e6] focus:outline-none focus:ring-2 focus:ring-[#00a86b]/50"
+              placeholder="Ej: Módulo 1 - Introducción" value={pdfModuloForm.titulo}
+              onChange={e => setPdfModuloForm(f => ({ ...f, titulo: e.target.value }))} />
+          </div>
+          <div className="space-y-1">
+            <label className="text-sm font-medium text-gray-700">Orden</label>
+            <input type="number" min={1} className="w-full px-3 py-2 rounded-md border border-[#dee2e6] focus:outline-none focus:ring-2 focus:ring-[#00a86b]/50"
+              value={pdfModuloForm.orden}
+              onChange={e => setPdfModuloForm(f => ({ ...f, orden: parseInt(e.target.value) || 1 }))} />
+          </div>
+          <div className="space-y-1">
+            <label className="text-sm font-medium text-gray-700">Archivo PDF *</label>
+            <input ref={pdfFileInputRef} type="file" accept="application/pdf,.ppt,.pptx" className="hidden"
+              onChange={async (e) => {
+                const file = e.target.files?.[0];
+                if (!file) return;
+                if (file.size > 10 * 1024 * 1024) {
+                  setToast({ message: "El archivo supera los 10 MB", type: "error" });
+                  return;
+                }
+                const reader = new FileReader();
+                reader.onload = () => setPdfModuloForm(f => ({ ...f, pdf_url: reader.result as string }));
+                reader.readAsDataURL(file);
+              }} />
+            <button type="button" onClick={() => pdfFileInputRef.current?.click()}
+              className="w-full flex items-center justify-center gap-2 px-4 py-3 border-2 border-dashed border-[#dee2e6] rounded-md text-gray-500 hover:border-[#00a86b] hover:text-[#1a5c4a] transition-all">
+              <Upload size={18} />
+              {pdfModuloForm.pdf_url ? "Archivo cargado ✓ (click para cambiar)" : "Click para subir PDF/PPT (máx. 10 MB)"}
+            </button>
+            <p className="text-xs text-gray-400">También podés pegar una URL directa abajo.</p>
+            <input type="url" className="w-full px-3 py-2 rounded-md border border-[#dee2e6] focus:outline-none focus:ring-2 focus:ring-[#00a86b]/50 mt-2"
+              placeholder="https://... (URL alternativa)"
+              value={pdfModuloForm.pdf_url.startsWith('data:') ? '' : pdfModuloForm.pdf_url}
+              onChange={e => setPdfModuloForm(f => ({ ...f, pdf_url: e.target.value }))} />
+          </div>
+          <div className="flex justify-end gap-3 pt-4">
+            <button type="button" onClick={() => { setIsPdfModuloModalOpen(false); setEditingPdfModulo(null); }}
+              className="px-6 py-2 rounded-md font-medium text-gray-500 hover:bg-gray-100 transition-colors">Cancelar</button>
+            <button type="submit" disabled={!pdfModuloForm.pdf_url}
+              className="px-6 py-2 rounded-md font-medium bg-[#1a7a5e] text-white hover:bg-[#00a86b] transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+              {editingPdfModulo ? "Guardar cambios" : "Crear módulo"}
+            </button>
           </div>
         </form>
       </Modal>
