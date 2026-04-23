@@ -1,3 +1,17 @@
+export interface PdfArchivo {
+  id: string;
+  nombre: string;
+  pdf_url: string;
+}
+
+export interface PdfModulo {
+  id: string;
+  titulo: string;
+  orden: number;
+  pdfs: PdfArchivo[];
+  pdf_url?: string;
+}
+
 export interface PdfCourse {
   id: number;
   nombre: string;
@@ -6,11 +20,4 @@ export interface PdfCourse {
   slug: string;
   activo: boolean;
   modulos: PdfModulo[];
-}
-
-export interface PdfModulo {
-  id: string;
-  titulo: string;
-  pdf_url: string;
-  orden: number;
 }
