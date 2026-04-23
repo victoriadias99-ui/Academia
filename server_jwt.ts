@@ -459,7 +459,14 @@ async function startServer() {
     } catch { res.status(500).json({ error: "Error al crear usuario" }); }
   });
 
-  app.get("/api/auth/perfil", requireAuth, (req: any, res) => res.json({ usuario: req.user }));
+  app.get("/api/auth/perfil", requireAuth, async (req: any, res) => {
+    try {
+      const dbUsers = await getUsers();
+      const dbUser = dbUsers.find((u: any) => u.email === req.user.email);
+      const usuario = { ...req.user, cursos: dbUser?.cursos ?? req.user.cursos ?? "" };
+      res.json({ usuario });
+    } catch { res.json({ usuario: req.user }); }
+  });
   app.post("/api/auth/logout", (req, res) => res.json({ status: "ok" }));
 
   app.post("/api/auth/update-profile", requireAuth, (req: any, res) => {
