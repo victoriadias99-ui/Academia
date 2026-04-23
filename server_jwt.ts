@@ -11,7 +11,7 @@ const JWT_SECRET = "academia-excel-jwt-secret-2024";
 async function startServer() {
   const app = express();
   const PORT = process.env.PORT || 3000;
-  app.use(express.json({ limit: "10mb" }));
+  app.use(express.json({ limit: "20mb" }));
 
   // ─── JWT HELPERS ─────────────────────────────────────────────
   const signToken = (user: any) =>
@@ -203,6 +203,45 @@ async function startServer() {
     const setClause = keys.map((k) => `${k}=?`).join(", ");
     const values = keys.map((k) => (k === "progreso" ? JSON.stringify(fields[k]) : fields[k]));
     await pool.query(`UPDATE academia_usuarios SET ${setClause} WHERE email=?`, [...values, email]);
+  };
+
+  // ─── PDF COURSES (MySQL) ──────────────────────────────────────
+  let _pdfTableReady = false;
+  const ensurePdfTable = async (): Promise<void> => {
+    if (_pdfTableReady) return;
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS academia_pdf_cursos (
+        id BIGINT NOT NULL AUTO_INCREMENT,
+        slug VARCHAR(255) NOT NULL,
+        nombre VARCHAR(500) NOT NULL,
+        descripcion TEXT NULL,
+        imagen_url TEXT NULL,
+        activo TINYINT(1) NOT NULL DEFAULT 1,
+        modulos JSON NOT NULL,
+        PRIMARY KEY (id),
+        UNIQUE KEY uq_slug (slug)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+    `);
+    _pdfTableReady = true;
+  };
+
+  const parsePdfCourse = (row: any): any => ({
+    ...row,
+    activo: !!row.activo,
+    modulos: typeof row.modulos === "string" ? JSON.parse(row.modulos || "[]") : (row.modulos ?? []),
+  });
+
+  const getPdfCourses = async (): Promise<any[]> => {
+    await ensurePdfTable();
+    const [rows] = await pool.query("SELECT * FROM academia_pdf_cursos ORDER BY id");
+    return (rows as any[]).map(parsePdfCourse);
+  };
+
+  const getPdfCourseById = async (id: number): Promise<any | null> => {
+    await ensurePdfTable();
+    const [rows] = await pool.query("SELECT * FROM academia_pdf_cursos WHERE id = ? LIMIT 1", [id]);
+    const row = (rows as any[])[0];
+    return row ? parsePdfCourse(row) : null;
   };
 
   // ─── COURSE MAPPING ───────────────────────────────────────────
@@ -652,6 +691,111 @@ async function startServer() {
       await pool.query(`DELETE FROM academia_soporte WHERE id=?`, [req.params.id]);
       res.json({ status: "ok" });
     } catch { res.status(500).json({ error: "Error al eliminar ticket" }); }
+  });
+
+  // ─── ADMIN: CURSOS PDF MODULARES ─────────────────────────────────
+  app.get("/api/admin/cursos-pdf", requireAdmin, async (_req, res) => {
+    try { res.json({ cursos: await getPdfCourses() }); }
+    catch (e: any) { console.error("Error listando cursos PDF:", e?.message); res.status(500).json({ error: "Error interno" }); }
+  });
+
+  app.post("/api/admin/cursos-pdf", requireAdmin, async (req, res) => {
+    const { nombre, descripcion, imagen_url, slug } = req.body || {};
+    if (!nombre || !slug) return res.status(400).json({ error: "Nombre y slug son requeridos" });
+    try {
+      await ensurePdfTable();
+      const [result]: any = await pool.query(
+        "INSERT INTO academia_pdf_cursos (slug, nombre, descripcion, imagen_url, activo, modulos) VALUES (?, ?, ?, ?, 1, '[]')",
+        [String(slug).trim(), String(nombre).trim(), descripcion || "", imagen_url || ""]
+      );
+      const curso = await getPdfCourseById(result.insertId);
+      res.json({ status: "ok", curso });
+    } catch (e: any) {
+      if (e?.code === "ER_DUP_ENTRY") return res.status(400).json({ error: "El slug ya existe" });
+      console.error("Error creando curso PDF:", e?.message);
+      res.status(500).json({ error: "Error interno" });
+    }
+  });
+
+  app.put("/api/admin/cursos-pdf/:id", requireAdmin, async (req, res) => {
+    const id = parseInt(req.params.id);
+    if (!id) return res.status(400).json({ error: "ID inválido" });
+    const { nombre, descripcion, imagen_url, slug, activo } = req.body || {};
+    try {
+      await ensurePdfTable();
+      const fields: string[] = [];
+      const vals: any[] = [];
+      if (nombre      !== undefined) { fields.push("nombre=?");      vals.push(nombre); }
+      if (descripcion !== undefined) { fields.push("descripcion=?"); vals.push(descripcion); }
+      if (imagen_url  !== undefined) { fields.push("imagen_url=?");  vals.push(imagen_url); }
+      if (slug        !== undefined) { fields.push("slug=?");        vals.push(slug); }
+      if (activo      !== undefined) { fields.push("activo=?");      vals.push(activo ? 1 : 0); }
+      if (fields.length) await pool.query(`UPDATE academia_pdf_cursos SET ${fields.join(",")} WHERE id=?`, [...vals, id]);
+      res.json({ status: "ok", curso: await getPdfCourseById(id) });
+    } catch (e: any) {
+      if (e?.code === "ER_DUP_ENTRY") return res.status(400).json({ error: "El slug ya existe" });
+      console.error("Error actualizando curso PDF:", e?.message);
+      res.status(500).json({ error: "Error interno" });
+    }
+  });
+
+  app.delete("/api/admin/cursos-pdf/:id", requireAdmin, async (req, res) => {
+    const id = parseInt(req.params.id);
+    if (!id) return res.status(400).json({ error: "ID inválido" });
+    try {
+      await ensurePdfTable();
+      await pool.query("DELETE FROM academia_pdf_cursos WHERE id=?", [id]);
+      res.json({ status: "ok" });
+    } catch (e: any) { console.error("Error eliminando curso PDF:", e?.message); res.status(500).json({ error: "Error interno" }); }
+  });
+
+  app.post("/api/admin/cursos-pdf/:id/modulos", requireAdmin, async (req, res) => {
+    const id = parseInt(req.params.id);
+    if (!id) return res.status(400).json({ error: "ID inválido" });
+    const { titulo, pdf_url, orden } = req.body || {};
+    if (!titulo || !pdf_url) return res.status(400).json({ error: "Título y URL del PDF son requeridos" });
+    try {
+      const course = await getPdfCourseById(id);
+      if (!course) return res.status(404).json({ error: "Curso no encontrado" });
+      const modulo = { id: `pdf_${id}_${Date.now()}`, titulo, pdf_url, orden: orden ?? (course.modulos.length + 1) };
+      const modulos = [...course.modulos, modulo].sort((a: any, b: any) => a.orden - b.orden);
+      await pool.query("UPDATE academia_pdf_cursos SET modulos=? WHERE id=?", [JSON.stringify(modulos), id]);
+      res.json({ status: "ok", modulo });
+    } catch (e: any) { console.error("Error creando módulo PDF:", e?.message); res.status(500).json({ error: "Error interno" }); }
+  });
+
+  app.put("/api/admin/cursos-pdf/:id/modulos/:moduloId", requireAdmin, async (req, res) => {
+    const id = parseInt(req.params.id);
+    if (!id) return res.status(400).json({ error: "ID inválido" });
+    const { moduloId } = req.params;
+    const { titulo, pdf_url, orden } = req.body || {};
+    try {
+      const course = await getPdfCourseById(id);
+      if (!course) return res.status(404).json({ error: "Curso no encontrado" });
+      const modulos = course.modulos
+        .map((m: any) => m.id !== moduloId ? m : {
+          ...m,
+          ...(titulo  !== undefined && { titulo }),
+          ...(pdf_url !== undefined && { pdf_url }),
+          ...(orden   !== undefined && { orden }),
+        })
+        .sort((a: any, b: any) => a.orden - b.orden);
+      await pool.query("UPDATE academia_pdf_cursos SET modulos=? WHERE id=?", [JSON.stringify(modulos), id]);
+      res.json({ status: "ok", modulo: modulos.find((m: any) => m.id === moduloId) });
+    } catch (e: any) { console.error("Error actualizando módulo PDF:", e?.message); res.status(500).json({ error: "Error interno" }); }
+  });
+
+  app.delete("/api/admin/cursos-pdf/:id/modulos/:moduloId", requireAdmin, async (req, res) => {
+    const id = parseInt(req.params.id);
+    if (!id) return res.status(400).json({ error: "ID inválido" });
+    const { moduloId } = req.params;
+    try {
+      const course = await getPdfCourseById(id);
+      if (!course) return res.status(404).json({ error: "Curso no encontrado" });
+      const modulos = course.modulos.filter((m: any) => m.id !== moduloId);
+      await pool.query("UPDATE academia_pdf_cursos SET modulos=? WHERE id=?", [JSON.stringify(modulos), id]);
+      res.json({ status: "ok" });
+    } catch (e: any) { console.error("Error eliminando módulo PDF:", e?.message); res.status(500).json({ error: "Error interno" }); }
   });
 
   // ─── PRECIOS PÚBLICOS (sin auth, para la landing) ────────────────
