@@ -1,10 +1,28 @@
-# TODO - ✅ Fix asignación de cursos PDF en Alumnos **COMPLETADO**
+# ✅ FIX: Cursos asignados no aparecen en perfil usuario
 
-**Estado final**: Fix implementado y verificado.
+## 📋 Estado: [EN PROGRESO]
 
-## Cambios realizados:
+### ✅ 1. Crear TODO.md [COMpletado]
 
-**Información recopilada y análisis:**
-- `src/AdminDashboard.tsx`: 
-  * availableCourses ya combinaba `filteredCourses` (Vimeo ✨) + `pdfCourses` (PDF 📄)
-  * Detección correcta de tipo: `'
+### ⏳ 2. Editar api/index.ts
+- [ ] Fix `/api/auth/perfil` → fetch DB cursos frescos
+
+### ⏳ 3. Editar src/App.tsx  
+- [ ] Botón refresh en header cursos
+- [ ] Auto-refresh 30s en dashboard (opcional: **SÍ**)
+
+### ⏳ 4. Test completo
+```
+1. Admin asigna curso a usuario X
+2. Usuario X refresca → ✅ Nuevo curso en perfil
+3. Usuario X "Mis Cursos" → ✅ Listado actualizado
+4. DB verify: SELECT email,cursos FROM academia_usuarios
+```
+
+### ⏳ 5. Deploy & Validar
+```
+vercel --prod
+railway deploy (si aplica)
+```
+
+**Próximo**: Editar `api/index.ts`

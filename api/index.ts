@@ -767,9 +767,20 @@ app.post("/api/auth/register", async (req, res) => {
   }
 });
 
-app.get("/api/auth/perfil", requireAuth, (req: any, res) =>
-  res.json({ usuario: req.user })
-);
+app.get("/api/auth/perfil", requireAuth, async (req: any, res) => {
+  try {
+    const dbUser = await getUserByEmail(req.user.email);
+    const freshUser = {
+      ...req.user,
+      cursos: dbUser?.cursos || req.user.cursos,
+    };
+    res.json({ usuario: freshUser });
+  } catch (e) {
+    console.error("Error fetching fresh perfil:", e);
+    res.json({ usuario: req.user });
+  }
+});
+
 
 app.post("/api/auth/logout", (_, res) => res.json({ status: "ok" }));
 

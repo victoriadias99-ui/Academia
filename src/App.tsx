@@ -283,7 +283,17 @@ export default function App() {
           <p className="text-texto-gris text-sm">
             {activeTab === 'cursos' ? 'Accedé a tus cursos disponibles' : activeTab === 'perfil' ? 'Actualizá tus datos personales' : 'Mantené tu cuenta segura'}
           </p>
+          {activeTab === 'cursos' && (
+            <button 
+              onClick={fetchCourses}
+              className="mt-2 flex items-center gap-1 text-xs text-texto-gris hover:text-verde-brillante font-medium transition-colors"
+              title="Refrescar lista de cursos"
+            >
+              ↻ Refrescar
+            </button>
+          )}
         </header>
+
 
         {/* Scrollable Content */}
         <div className="flex-1 overflow-y-auto p-8">
