@@ -830,7 +830,10 @@ const menuItems = [
                     <tbody className="divide-y divide-[#dee2e6]">
                       {filteredStudents.map((student, i) => {
                         const assignedIds = (student.cursos_slugs || "").split("|").filter(Boolean);
-                        const availableCourses = filteredCourses.filter(c => !assignedIds.includes(getCourseIdentifier(c)));
+                        const availableCourses = [
+                          ...filteredCourses.filter(c => !assignedIds.includes(getCourseIdentifier(c))),
+                          ...pdfCourses.filter(c => !assignedIds.includes(c.slug))
+                        ];
                         return (
                         <tr key={i} className="hover:bg-gray-50 transition-colors">
                           <td className="px-6 py-4 text-gray-600 text-sm">{student.email}</td>
@@ -855,9 +858,23 @@ const menuItems = [
                                   className="text-xs border border-[#dee2e6] rounded-md px-2 py-1.5 text-gray-500 bg-white focus:outline-none focus:border-[#00a86b] focus:ring-1 focus:ring-[#00a86b]/30 cursor-pointer w-full max-w-[180px]"
                                 >
                                   <option value="">＋ Agregar curso...</option>
-                                  {availableCourses.map(c => (
-                                    <option key={c.id} value={getCourseIdentifier(c)}>{c.nombre}</option>
-                                  ))}
+                                  {availableCourses.map(c => {
+                                    if ('id' in c && 'nombre' in c) {
+                                      // Vimeo course
+                                      return (
+                                        <option key={c.id} value={getCourseIdentifier(c)}>
+                                          {c.nombre} ✨
+                                        </option>
+                                      );
+                                    } else {
+                                      // PDF course
+                                      return (
+                                        <option key={c.id} value={c.slug}>
+                                          {c.nombre} 📄
+                                        </option>
+                                      );
+                                    }
+                                  })}
                                 </select>
                               )}
                             </div>
