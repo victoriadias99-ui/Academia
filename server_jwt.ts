@@ -977,12 +977,12 @@ async function startServer() {
       const dbUser = dbUsers.find((u: any) => u.email === user.email);
       const cursosActualizados = dbUser?.cursos ?? user.cursos ?? "";
       const cursosInfo = await getCursosInfo();
+      const assignedSlugs = cursosActualizados.split("|").filter(Boolean);
 
       let cursosBase = user.role === "admin"
         ? vimeoCourses
         : (() => {
-          const slugs = cursosActualizados.split("|").filter(Boolean);
-          const ids = expandSlugsToIds(slugs);
+          const ids = expandSlugsToIds(assignedSlugs);
           return vimeoCourses.filter(c => ids.includes(c.id.toString()));
         })();
 
@@ -1001,22 +1001,86 @@ async function startServer() {
           progreso: total > 0 ? Math.round((completadas / total) * 100) : 0,
         };
       });
-      res.json({ cursos });
-    } catch { res.status(500).json({ error: "Error al obtener cursos" }); }
+
+      // Incluir cursos PDF asignados al alumno (admin ve todos)
+      const allPdfCourses = await getPdfCourses().catch(() => []);
+      const assignedPdfCourses = user.role === "admin"
+        ? allPdfCourses
+        : allPdfCourses.filter((p: any) => assignedSlugs.includes(p.slug));
+      const cursosPdf = assignedPdfCourses.map((p: any) => {
+        const totalPdfs = (p.modulos || []).reduce((sum: number, m: any) => sum + ((m.pdfs?.length) || 0), 0);
+        const completadasPdf = (progreso[p.id.toString()] || []).length;
+        return {
+          id: p.id,
+          nombre: p.nombre,
+          descripcion: p.descripcion || "",
+          imagen_url: p.imagen_url || "",
+          total_lecciones: totalPdfs,
+          lecciones_completadas: completadasPdf,
+          progreso: totalPdfs > 0 ? Math.round((completadasPdf / totalPdfs) * 100) : 0,
+          tipo: "pdf",
+          slug: p.slug,
+          activo: !!p.activo,
+          stripe_price_id: "",
+          precio_ars: 0,
+          precio_usd: 0,
+          precios_paises: {},
+        };
+      });
+
+      res.json({ cursos: [...cursos, ...cursosPdf] });
+    } catch (e: any) { console.error("mis-cursos error:", e?.message); res.status(500).json({ error: "Error al obtener cursos" }); }
   });
 
   app.get("/api/cursos/:id", requireAuth, async (req: any, res) => {
     const id = parseInt(req.params.id);
     const curso = vimeoCourses.find(c => c.id === id);
-    if (!curso) return res.status(404).json({ error: "Curso no encontrado" });
+    if (curso) {
+      try {
+        const completadas: string[] = (await getUserProgress(req.user.email))[id.toString()] || [];
+        const lecciones = (vimeoLessons[id] || []).map((l: any) => ({ ...l, completada: completadas.includes(l.id) }));
+        const completadasCount = lecciones.filter((l: any) => l.completada).length;
+        const total = lecciones.length;
+        const cursoConProgreso = { ...curso, lecciones_completadas: completadasCount, progreso: total > 0 ? Math.round((completadasCount / total) * 100) : 0 };
+        return res.json({ curso: cursoConProgreso, lecciones });
+      } catch { return res.status(500).json({ error: "Error al obtener curso" }); }
+    }
+    // Curso PDF
     try {
+      const pdfCurso = await getPdfCourseById(id);
+      if (!pdfCurso) return res.status(404).json({ error: "Curso no encontrado" });
       const completadas: string[] = (await getUserProgress(req.user.email))[id.toString()] || [];
-      const lecciones = (vimeoLessons[id] || []).map((l: any) => ({ ...l, completada: completadas.includes(l.id) }));
-      const completadasCount = lecciones.filter((l: any) => l.completada).length;
+      const modulos = Array.isArray(pdfCurso.modulos) ? pdfCurso.modulos : [];
+      const lecciones: any[] = [];
+      for (const m of modulos) {
+        for (const pdf of (m.pdfs || [])) {
+          lecciones.push({
+            id: pdf.id,
+            titulo: `${m.titulo} — ${pdf.nombre}`,
+            vimeo_id: "",
+            duracion: 0,
+            completada: completadas.includes(pdf.id),
+            pdf_url: pdf.pdf_url,
+            tipo: "pdf",
+          });
+        }
+      }
+      const completadasCount = lecciones.filter(l => l.completada).length;
       const total = lecciones.length;
-      const cursoConProgreso = { ...curso, lecciones_completadas: completadasCount, progreso: total > 0 ? Math.round((completadasCount / total) * 100) : 0 };
-      res.json({ curso: cursoConProgreso, lecciones });
-    } catch { res.status(500).json({ error: "Error al obtener curso" }); }
+      const cursoPdf = {
+        id: pdfCurso.id,
+        nombre: pdfCurso.nombre,
+        descripcion: pdfCurso.descripcion || "",
+        imagen_url: pdfCurso.imagen_url || "",
+        total_lecciones: total,
+        lecciones_completadas: completadasCount,
+        progreso: total > 0 ? Math.round((completadasCount / total) * 100) : 0,
+        tipo: "pdf",
+        slug: pdfCurso.slug,
+        activo: !!pdfCurso.activo,
+      };
+      return res.json({ curso: cursoPdf, lecciones });
+    } catch { return res.status(500).json({ error: "Error al obtener curso" }); }
   });
 
   app.post("/api/cursos/progreso/:leccionId", requireAuth, async (req: any, res) => {
