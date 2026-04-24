@@ -3,26 +3,67 @@
 
 @theme {
   --font-sans: "DM Sans", ui-sans-serif, system-ui, sans-serif;
-  
+
+  /* Brand — verdes (identidad) */
   --color-verde-navbar: #1a5c4a;
+  --color-verde-navbar-deep: #134735;
   --color-verde-brillante: #00a86b;
   --color-verde-boton: #1a7a5e;
+  --color-verde-boton-hover: #15664d;
+  --color-verde-soft: #eaf4ee;
+
+  /* Neutrales — mejor contraste y jerarquía */
   --color-azul-marino: #0d2137;
-  --color-fondo-gris: #f4f5f7;
-  --color-texto-gris: #6c757d;
+  --color-fondo-gris: #f6f7f9;
+  --color-superficie: #ffffff;
+  --color-borde: #e5e7eb;
+  --color-borde-fuerte: #d1d5db;
+  --color-texto-gris: #6b7280;
+  --color-texto-suave: #9ca3af;
+
+  /* Sombras coherentes tipo SaaS */
+  --shadow-xs: 0 1px 2px 0 rgb(15 23 42 / 0.04);
+  --shadow-sm: 0 1px 2px 0 rgb(15 23 42 / 0.05), 0 1px 3px 0 rgb(15 23 42 / 0.06);
+  --shadow-md: 0 4px 12px -2px rgb(15 23 42 / 0.08), 0 2px 4px -2px rgb(15 23 42 / 0.04);
+  --shadow-lg: 0 12px 32px -8px rgb(15 23 42 / 0.12), 0 4px 8px -4px rgb(15 23 42 / 0.06);
 }
 
 @layer base {
+  html { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
   body {
-    @apply font-sans text-azul-marino bg-white;
+    @apply font-sans text-azul-marino bg-fondo-gris;
+    letter-spacing: -0.005em;
   }
+
+  /* Scrollbars sutiles */
+  *::-webkit-scrollbar { width: 10px; height: 10px; }
+  *::-webkit-scrollbar-thumb { background: #d4d8de; border-radius: 999px; border: 2px solid transparent; background-clip: padding-box; }
+  *::-webkit-scrollbar-thumb:hover { background: #b8bec7; background-clip: padding-box; border: 2px solid transparent; }
+  *::-webkit-scrollbar-track { background: transparent; }
+
+  /* Focus accesible */
+  :focus-visible { outline: 2px solid var(--color-verde-brillante); outline-offset: 2px; border-radius: 4px; }
 }
 
+/* Animaciones */
 @keyframes fadeIn {
   from { opacity: 0; transform: translateX(10px); }
   to { opacity: 1; transform: translateX(0); }
 }
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes shimmer {
+  0% { background-position: -400px 0; }
+  100% { background-position: 400px 0; }
+}
 
-.animate-fade-in {
-  animation: fadeIn 0.4s ease-out forwards;
+.animate-fade-in { animation: fadeIn 0.4s ease-out forwards; }
+.animate-fade-up { animation: fadeUp 0.35s ease-out forwards; }
+
+.skeleton {
+  background: linear-gradient(90deg, #eef0f3 0%, #f7f8fa 50%, #eef0f3 100%);
+  background-size: 800px 100%;
+  animation: shimmer 1.4s infinite linear;
 }

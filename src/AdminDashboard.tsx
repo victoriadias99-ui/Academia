@@ -3,7 +3,7 @@ import {
   LayoutDashboard, Users, BookOpen, PlayCircle, DollarSign, LogOut, Search, Plus, X,
   CheckCircle2, AlertCircle, ShieldCheck, ShieldX, Calendar, Edit2, Trash2,
   FileText, Link2, MessageSquare, Upload, FolderOpen, Bug, AlertTriangle, ShieldAlert,
-  ChevronDown, ChevronRight, LifeBuoy, Mail, Phone
+  ChevronDown, ChevronRight, LifeBuoy, Mail, Phone, GraduationCap
 } from "lucide-react";
 import type { PdfCourse, PdfModulo, PdfArchivo } from "./types";
 
@@ -805,48 +805,100 @@ const menuItems = [
   }
 
   return (
-    <div className="flex h-screen bg-[#f4f5f7] font-sans overflow-hidden">
-      <aside className="w-[240px] bg-[#1a5c4a] flex flex-col flex-shrink-0">
-        <div className="p-6">
-          <div className="flex flex-col mb-1">
-            <img src="/logo-aprende-excel.png" onError={(e) => { e.currentTarget.src = "https://www.aprende-excel.com/wp-content/uploads/2023/03/logo-aprende-excel-horizontal.png"; }} alt="Aprende Excel" className="h-10 w-auto" referrerPolicy="no-referrer" />
-            <span className="text-[#00a86b] text-[10px] font-bold uppercase tracking-wider mt-1">Admin</span>
+    <div className="flex h-screen bg-[#f6f7f9] font-sans overflow-hidden">
+      <aside className="w-[244px] bg-gradient-to-b from-[#1a5c4a] to-[#134735] flex flex-col flex-shrink-0 border-r border-black/10 relative">
+        {/* Accent hairline */}
+        <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-[#00a86b]/60 to-transparent" />
+
+        {/* Logo */}
+        <div className="px-6 pt-6 pb-5">
+          <div className="flex items-center gap-2.5">
+            <img
+              src="/logo-aprende-excel.png"
+              onError={(e) => { e.currentTarget.src = "https://www.aprende-excel.com/wp-content/uploads/2023/03/logo-aprende-excel-horizontal.png"; }}
+              alt="Aprende Excel"
+              className="h-9 w-auto"
+              referrerPolicy="no-referrer"
+            />
+          </div>
+          <span className="inline-flex items-center gap-1.5 mt-2 px-2 py-0.5 rounded-full bg-[#00a86b]/15 text-[#5de6ae] text-[10px] font-semibold uppercase tracking-wider ring-1 ring-[#00a86b]/25">
+            <span className="w-1.5 h-1.5 rounded-full bg-[#00a86b] shadow-[0_0_6px_#00a86b]" />
+            Admin
+          </span>
+        </div>
+
+        {/* Separador */}
+        <div className="h-px bg-white/10 mx-5 mb-4" />
+
+        {/* Selector Academia */}
+        <div className="px-5 mb-5">
+          <label className="flex items-center gap-1.5 text-white/50 text-[10px] font-semibold uppercase tracking-[0.08em] mb-2">
+            <GraduationCap size={12} /> Academia
+          </label>
+          <div className="relative">
+            <select
+              value={academiaFilter}
+              onChange={(e) => setAcademiaFilter(e.target.value)}
+              className="w-full appearance-none bg-white/[0.06] hover:bg-white/[0.1] text-white text-sm pl-3 pr-9 py-2.5 rounded-lg border border-white/10 focus:outline-none focus:border-[#00a86b]/50 focus:ring-2 focus:ring-[#00a86b]/30 transition-colors cursor-pointer"
+            >
+              <option value="todas" className="bg-[#134735]">Todas las academias</option>
+              <option value={ACADEMIA_EXCEL} className="bg-[#134735]">Aprende Excel</option>
+              <option value={ACADEMIA_IDIOMAS} className="bg-[#134735]">Aprende Idiomas</option>
+            </select>
+            <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-white/50 pointer-events-none" />
           </div>
         </div>
-        <div className="h-[1px] bg-white/15 mx-6 mb-4"></div>
-        <div className="px-6 mb-4">
-          <label className="block text-white/60 text-[10px] font-bold uppercase tracking-wider mb-1.5">Academia</label>
-          <select
-            value={academiaFilter}
-            onChange={(e) => setAcademiaFilter(e.target.value)}
-            className="w-full bg-[#134735] text-white text-sm px-3 py-2 rounded-md border border-white/15 focus:outline-none focus:ring-2 focus:ring-[#00a86b]/50 cursor-pointer"
-          >
-            <option value="todas">Todas</option>
-            <option value={ACADEMIA_EXCEL}>Aprende Excel</option>
-            <option value={ACADEMIA_IDIOMAS}>Aprende Idiomas</option>
-          </select>
+
+        {/* Label de navegación */}
+        <div className="px-5 mb-2">
+          <span className="text-white/40 text-[10px] font-semibold uppercase tracking-[0.08em]">Navegación</span>
         </div>
-        <nav className="flex-1 px-3 space-y-1">
-          {menuItems.map((item) => (
-            <button key={item.id} onClick={() => setActiveTab(item.id)}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-md transition-all duration-200 group ${activeTab === item.id ? "bg-[#00a86b]/20 border-l-[3px] border-[#00a86b] text-white" : "text-white/70 hover:bg-white/10 hover:text-white"}`}>
-              <item.icon size={20} className={activeTab === item.id ? "text-[#00a86b]" : "text-white/70 group-hover:text-white"} />
-              <span className="font-medium">{item.label}</span>
-            </button>
-          ))}
+
+        {/* Menú */}
+        <nav className="flex-1 px-3 space-y-0.5 overflow-y-auto">
+          {menuItems.map((item) => {
+            const isActive = activeTab === item.id;
+            return (
+              <button
+                key={item.id}
+                onClick={() => setActiveTab(item.id)}
+                className={`relative w-full flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-sm transition-all duration-150 group ${
+                  isActive
+                    ? "bg-white/[0.08] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]"
+                    : "text-white/65 hover:bg-white/[0.05] hover:text-white"
+                }`}
+              >
+                {isActive && (
+                  <span className="absolute left-0 top-1/2 -translate-y-1/2 h-5 w-[3px] rounded-r-full bg-[#00a86b] shadow-[0_0_8px_#00a86b]" />
+                )}
+                <item.icon
+                  size={18}
+                  className={`transition-colors ${isActive ? "text-[#00a86b]" : "text-white/55 group-hover:text-white/90"}`}
+                />
+                <span className={`font-medium tracking-tight ${isActive ? "" : "group-hover:translate-x-0.5 transition-transform"}`}>
+                  {item.label}
+                </span>
+              </button>
+            );
+          })}
         </nav>
-        <div className="p-6 mt-auto">
-          <div className="flex items-center gap-3 mb-4 overflow-hidden">
-            <div className="w-8 h-8 rounded-full bg-[#00a86b] flex items-center justify-center text-white font-bold text-xs shrink-0">
+
+        {/* Footer usuario */}
+        <div className="mt-auto p-4 border-t border-white/10 bg-black/10">
+          <div className="flex items-center gap-3 p-2 rounded-lg hover:bg-white/5 transition-colors mb-2">
+            <div className="w-9 h-9 rounded-full bg-gradient-to-br from-[#00a86b] to-[#008f5a] flex items-center justify-center text-white font-semibold text-sm shrink-0 ring-2 ring-white/10 shadow-md">
               {user?.inicial || 'A'}
             </div>
-            <div className="overflow-hidden">
-              <div className="text-white font-bold text-xs truncate">{user?.nombre || 'Admin'}</div>
-              <div className="text-white/50 text-[10px] truncate">{user?.email}</div>
+            <div className="overflow-hidden min-w-0">
+              <div className="text-white font-semibold text-xs truncate">{user?.nombre || 'Admin'}</div>
+              <div className="text-white/45 text-[10px] truncate">{user?.email}</div>
             </div>
           </div>
-          <button onClick={handleLogout} className="w-full flex items-center justify-center gap-2 px-4 py-2 rounded-md border border-white/20 text-white hover:bg-red-600 hover:border-red-600 transition-all duration-200">
-            <LogOut size={18} /><span className="font-medium">Salir</span>
+          <button
+            onClick={handleLogout}
+            className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-white/80 text-sm font-medium border border-white/10 hover:bg-red-500/15 hover:border-red-500/40 hover:text-red-200 transition-all duration-200"
+          >
+            <LogOut size={16} /><span>Cerrar sesión</span>
           </button>
         </div>
       </aside>
