@@ -3,7 +3,8 @@ import {
   LayoutDashboard, Users, BookOpen, PlayCircle, DollarSign, LogOut, Search, Plus, X,
   CheckCircle2, AlertCircle, ShieldCheck, ShieldX, Calendar, Edit2, Trash2,
   FileText, Link2, MessageSquare, Upload, FolderOpen, Bug, AlertTriangle, ShieldAlert,
-  ChevronDown, ChevronRight, LifeBuoy, Mail, Phone, GraduationCap
+  ChevronDown, ChevronRight, LifeBuoy, Mail, Phone, GraduationCap,
+  TrendingUp, ArrowUpRight, Activity, Sparkles
 } from "lucide-react";
 import type { PdfCourse, PdfModulo, PdfArchivo } from "./types";
 
@@ -907,46 +908,146 @@ const menuItems = [
         <AnimatePresence mode="wait">
           {activeTab === "dashboard" && (
             <motion.div key="dashboard" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="p-8">
-              <header className="mb-8">
-                <h1 className="text-3xl font-bold text-[#0d2137]">Dashboard</h1>
-                <p className="text-gray-500">Resumen general de la academia</p>
-              </header>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-                {[
-                  { label: "Total Alumnos", value: filteredStats?.totalAlumnos, icon: Users },
-                  { label: "Alumnos Activos", value: filteredStats?.alumnosActivos, icon: Users },
-                  { label: "Cursos Activos", value: filteredStats?.cursosActivos, icon: BookOpen },
-                ].map((card) => (
-                  <div key={card.label} className="bg-white p-5 rounded-lg border border-[#dee2e6] shadow-sm">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-gray-500 font-medium">{card.label}</span>
-                      <card.icon className="text-[#00a86b]" size={20} />
+              {/* Hero header con gradiente */}
+              <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-[#1a5c4a] via-[#1a7a5e] to-[#00a86b] p-8 mb-8 shadow-lg">
+                <div className="absolute -top-24 -right-24 w-72 h-72 rounded-full bg-white/10 blur-3xl" />
+                <div className="absolute -bottom-20 -left-10 w-60 h-60 rounded-full bg-[#00a86b]/30 blur-3xl" />
+                <div className="relative flex flex-col md:flex-row md:items-center justify-between gap-4">
+                  <div>
+                    <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/15 backdrop-blur-sm text-white/90 text-[11px] font-semibold uppercase tracking-wider mb-3 ring-1 ring-white/20">
+                      <Sparkles size={12} /> Panel de administración
                     </div>
-                    <div className="text-3xl font-bold text-[#0d2137]">{card.value ?? '-'}</div>
+                    <h1 className="text-3xl md:text-4xl font-bold text-white tracking-tight">Hola, {user?.nombre?.split(' ')[0] || 'Admin'} 👋</h1>
+                    <p className="text-white/80 mt-1">Resumen general de {academiaFilter === 'todas' ? 'todas las academias' : academiaFilter}</p>
                   </div>
-                ))}
+                  <div className="flex items-center gap-3">
+                    <div className="bg-white/10 backdrop-blur-sm rounded-xl px-4 py-3 ring-1 ring-white/20">
+                      <div className="flex items-center gap-2 text-white/70 text-[11px] font-semibold uppercase tracking-wider">
+                        <Calendar size={12} /> Hoy
+                      </div>
+                      <div className="text-white font-bold text-sm mt-0.5">{new Date().toLocaleDateString('es-AR', { day: 'numeric', month: 'long', year: 'numeric' })}</div>
+                    </div>
+                  </div>
+                </div>
               </div>
-              <div className="bg-white rounded-lg border border-[#dee2e6] shadow-sm overflow-hidden">
-                <div className="p-6 border-b border-[#dee2e6]"><h2 className="text-lg font-bold text-[#0d2137]">Últimas compras</h2></div>
+
+              {/* Stat cards con color accent */}
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-5 mb-8">
+                {(() => {
+                  const totalAlumnos = filteredStats?.totalAlumnos ?? 0;
+                  const activos = filteredStats?.alumnosActivos ?? 0;
+                  const cursos = filteredStats?.cursosActivos ?? 0;
+                  const ingresos = filteredSales.reduce((acc, s) => acc + (Number(s.monto) || 0), 0);
+                  const ratio = totalAlumnos > 0 ? Math.round((activos / totalAlumnos) * 100) : 0;
+                  const cards = [
+                    { label: "Total Alumnos", value: totalAlumnos, icon: Users, accent: "from-[#1a5c4a] to-[#00a86b]", tintBg: "bg-[#eaf4ee]", tintText: "text-[#1a5c4a]", delta: { up: true, label: "Activos " + ratio + "%" } },
+                    { label: "Alumnos Activos", value: activos, icon: Activity, accent: "from-[#00a86b] to-[#5de6ae]", tintBg: "bg-emerald-50", tintText: "text-emerald-700", delta: { up: true, label: "En curso" } },
+                    { label: "Cursos Activos", value: cursos, icon: BookOpen, accent: "from-indigo-500 to-indigo-400", tintBg: "bg-indigo-50", tintText: "text-indigo-700", delta: null },
+                    { label: "Ingresos recientes", value: "$" + ingresos.toLocaleString('es-AR'), icon: DollarSign, accent: "from-amber-500 to-amber-400", tintBg: "bg-amber-50", tintText: "text-amber-700", delta: { up: true, label: filteredSales.length + " ventas" } },
+                  ];
+                  return cards.map((card, idx) => (
+                    <motion.div
+                      key={card.label}
+                      initial={{ opacity: 0, y: 12 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: idx * 0.06 }}
+                      className="relative overflow-hidden bg-white rounded-xl border border-[#e5e7eb] shadow-sm hover:shadow-md transition-shadow p-5 group"
+                    >
+                      {/* Accent bar */}
+                      <div className={`absolute top-0 left-0 right-0 h-1 bg-gradient-to-r ${card.accent}`} />
+                      {/* Background glow on hover */}
+                      <div className={`absolute -top-10 -right-10 w-32 h-32 rounded-full bg-gradient-to-br ${card.accent} opacity-0 group-hover:opacity-10 blur-2xl transition-opacity`} />
+                      <div className="relative flex items-start justify-between mb-4">
+                        <div className={`w-11 h-11 rounded-xl ${card.tintBg} ${card.tintText} flex items-center justify-center shadow-inner`}>
+                          <card.icon size={20} strokeWidth={2.2} />
+                        </div>
+                        {card.delta && (
+                          <div className={`flex items-center gap-0.5 text-[11px] font-semibold px-2 py-0.5 rounded-full ${card.delta.up ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-700'}`}>
+                            {card.delta.up ? <ArrowUpRight size={11} /> : null}
+                            {card.delta.label}
+                          </div>
+                        )}
+                      </div>
+                      <div className="text-[11px] font-semibold uppercase tracking-wider text-gray-500 mb-1">{card.label}</div>
+                      <div className="text-3xl font-bold text-[#0d2137] tracking-tight">{card.value ?? '-'}</div>
+                      {/* Mini sparkline decorativa (SVG estático con leve animación via Framer) */}
+                      <svg className="mt-3 w-full h-8 opacity-60" viewBox="0 0 120 32" preserveAspectRatio="none">
+                        <defs>
+                          <linearGradient id={`spark-${idx}`} x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stopColor="currentColor" stopOpacity="0.35" className={card.tintText} />
+                            <stop offset="100%" stopColor="currentColor" stopOpacity="0" className={card.tintText} />
+                          </linearGradient>
+                        </defs>
+                        <path d={`M0,${20 + (idx % 2) * 3} L20,${14 + idx} L40,${18 - idx} L60,${10 + idx} L80,${16 - idx} L100,${8 + idx} L120,${12 + idx}`} fill="none" strokeWidth="2" className={card.tintText} stroke="currentColor" />
+                        <path d={`M0,${20 + (idx % 2) * 3} L20,${14 + idx} L40,${18 - idx} L60,${10 + idx} L80,${16 - idx} L100,${8 + idx} L120,${12 + idx} L120,32 L0,32 Z`} fill={`url(#spark-${idx})`} />
+                      </svg>
+                    </motion.div>
+                  ));
+                })()}
+              </div>
+
+              {/* Últimas compras — card rica */}
+              <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
+                className="bg-white rounded-xl border border-[#e5e7eb] shadow-sm overflow-hidden">
+                <div className="flex items-center justify-between p-6 border-b border-[#e5e7eb] bg-gradient-to-r from-[#f8faf9] to-white">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-lg bg-[#eaf4ee] text-[#1a5c4a] flex items-center justify-center">
+                      <TrendingUp size={18} />
+                    </div>
+                    <div>
+                      <h2 className="text-lg font-bold text-[#0d2137] tracking-tight">Últimas compras</h2>
+                      <p className="text-xs text-gray-500">Movimientos más recientes de la academia</p>
+                    </div>
+                  </div>
+                  <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-[#eaf4ee] text-[#1a5c4a] text-xs font-bold ring-1 ring-[#1a5c4a]/10">
+                    {filteredSales.length} {filteredSales.length === 1 ? 'venta' : 'ventas'}
+                  </span>
+                </div>
                 <div className="overflow-x-auto">
                   <table className="w-full text-left">
-                    <thead className="bg-[#1a5c4a] text-white">
-                      <tr><th className="px-6 py-4 font-semibold">Email</th><th className="px-6 py-4 font-semibold">Nombre</th><th className="px-6 py-4 font-semibold">Curso</th><th className="px-6 py-4 font-semibold">Monto</th><th className="px-6 py-4 font-semibold">Fecha</th></tr>
+                    <thead>
+                      <tr className="bg-[#f6f7f9] border-b border-[#e5e7eb]">
+                        <th className="px-6 py-3 text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Alumno</th>
+                        <th className="px-6 py-3 text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Curso</th>
+                        <th className="px-6 py-3 text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Monto</th>
+                        <th className="px-6 py-3 text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Fecha</th>
+                      </tr>
                     </thead>
-                    <tbody className="divide-y divide-[#dee2e6]">
-                      {filteredSales.map((sale, i) => (
-                        <tr key={i} className="hover:bg-gray-50 transition-colors">
-                          <td className="px-6 py-4 text-gray-600">{sale.email}</td>
-                          <td className="px-6 py-4 font-medium text-[#0d2137]">{sale.nombre}</td>
-                          <td className="px-6 py-4 text-gray-600">{sale.curso}</td>
-                          <td className="px-6 py-4 font-bold text-[#00a86b]">${sale.monto}</td>
-                          <td className="px-6 py-4 text-gray-500">{sale.fecha}</td>
-                        </tr>
-                      ))}
+                    <tbody className="divide-y divide-[#eef0f3]">
+                      {filteredSales.length === 0 && (
+                        <tr><td colSpan={4} className="px-6 py-12 text-center text-gray-400 text-sm">Aún no hay compras registradas</td></tr>
+                      )}
+                      {filteredSales.map((sale, i) => {
+                        const inicial = (sale.nombre || sale.email || '?').charAt(0).toUpperCase();
+                        const colors = ['from-[#1a5c4a] to-[#00a86b]', 'from-indigo-500 to-indigo-400', 'from-amber-500 to-amber-400', 'from-rose-500 to-rose-400', 'from-sky-500 to-sky-400'];
+                        const grad = colors[i % colors.length];
+                        return (
+                          <tr key={i} className="hover:bg-[#fafbfc] transition-colors group">
+                            <td className="px-6 py-4">
+                              <div className="flex items-center gap-3">
+                                <div className={`w-9 h-9 rounded-full bg-gradient-to-br ${grad} flex items-center justify-center text-white font-semibold text-sm shadow-sm shrink-0`}>
+                                  {inicial}
+                                </div>
+                                <div className="min-w-0">
+                                  <div className="font-medium text-[#0d2137] text-sm truncate">{sale.nombre}</div>
+                                  <div className="text-xs text-gray-500 truncate">{sale.email}</div>
+                                </div>
+                              </div>
+                            </td>
+                            <td className="px-6 py-4">
+                              <span className="inline-flex items-center px-2.5 py-1 rounded-md bg-[#eaf4ee] text-[#1a5c4a] text-xs font-semibold ring-1 ring-[#1a5c4a]/10">
+                                {sale.curso}
+                              </span>
+                            </td>
+                            <td className="px-6 py-4"><span className="font-bold text-[#0d2137] tabular-nums">${sale.monto}</span></td>
+                            <td className="px-6 py-4 text-gray-500 text-sm">{sale.fecha}</td>
+                          </tr>
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>
-              </div>
+              </motion.div>
             </motion.div>
           )}
 
