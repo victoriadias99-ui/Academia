@@ -1053,41 +1053,125 @@ const menuItems = [
 
           {activeTab === "alumnos" && (
             <motion.div key="alumnos" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="p-8">
-              <header className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
-                <div><h1 className="text-3xl font-bold text-[#0d2137]">Alumnos</h1><p className="text-gray-500">Gestión de estudiantes registrados</p></div>
-                <div className="flex gap-2">
-                  <div className="relative">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
-                    <input type="text" placeholder="Buscar por nombre o email..." className="pl-10 pr-4 py-2 rounded-md border border-[#dee2e6] focus:outline-none focus:ring-2 focus:ring-[#00a86b]/50 w-full md:w-64" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
+              {/* Header con mini stats */}
+              <div className="mb-6">
+                <div className="flex flex-col md:flex-row md:items-start justify-between gap-4 mb-5">
+                  <div>
+                    <h1 className="text-3xl font-bold text-[#0d2137] tracking-tight flex items-center gap-3">
+                      <span className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#1a5c4a] to-[#00a86b] text-white flex items-center justify-center shadow-md">
+                        <Users size={20} />
+                      </span>
+                      Alumnos
+                    </h1>
+                    <p className="text-gray-500 mt-1">Gestión de estudiantes registrados en la academia</p>
                   </div>
-                  <button onClick={() => fetchStudents(searchQuery)} className="bg-[#00a86b] text-white px-6 py-2 rounded-md font-medium hover:bg-[#008f5a] transition-colors">Buscar</button>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <div className="relative">
+                      <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
+                      <input
+                        type="text"
+                        placeholder="Buscar por nombre o email..."
+                        className="pl-10 pr-4 py-2.5 rounded-lg border border-[#e5e7eb] bg-white text-sm focus:outline-none focus:border-[#00a86b] focus:ring-2 focus:ring-[#00a86b]/20 transition-all w-full md:w-72 shadow-sm"
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        onKeyDown={(e) => { if (e.key === 'Enter') fetchStudents(searchQuery); }}
+                      />
+                    </div>
+                    <button
+                      onClick={() => fetchStudents(searchQuery)}
+                      className="bg-gradient-to-br from-[#1a7a5e] to-[#00a86b] text-white px-5 py-2.5 rounded-lg font-medium hover:shadow-md hover:brightness-110 transition-all flex items-center gap-2 shadow-sm text-sm"
+                    >
+                      <Search size={15} /> Buscar
+                    </button>
+                  </div>
                 </div>
-              </header>
-              <div className="bg-white rounded-lg border border-[#dee2e6] shadow-sm overflow-hidden">
+
+                {/* Mini stats row */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                  {(() => {
+                    const total = filteredStudents.length;
+                    const activos = filteredStudents.filter(s => s.activo).length;
+                    const admins = filteredStudents.filter(s => s.role === 'admin').length;
+                    const sinCursos = filteredStudents.filter(s => !(s.cursos_slugs || '').split('|').filter(Boolean).length).length;
+                    const items = [
+                      { label: "Total", value: total, icon: Users, color: "bg-[#eaf4ee] text-[#1a5c4a]" },
+                      { label: "Activos", value: activos, icon: ShieldCheck, color: "bg-emerald-50 text-emerald-700" },
+                      { label: "Admins", value: admins, icon: Sparkles, color: "bg-purple-50 text-purple-700" },
+                      { label: "Sin cursos", value: sinCursos, icon: AlertCircle, color: "bg-amber-50 text-amber-700" },
+                    ];
+                    return items.map(it => (
+                      <div key={it.label} className="bg-white rounded-xl border border-[#e5e7eb] p-3.5 flex items-center gap-3 shadow-xs hover:shadow-sm transition-shadow">
+                        <div className={`w-10 h-10 rounded-lg ${it.color} flex items-center justify-center shrink-0`}>
+                          <it.icon size={18} />
+                        </div>
+                        <div className="min-w-0">
+                          <div className="text-[10px] font-semibold uppercase tracking-wider text-gray-500">{it.label}</div>
+                          <div className="text-xl font-bold text-[#0d2137] tabular-nums">{it.value}</div>
+                        </div>
+                      </div>
+                    ));
+                  })()}
+                </div>
+              </div>
+
+              {/* Tabla */}
+              <div className="bg-white rounded-xl border border-[#e5e7eb] shadow-sm overflow-hidden">
                 <div className="overflow-x-auto">
                   <table className="w-full text-left">
-                    <thead className="bg-[#1a5c4a] text-white">
-                      <tr><th className="px-6 py-4 font-semibold">Email</th><th className="px-6 py-4 font-semibold">Nombre</th><th className="px-6 py-4 font-semibold">Cursos asignados</th><th className="px-6 py-4 font-semibold">Rol</th><th className="px-6 py-4 font-semibold">Estado</th><th className="px-6 py-4 font-semibold">Vencimiento</th><th className="px-6 py-4 font-semibold">Acciones</th></tr>
+                    <thead>
+                      <tr className="bg-[#f6f7f9] border-b border-[#e5e7eb]">
+                        <th className="px-6 py-3 text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Alumno</th>
+                        <th className="px-6 py-3 text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Cursos asignados</th>
+                        <th className="px-6 py-3 text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Rol</th>
+                        <th className="px-6 py-3 text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Estado</th>
+                        <th className="px-6 py-3 text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Vencimiento</th>
+                        <th className="px-6 py-3 text-[11px] font-semibold text-gray-500 uppercase tracking-wider text-right">Acciones</th>
+                      </tr>
                     </thead>
-                    <tbody className="divide-y divide-[#dee2e6]">
+                    <tbody className="divide-y divide-[#eef0f3]">
+                      {filteredStudents.length === 0 && (
+                        <tr><td colSpan={6} className="px-6 py-16 text-center">
+                          <div className="flex flex-col items-center gap-2">
+                            <div className="w-14 h-14 rounded-full bg-gray-50 flex items-center justify-center text-gray-300">
+                              <Users size={24} />
+                            </div>
+                            <div className="text-gray-500 font-medium">No se encontraron alumnos</div>
+                            <div className="text-xs text-gray-400">Probá con otro término de búsqueda</div>
+                          </div>
+                        </td></tr>
+                      )}
                       {filteredStudents.map((student, i) => {
                         const assignedIds = (student.cursos_slugs || "").split("|").filter(Boolean);
                         const availableCourses = [
                           ...filteredCourses.filter(c => !assignedIds.includes(getCourseIdentifier(c))),
                           ...pdfCourses.filter(c => !assignedIds.includes(c.slug))
                         ];
+                        const inicial = (student.nombre || student.email || '?').charAt(0).toUpperCase();
+                        const gradients = ['from-[#1a5c4a] to-[#00a86b]', 'from-indigo-500 to-indigo-400', 'from-amber-500 to-amber-400', 'from-rose-500 to-rose-400', 'from-sky-500 to-sky-400', 'from-violet-500 to-violet-400'];
+                        const grad = gradients[i % gradients.length];
                         return (
-                        <tr key={i} className="hover:bg-gray-50 transition-colors">
-                          <td className="px-6 py-4 text-gray-600 text-sm">{student.email}</td>
-                          <td className="px-6 py-4 font-medium text-[#0d2137]">{student.nombre}</td>
-                          <td className="px-6 py-4 min-w-[220px]">
+                        <tr key={i} className="hover:bg-[#fafbfc] transition-colors group">
+                          <td className="px-6 py-4">
+                            <div className="flex items-center gap-3">
+                              <div className={`w-10 h-10 rounded-full bg-gradient-to-br ${grad} flex items-center justify-center text-white font-semibold shadow-sm shrink-0 ring-2 ring-white`}>
+                                {inicial}
+                              </div>
+                              <div className="min-w-0">
+                                <div className="font-semibold text-[#0d2137] text-sm truncate">{student.nombre}</div>
+                                <div className="text-xs text-gray-500 truncate flex items-center gap-1">
+                                  <Mail size={10} /> {student.email}
+                                </div>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 min-w-[240px]">
                             <div className="flex flex-col gap-2">
                               <div className="flex flex-wrap gap-1.5">
                                 {assignedIds.length === 0 && <span className="text-xs text-gray-400 italic">Sin cursos asignados</span>}
                                 {assignedIds.map(id => (
-                                  <span key={id} className="flex items-center gap-1 bg-[#eaf4ee] text-[#1a5c4a] text-[11px] font-semibold px-2 py-0.5 rounded-full border border-[#c3e6cb]">
+                                  <span key={id} className="inline-flex items-center gap-1 bg-[#eaf4ee] text-[#1a5c4a] text-[11px] font-semibold pl-2 pr-1 py-0.5 rounded-full ring-1 ring-[#1a5c4a]/10 hover:ring-[#1a5c4a]/25 transition-all">
                                     {getCourseDisplayName(id, courses)}
-                                    <button onClick={() => handleToggleCourse(student, id, false)} title="Quitar curso" className="hover:text-red-600 transition-colors ml-0.5">
+                                    <button onClick={() => handleToggleCourse(student, id, false)} title="Quitar curso" className="w-4 h-4 rounded-full flex items-center justify-center hover:bg-red-500/15 hover:text-red-600 transition-colors">
                                       <X size={10} />
                                     </button>
                                   </span>
@@ -1097,19 +1181,17 @@ const menuItems = [
                                 <select
                                   value=""
                                   onChange={(e) => { if (e.target.value) handleToggleCourse(student, e.target.value, true); }}
-                                  className="text-xs border border-[#dee2e6] rounded-md px-2 py-1.5 text-gray-500 bg-white focus:outline-none focus:border-[#00a86b] focus:ring-1 focus:ring-[#00a86b]/30 cursor-pointer w-full max-w-[180px]"
+                                  className="text-xs border border-dashed border-[#d1d5db] rounded-lg px-2.5 py-1.5 text-gray-500 bg-white hover:border-[#00a86b] hover:text-[#1a5c4a] focus:outline-none focus:border-[#00a86b] focus:ring-2 focus:ring-[#00a86b]/20 cursor-pointer w-full max-w-[200px] transition-colors"
                                 >
                                   <option value="">＋ Agregar curso...</option>
                                   {availableCourses.map(c => {
                                     if ('id' in c && 'nombre' in c) {
-                                      // Vimeo course
                                       return (
                                         <option key={c.id} value={getCourseIdentifier(c)}>
                                           {c.nombre} ✨
                                         </option>
                                       );
                                     } else {
-                                      // PDF course
                                       return (
                                         <option key={c.id} value={c.slug}>
                                           {c.nombre} 📄
@@ -1125,19 +1207,36 @@ const menuItems = [
                             <button
                               onClick={() => handleToggleRole(student)}
                               title={student.role === "admin" ? "Quitar admin" : "Hacer admin"}
-                              className={`px-2 py-1 rounded-full text-[10px] font-bold uppercase cursor-pointer border transition-colors ${student.role === "admin" ? 'bg-purple-100 text-purple-700 border-purple-300 hover:bg-purple-200' : 'bg-gray-100 text-gray-500 border-gray-300 hover:bg-gray-200'}`}>
+                              className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider cursor-pointer transition-all ${student.role === "admin" ? 'bg-gradient-to-r from-purple-100 to-purple-50 text-purple-700 ring-1 ring-purple-300 hover:from-purple-200 hover:to-purple-100 shadow-sm' : 'bg-gray-100 text-gray-600 ring-1 ring-gray-200 hover:bg-gray-200'}`}>
+                              {student.role === "admin" && <Sparkles size={10} />}
                               {student.role === "admin" ? "Admin" : "Usuario"}
                             </button>
                           </td>
-                          <td className="px-6 py-4"><span className={`px-2 py-1 rounded-full text-[10px] font-bold uppercase ${student.activo ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>{student.activo ? 'Activo' : 'Inactivo'}</span></td>
-                          <td className="px-6 py-4"><div className="flex items-center gap-2 text-gray-500 text-sm"><Calendar size={14} className="text-gray-400" />{student.vencimiento || '-'}</div></td>
                           <td className="px-6 py-4">
-                            <div className="flex items-center gap-3">
-                              <button onClick={() => { setEditingStudent(student); setStudentForm({ nombre: student.nombre, email: student.email, nuevoEmail: student.email, cursos: student.cursos_slugs || "", activo: student.activo, vencimiento: student.vencimiento }); setIsStudentModalOpen(true); }} className="p-1.5 rounded border border-indigo-200 text-indigo-600 hover:bg-indigo-50 transition-all"><Edit2 size={16} /></button>
-                              <button onClick={() => handleDeleteStudent(student.email)} className="p-1.5 rounded border border-red-200 text-red-600 hover:bg-red-50 transition-all"><Trash2 size={16} /></button>
-                              <button onClick={() => handleUpdateSubscription(student.email, undefined, !student.activo)} className={`p-1.5 rounded border transition-all ${student.activo ? 'border-red-200 text-red-600 hover:bg-red-50' : 'border-green-200 text-green-600 hover:bg-green-50'}`}>{student.activo ? <ShieldX size={16} /> : <ShieldCheck size={16} />}</button>
-                              <div className="flex bg-gray-100 rounded p-1">
-                                {[1, 3, 12].map(m => (<button key={m} onClick={() => handleUpdateSubscription(student.email, m)} className="px-2 py-1 text-[10px] font-bold hover:bg-white rounded transition-all text-[#1a5c4a]">{m}M</button>))}
+                            <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ring-1 ${student.activo ? 'bg-emerald-50 text-emerald-700 ring-emerald-200' : 'bg-red-50 text-red-700 ring-red-200'}`}>
+                              <span className={`w-1.5 h-1.5 rounded-full ${student.activo ? 'bg-emerald-500 shadow-[0_0_6px_#10b981] animate-pulse' : 'bg-red-500'}`} />
+                              {student.activo ? 'Activo' : 'Inactivo'}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4">
+                            <div className="flex items-center gap-2 text-gray-600 text-sm">
+                              <div className="w-7 h-7 rounded-lg bg-gray-50 flex items-center justify-center">
+                                <Calendar size={13} className="text-gray-400" />
+                              </div>
+                              <span className="tabular-nums">{student.vencimiento || '—'}</span>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4">
+                            <div className="flex items-center gap-1.5 justify-end">
+                              <button onClick={() => { setEditingStudent(student); setStudentForm({ nombre: student.nombre, email: student.email, nuevoEmail: student.email, cursos: student.cursos_slugs || "", activo: student.activo, vencimiento: student.vencimiento }); setIsStudentModalOpen(true); }} title="Editar alumno" className="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-600 hover:bg-indigo-100 hover:shadow-sm flex items-center justify-center transition-all"><Edit2 size={14} /></button>
+                              <button onClick={() => handleUpdateSubscription(student.email, undefined, !student.activo)} title={student.activo ? 'Desactivar' : 'Activar'} className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all hover:shadow-sm ${student.activo ? 'bg-red-50 text-red-600 hover:bg-red-100' : 'bg-emerald-50 text-emerald-600 hover:bg-emerald-100'}`}>{student.activo ? <ShieldX size={14} /> : <ShieldCheck size={14} />}</button>
+                              <button onClick={() => handleDeleteStudent(student.email)} title="Eliminar" className="w-8 h-8 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 hover:shadow-sm flex items-center justify-center transition-all"><Trash2 size={14} /></button>
+                              <div className="flex items-center bg-[#f6f7f9] rounded-lg p-0.5 ring-1 ring-[#e5e7eb] ml-1">
+                                {[1, 3, 12].map(m => (
+                                  <button key={m} onClick={() => handleUpdateSubscription(student.email, m)} title={`Extender ${m} mes${m > 1 ? 'es' : ''}`} className="px-2 py-1 text-[10px] font-bold hover:bg-white hover:text-[#00a86b] hover:shadow-sm rounded-md transition-all text-[#1a5c4a]">
+                                    +{m}M
+                                  </button>
+                                ))}
                               </div>
                             </div>
                           </td>
@@ -1319,23 +1418,130 @@ const menuItems = [
 
           {activeTab === "ventas" && (
             <motion.div key="ventas" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="p-8">
-              <header className="mb-8"><h1 className="text-3xl font-bold text-[#0d2137]">Ventas</h1><p className="text-gray-500">Historial de transacciones</p></header>
-              <div className="bg-white rounded-lg border border-[#dee2e6] shadow-sm overflow-hidden">
+              {/* Header */}
+              <div className="mb-6">
+                <h1 className="text-3xl font-bold text-[#0d2137] tracking-tight flex items-center gap-3">
+                  <span className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 to-amber-400 text-white flex items-center justify-center shadow-md">
+                    <DollarSign size={20} />
+                  </span>
+                  Ventas
+                </h1>
+                <p className="text-gray-500 mt-1">Historial de transacciones y movimientos de la academia</p>
+              </div>
+
+              {/* Summary stats */}
+              {(() => {
+                const total = filteredSales.length;
+                const ingresos = filteredSales.reduce((acc, s) => acc + (Number(s.monto) || 0), 0);
+                const ticketProm = total > 0 ? Math.round(ingresos / total) : 0;
+                const cursosVendidos = new Set(filteredSales.map(s => s.curso)).size;
+                const cards = [
+                  { label: "Total ventas", value: total, icon: TrendingUp, grad: "from-[#1a5c4a] to-[#00a86b]", tint: "bg-[#eaf4ee] text-[#1a5c4a]" },
+                  { label: "Ingresos totales", value: "$" + ingresos.toLocaleString('es-AR'), icon: DollarSign, grad: "from-amber-500 to-amber-400", tint: "bg-amber-50 text-amber-700" },
+                  { label: "Ticket promedio", value: "$" + ticketProm.toLocaleString('es-AR'), icon: Activity, grad: "from-indigo-500 to-indigo-400", tint: "bg-indigo-50 text-indigo-700" },
+                  { label: "Cursos vendidos", value: cursosVendidos, icon: BookOpen, grad: "from-rose-500 to-rose-400", tint: "bg-rose-50 text-rose-700" },
+                ];
+                return (
+                  <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-5 mb-8">
+                    {cards.map((c, idx) => (
+                      <motion.div
+                        key={c.label}
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: idx * 0.05 }}
+                        className="relative overflow-hidden bg-white rounded-xl border border-[#e5e7eb] shadow-sm hover:shadow-md p-5 group transition-shadow"
+                      >
+                        <div className={`absolute top-0 left-0 right-0 h-1 bg-gradient-to-r ${c.grad}`} />
+                        <div className={`absolute -top-10 -right-10 w-32 h-32 rounded-full bg-gradient-to-br ${c.grad} opacity-0 group-hover:opacity-10 blur-2xl transition-opacity`} />
+                        <div className="relative flex items-start justify-between mb-3">
+                          <div className={`w-11 h-11 rounded-xl ${c.tint} flex items-center justify-center shadow-inner`}>
+                            <c.icon size={20} strokeWidth={2.2} />
+                          </div>
+                        </div>
+                        <div className="text-[11px] font-semibold uppercase tracking-wider text-gray-500 mb-1">{c.label}</div>
+                        <div className="text-3xl font-bold text-[#0d2137] tracking-tight tabular-nums">{c.value}</div>
+                      </motion.div>
+                    ))}
+                  </div>
+                );
+              })()}
+
+              {/* Tabla */}
+              <div className="bg-white rounded-xl border border-[#e5e7eb] shadow-sm overflow-hidden">
+                <div className="flex items-center justify-between px-6 py-4 border-b border-[#e5e7eb] bg-gradient-to-r from-[#f8faf9] to-white">
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-lg bg-[#eaf4ee] text-[#1a5c4a] flex items-center justify-center">
+                      <TrendingUp size={16} />
+                    </div>
+                    <div>
+                      <h2 className="text-sm font-bold text-[#0d2137] tracking-tight">Historial de transacciones</h2>
+                      <p className="text-[11px] text-gray-500">Todas las ventas registradas</p>
+                    </div>
+                  </div>
+                  <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-[#eaf4ee] text-[#1a5c4a] text-xs font-bold ring-1 ring-[#1a5c4a]/10">
+                    {filteredSales.length} {filteredSales.length === 1 ? 'venta' : 'ventas'}
+                  </span>
+                </div>
                 <div className="overflow-x-auto">
                   <table className="w-full text-left">
-                    <thead className="bg-[#1a5c4a] text-white">
-                      <tr><th className="px-6 py-4 font-semibold">Email</th><th className="px-6 py-4 font-semibold">Nombre</th><th className="px-6 py-4 font-semibold">Curso</th><th className="px-6 py-4 font-semibold">Monto</th><th className="px-6 py-4 font-semibold">Fecha</th></tr>
+                    <thead>
+                      <tr className="bg-[#f6f7f9] border-b border-[#e5e7eb]">
+                        <th className="px-6 py-3 text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Alumno</th>
+                        <th className="px-6 py-3 text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Curso</th>
+                        <th className="px-6 py-3 text-[11px] font-semibold text-gray-500 uppercase tracking-wider text-right">Monto</th>
+                        <th className="px-6 py-3 text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Fecha</th>
+                      </tr>
                     </thead>
-                    <tbody className="divide-y divide-[#dee2e6]">
-                      {filteredSales.map((sale, i) => (
-                        <tr key={i} className="hover:bg-gray-50 transition-colors">
-                          <td className="px-6 py-4 text-gray-600">{sale.email}</td>
-                          <td className="px-6 py-4 font-medium text-[#0d2137]">{sale.nombre}</td>
-                          <td className="px-6 py-4 text-gray-600">{sale.curso}</td>
-                          <td className="px-6 py-4 font-bold text-[#00a86b]">${sale.monto}</td>
-                          <td className="px-6 py-4 text-gray-500">{sale.fecha}</td>
-                        </tr>
-                      ))}
+                    <tbody className="divide-y divide-[#eef0f3]">
+                      {filteredSales.length === 0 && (
+                        <tr><td colSpan={4} className="px-6 py-16 text-center">
+                          <div className="flex flex-col items-center gap-2">
+                            <div className="w-14 h-14 rounded-full bg-gray-50 flex items-center justify-center text-gray-300">
+                              <DollarSign size={24} />
+                            </div>
+                            <div className="text-gray-500 font-medium">Aún no hay ventas registradas</div>
+                          </div>
+                        </td></tr>
+                      )}
+                      {filteredSales.map((sale, i) => {
+                        const inicial = (sale.nombre || sale.email || '?').charAt(0).toUpperCase();
+                        const gradients = ['from-[#1a5c4a] to-[#00a86b]', 'from-indigo-500 to-indigo-400', 'from-amber-500 to-amber-400', 'from-rose-500 to-rose-400', 'from-sky-500 to-sky-400'];
+                        const grad = gradients[i % gradients.length];
+                        return (
+                          <tr key={i} className="hover:bg-[#fafbfc] transition-colors group">
+                            <td className="px-6 py-4">
+                              <div className="flex items-center gap-3">
+                                <div className={`w-10 h-10 rounded-full bg-gradient-to-br ${grad} flex items-center justify-center text-white font-semibold text-sm shadow-sm shrink-0 ring-2 ring-white`}>
+                                  {inicial}
+                                </div>
+                                <div className="min-w-0">
+                                  <div className="font-semibold text-[#0d2137] text-sm truncate">{sale.nombre}</div>
+                                  <div className="text-xs text-gray-500 truncate flex items-center gap-1">
+                                    <Mail size={10} /> {sale.email}
+                                  </div>
+                                </div>
+                              </div>
+                            </td>
+                            <td className="px-6 py-4">
+                              <span className="inline-flex items-center px-2.5 py-1 rounded-md bg-[#eaf4ee] text-[#1a5c4a] text-xs font-semibold ring-1 ring-[#1a5c4a]/10">
+                                {sale.curso}
+                              </span>
+                            </td>
+                            <td className="px-6 py-4 text-right">
+                              <span className="inline-flex items-center gap-1 font-bold text-[#0d2137] tabular-nums">
+                                <span className="text-emerald-600 text-xs">$</span>
+                                {sale.monto}
+                              </span>
+                            </td>
+                            <td className="px-6 py-4">
+                              <div className="flex items-center gap-2 text-gray-500 text-sm">
+                                <Calendar size={13} className="text-gray-400" />
+                                <span className="tabular-nums">{sale.fecha}</span>
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>

@@ -9,7 +9,9 @@
       "Bash(git show *)",
       "Bash(git merge *)",
       "Bash(git add *)",
-      "Bash(git commit -m ' *)"
+      "Bash(git commit -m ' *)",
+      "Read(//tmp/**)",
+      "Bash(git checkout *)"
     ]
   }
 }
