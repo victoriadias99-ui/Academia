@@ -622,35 +622,15 @@ function PlayerView({ courseId, onBack }: { courseId: number, onBack: () => void
         <div className="flex-1 flex flex-col bg-black overflow-hidden">
           <div className="flex-1 relative">
             {currentLesson.pdf_url ? (
-              <div className="absolute inset-0 w-full h-full flex items-center justify-center bg-gradient-to-br from-[#0e2318] to-[#1a5c4a] p-8">
-                <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden">
-                  {course.imagen_url ? (
-                    <img
-                      src={course.imagen_url}
-                      alt={currentLesson.titulo}
-                      className="w-full h-56 object-cover"
-                      referrerPolicy="no-referrer"
-                    />
-                  ) : (
-                    <div className="w-full h-56 bg-gradient-to-br from-verde-brillante to-verde-navbar flex items-center justify-center">
-                      <BookOpen size={72} className="text-white/70" />
-                    </div>
-                  )}
-                  <div className="p-6 text-center">
-                    <p className="text-[11px] font-bold text-verde-brillante uppercase tracking-wide mb-1">
-                      {currentLesson.modulo_titulo || 'PDF'}
-                    </p>
-                    <h3 className="text-lg font-bold text-azul-marino mb-4">{currentLesson.titulo}</h3>
-                    <a
-                      href={currentLesson.pdf_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center justify-center gap-2 w-full bg-verde-boton hover:bg-verde-brillante text-white font-bold px-6 py-3 rounded-lg transition-all shadow-md"
-                    >
-                      Abrir PDF
-                    </a>
-                  </div>
-                </div>
+              <div
+                className="absolute inset-0 w-full h-full bg-[#1a1a1a]"
+                onContextMenu={(e) => e.preventDefault()}
+              >
+                <iframe
+                  src={`/api/pdf-proxy/${currentLesson.id}?token=${encodeURIComponent(getToken() || '')}#toolbar=0&navpanes=0&scrollbar=0&view=FitH`}
+                  className="w-full h-full border-0"
+                  title={currentLesson.titulo}
+                />
               </div>
             ) : (
               <iframe

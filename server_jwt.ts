@@ -1148,6 +1148,46 @@ async function startServer() {
     } catch { return res.status(500).json({ error: "Error al obtener curso" }); }
   });
 
+  // ─── PDF PROXY ───────────────────────────────────────────────
+  // Sirve el PDF embebido inline para que se renderice en un iframe sin
+  // redirigir al origen externo (evita CORS / X-Frame-Options / Content-Disposition: attachment).
+  // Acepta el token por header Authorization o por query ?token=... (necesario porque los iframes no envían headers custom).
+  app.get("/api/pdf-proxy/:leccionId", async (req: any, res) => {
+    const token = getTokenFromRequest(req) || (req.query.token as string) || "";
+    const user = token ? verifyToken(token) : null;
+    if (!user) return res.status(401).send("No autenticado");
+
+    const { leccionId } = req.params;
+    try {
+      const cursos = await getPdfCourses();
+      let pdfUrl: string | null = null;
+      for (const c of cursos) {
+        for (const m of (c.modulos || [])) {
+          for (const p of (m.pdfs || [])) {
+            if (String(p.id) === String(leccionId)) { pdfUrl = p.pdf_url; break; }
+          }
+          if (pdfUrl) break;
+        }
+        if (pdfUrl) break;
+      }
+      if (!pdfUrl) return res.status(404).send("PDF no encontrado");
+
+      const upstream = await fetch(pdfUrl);
+      if (!upstream.ok || !upstream.body) return res.status(502).send("Error al obtener PDF");
+
+      const buffer = Buffer.from(await upstream.arrayBuffer());
+      res.setHeader("Content-Type", "application/pdf");
+      res.setHeader("Content-Disposition", `inline; filename="leccion.pdf"`);
+      res.setHeader("Cache-Control", "private, max-age=3600");
+      res.setHeader("X-Frame-Options", "SAMEORIGIN");
+      res.setHeader("Content-Length", String(buffer.length));
+      res.send(buffer);
+    } catch (e: any) {
+      console.error("pdf-proxy error:", e?.message);
+      res.status(500).send("Error interno");
+    }
+  });
+
   app.post("/api/cursos/progreso/:leccionId", requireAuth, async (req: any, res) => {
     const { leccionId } = req.params;
     const { completada, courseId } = req.body;
