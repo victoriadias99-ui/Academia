@@ -167,25 +167,80 @@ const ISSUES_CATALOG: Issue[] = [
 ];
 
 const Toast = ({ message, type, onClose }: { message: string, type: 'success' | 'error', onClose: () => void }) => {
-  useEffect(() => { const t = setTimeout(onClose, 3000); return () => clearTimeout(t); }, [onClose]);
+  useEffect(() => { const t = setTimeout(onClose, 3500); return () => clearTimeout(t); }, [onClose]);
+  const isSuccess = type === 'success';
   return (
-    <motion.div initial={{ opacity: 0, y: 50 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 50 }}
-      className={`fixed bottom-8 right-8 px-6 py-3 rounded-lg shadow-lg flex items-center gap-3 z-[100] ${type === 'success' ? 'bg-[#00a86b] text-white' : 'bg-red-600 text-white'}`}>
-      {type === 'success' ? <CheckCircle2 size={20} /> : <AlertCircle size={20} />}
-      <span className="font-medium">{message}</span>
+    <motion.div
+      initial={{ opacity: 0, y: 24, scale: 0.96 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      exit={{ opacity: 0, y: 24, scale: 0.96 }}
+      transition={{ type: 'spring', stiffness: 320, damping: 26 }}
+      className="fixed bottom-8 right-8 z-[100] min-w-[320px] max-w-[420px] bg-white rounded-xl shadow-lg ring-1 ring-black/5 overflow-hidden"
+    >
+      <div className={`flex items-start gap-3 p-4 ${isSuccess ? 'bg-gradient-to-r from-emerald-50/70 to-white' : 'bg-gradient-to-r from-red-50/70 to-white'}`}>
+        <div className={`w-10 h-10 rounded-lg shrink-0 flex items-center justify-center shadow-sm ${isSuccess ? 'bg-gradient-to-br from-[#00a86b] to-[#008f5a] text-white' : 'bg-gradient-to-br from-red-500 to-red-600 text-white'}`}>
+          {isSuccess ? <CheckCircle2 size={20} /> : <AlertCircle size={20} />}
+        </div>
+        <div className="flex-1 min-w-0 pt-0.5">
+          <div className={`text-xs font-bold uppercase tracking-wider mb-0.5 ${isSuccess ? 'text-emerald-700' : 'text-red-700'}`}>
+            {isSuccess ? 'Éxito' : 'Atención'}
+          </div>
+          <div className="text-sm font-medium text-[#0d2137] break-words">{message}</div>
+        </div>
+        <button onClick={onClose} className="text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-md p-1 transition-colors shrink-0">
+          <X size={14} />
+        </button>
+      </div>
+      {/* Progress bar */}
+      <motion.div
+        initial={{ scaleX: 1 }}
+        animate={{ scaleX: 0 }}
+        transition={{ duration: 3.5, ease: 'linear' }}
+        className={`h-1 origin-left ${isSuccess ? 'bg-gradient-to-r from-[#00a86b] to-[#5de6ae]' : 'bg-gradient-to-r from-red-500 to-red-400'}`}
+      />
     </motion.div>
   );
 };
 
 const Modal = ({ isOpen, onClose, title, children, maxWidth = "max-w-2xl" }: { isOpen: boolean, onClose: () => void, title: string, children: React.ReactNode, maxWidth?: string }) => {
+  useEffect(() => {
+    if (!isOpen) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    document.addEventListener('keydown', onKey);
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.removeEventListener('keydown', onKey);
+      document.body.style.overflow = prevOverflow;
+    };
+  }, [isOpen, onClose]);
+
   if (!isOpen) return null;
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 overflow-y-auto">
-      <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} transition={{ duration: 0.2 }}
-        className={`bg-white rounded-lg shadow-xl w-full ${maxWidth} relative`} onClick={(e) => e.stopPropagation()}>
-        <div className="flex items-center justify-between p-6 border-b border-[#dee2e6]">
-          <h2 className="text-xl font-bold text-[#0d2137]">{title}</h2>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 transition-colors"><X size={24} /></button>
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto bg-[#0d2137]/40 backdrop-blur-sm animate-fade-in"
+      onClick={onClose}
+    >
+      <motion.div
+        initial={{ opacity: 0, scale: 0.96, y: 8 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.96, y: 8 }}
+        transition={{ type: 'spring', stiffness: 280, damping: 26 }}
+        className={`bg-white rounded-2xl shadow-[0_24px_64px_-12px_rgba(13,33,55,0.3)] ring-1 ring-black/5 w-full ${maxWidth} relative my-8`}
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Accent bar superior */}
+        <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-[#1a5c4a] via-[#00a86b] to-[#5de6ae] rounded-t-2xl" />
+
+        <div className="flex items-center justify-between px-6 pt-6 pb-4 border-b border-[#eef0f3]">
+          <h2 className="text-xl font-bold text-[#0d2137] tracking-tight">{title}</h2>
+          <button
+            onClick={onClose}
+            aria-label="Cerrar"
+            className="w-9 h-9 rounded-lg bg-[#f6f7f9] hover:bg-red-50 text-gray-500 hover:text-red-600 flex items-center justify-center transition-all ring-1 ring-transparent hover:ring-red-200"
+          >
+            <X size={18} />
+          </button>
         </div>
         <div className="p-6">{children}</div>
       </motion.div>
@@ -1258,10 +1313,10 @@ const menuItems = [
                   <button onClick={handleImportarPreciosLanding} disabled={importandoPrecios} className="border border-[#1a7a5e] text-[#1a7a5e] px-4 py-2 rounded-md font-medium hover:bg-[#f0faf6] transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed text-sm">
                     {importandoPrecios ? "Importando..." : "↓ Importar precios de la landing"}
                   </button>
-                  <button onClick={() => { setEditingCourse(null); setCourseForm({ academia: "Aprende Excel", nombre: "", descripcion: "", imagen_url: "", stripe_price_id: "", precio_ars: 0, precio_usd: 0, orden: 0, precios_paises: {} }); setIsCourseModalOpen(true); }} className="bg-[#1a7a5e] text-white px-6 py-2 rounded-md font-medium hover:bg-[#00a86b] transition-colors flex items-center gap-2"><Plus size={20} />Agregar curso</button>
+                  <button onClick={() => { setEditingCourse(null); setCourseForm({ academia: "Aprende Excel", nombre: "", descripcion: "", imagen_url: "", stripe_price_id: "", precio_ars: 0, precio_usd: 0, orden: 0, precios_paises: {} }); setIsCourseModalOpen(true); }} className="bg-gradient-to-br from-[#1a7a5e] to-[#00a86b] text-white px-6 py-2 rounded-lg font-medium hover:shadow-md hover:brightness-110 transition-all shadow-sm flex items-center gap-2"><Plus size={20} />Agregar curso</button>
                 </div>
               </header>
-              <div className="bg-white rounded-lg border border-[#dee2e6] shadow-sm overflow-hidden">
+              <div className="bg-white rounded-lg border border-[#e5e7eb] shadow-sm overflow-hidden">
                 <div className="overflow-x-auto">
                   <table className="w-full text-left">
                     <thead className="bg-[#1a5c4a] text-white">
@@ -1314,15 +1369,15 @@ const menuItems = [
               <header className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
                 <div><h1 className="text-3xl font-bold text-[#0d2137]">Lecciones</h1><p className="text-gray-500">Contenido de los cursos</p></div>
                 <div className="flex gap-2">
-                  <select className="px-4 py-2 rounded-md border border-[#dee2e6] focus:outline-none focus:ring-2 focus:ring-[#00a86b]/50 bg-white" value={selectedCourseId || ""} onChange={(e) => setSelectedCourseId(Number(e.target.value))}>
+                  <select className="px-4 py-2 rounded-md border border-[#e5e7eb] focus:outline-none focus:ring-2 focus:ring-[#00a86b]/25 focus:border-[#00a86b] bg-white" value={selectedCourseId || ""} onChange={(e) => setSelectedCourseId(Number(e.target.value))}>
                     <option value="">Seleccionar curso...</option>
                     {filteredCourses.map(c => (<option key={c.id} value={c.id}>{c.nombre}</option>))}
                   </select>
-                  <button disabled={!selectedCourseId} onClick={() => { setEditingLesson(null); setLessonForm({ titulo: "", vimeo_id: "", duracion: 0, orden: 0, preview: false }); setIsLessonModalOpen(true); }} className="bg-[#00a86b] text-white px-6 py-2 rounded-md font-medium hover:bg-[#008f5a] transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"><Plus size={20} />Agregar lección</button>
+                  <button disabled={!selectedCourseId} onClick={() => { setEditingLesson(null); setLessonForm({ titulo: "", vimeo_id: "", duracion: 0, orden: 0, preview: false }); setIsLessonModalOpen(true); }} className="bg-gradient-to-br from-[#00a86b] to-[#008f5a] text-white px-6 py-2 rounded-lg font-medium hover:shadow-md hover:brightness-110 transition-all shadow-sm flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"><Plus size={20} />Agregar lección</button>
                 </div>
               </header>
               {selectedCourseId ? (
-                <div className="bg-white rounded-lg border border-[#dee2e6] shadow-sm overflow-hidden">
+                <div className="bg-white rounded-lg border border-[#e5e7eb] shadow-sm overflow-hidden">
                   <div className="overflow-x-auto">
                     <table className="w-full text-left">
                       <thead className="bg-[#1a5c4a] text-white">
@@ -1349,7 +1404,7 @@ const menuItems = [
                   </div>
                 </div>
               ) : (
-                <div className="bg-white rounded-lg border border-dashed border-[#dee2e6] p-12 text-center">
+                <div className="bg-white rounded-lg border border-dashed border-[#e5e7eb] p-12 text-center">
                   <PlayCircle size={48} className="mx-auto text-gray-300 mb-4" />
                   <p className="text-gray-500">Seleccioná un curso para ver y gestionar sus lecciones</p>
                 </div>
@@ -1362,7 +1417,7 @@ const menuItems = [
               <header className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
                 <div><h1 className="text-3xl font-bold text-[#0d2137]">Recursos</h1><p className="text-gray-500">PDFs, links y comentarios por curso</p></div>
                 <div className="flex gap-2">
-                  <select className="px-4 py-2 rounded-md border border-[#dee2e6] bg-white focus:outline-none focus:ring-2 focus:ring-[#00a86b]/50"
+                  <select className="px-4 py-2 rounded-md border border-[#e5e7eb] bg-white focus:outline-none focus:ring-2 focus:ring-[#00a86b]/25 focus:border-[#00a86b]"
                     value={selectedRecursoCursoId}
                     onChange={e => { setSelectedRecursoCursoId(e.target.value); fetchRecursos(e.target.value); }}>
                     <option value="">Seleccionar curso...</option>
@@ -1370,25 +1425,25 @@ const menuItems = [
                   </select>
                   <button disabled={!selectedRecursoCursoId}
                     onClick={() => { setRecursoForm({ tipo: "link", titulo: "", contenido: "" }); setIsRecursoModalOpen(true); }}
-                    className="bg-[#00a86b] text-white px-6 py-2 rounded-md font-medium hover:bg-[#008f5a] transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
+                    className="bg-gradient-to-br from-[#00a86b] to-[#008f5a] text-white px-6 py-2 rounded-lg font-medium hover:shadow-md hover:brightness-110 transition-all shadow-sm flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
                     <Plus size={20} />Agregar recurso
                   </button>
                 </div>
               </header>
               {!selectedRecursoCursoId ? (
-                <div className="bg-white rounded-lg border border-dashed border-[#dee2e6] p-12 text-center">
+                <div className="bg-white rounded-lg border border-dashed border-[#e5e7eb] p-12 text-center">
                   <FolderOpen size={48} className="mx-auto text-gray-300 mb-4" />
                   <p className="text-gray-500">Seleccioná un curso para ver y gestionar sus recursos</p>
                 </div>
               ) : recursos.length === 0 ? (
-                <div className="bg-white rounded-lg border border-dashed border-[#dee2e6] p-12 text-center">
+                <div className="bg-white rounded-lg border border-dashed border-[#e5e7eb] p-12 text-center">
                   <FolderOpen size={48} className="mx-auto text-gray-300 mb-4" />
                   <p className="text-gray-500">No hay recursos para este curso todavía</p>
                 </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
                   {recursos.map(r => (
-                    <div key={r.id} className="bg-white rounded-lg border border-[#dee2e6] shadow-sm p-4 flex flex-col gap-3">
+                    <div key={r.id} className="bg-white rounded-lg border border-[#e5e7eb] shadow-sm p-4 flex flex-col gap-3">
                       <div className="flex items-start justify-between gap-2">
                         <div className="flex items-center gap-2">
                           {r.tipo === "pdf" && <div className="w-8 h-8 bg-red-100 rounded-lg flex items-center justify-center shrink-0"><FileText size={16} className="text-red-600" /></div>}
@@ -1559,7 +1614,7 @@ const menuItems = [
                 <div className="flex flex-col sm:flex-row gap-2">
                   <button
                     onClick={() => { setWizardStep(1); setWizardCourseInfo({ nombre: "", slug: "", descripcion: "" }); setWizardTemario(""); setWizardFiles([]); setIsWizardOpen(true); }}
-                    className="bg-[#00a86b] text-white px-6 py-2 rounded-md font-medium hover:bg-[#008f5a] transition-colors flex items-center gap-2"
+                    className="bg-gradient-to-br from-[#00a86b] to-[#008f5a] text-white px-6 py-2 rounded-lg font-medium hover:shadow-md hover:brightness-110 transition-all shadow-sm flex items-center gap-2"
                   >
                     <Upload size={20} />Creación Asistida
                   </button>
@@ -1569,7 +1624,7 @@ const menuItems = [
                       setPdfCourseForm({ nombre: "", descripcion: "", imagen_url: "", slug: "" });
                       setIsPdfCourseModalOpen(true);
                     }}
-                    className="bg-[#1a7a5e] text-white px-6 py-2 rounded-md font-medium hover:bg-[#00a86b] transition-colors flex items-center gap-2"
+                    className="bg-gradient-to-br from-[#1a7a5e] to-[#00a86b] text-white px-6 py-2 rounded-lg font-medium hover:shadow-md hover:brightness-110 transition-all shadow-sm flex items-center gap-2"
                   >
                     <Plus size={20} />Nuevo curso PDF
                   </button>
@@ -1578,8 +1633,8 @@ const menuItems = [
 
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                 {/* Lista de cursos PDF */}
-                <div className="bg-white rounded-lg border border-[#dee2e6] shadow-sm overflow-hidden">
-                  <div className="p-6 border-b border-[#dee2e6]">
+                <div className="bg-white rounded-lg border border-[#e5e7eb] shadow-sm overflow-hidden">
+                  <div className="p-6 border-b border-[#e5e7eb]">
                     <h2 className="text-lg font-bold text-[#0d2137]">Cursos</h2>
                   </div>
                   <div className="overflow-x-auto">
@@ -1672,8 +1727,8 @@ const menuItems = [
 
                 {/* Módulos del curso seleccionado */}
                 {selectedPdfCourseId && (
-                  <div className="bg-white rounded-lg border border-[#dee2e6] shadow-sm overflow-hidden">
-                    <div className="p-6 border-b border-[#dee2e6]">
+                  <div className="bg-white rounded-lg border border-[#e5e7eb] shadow-sm overflow-hidden">
+                    <div className="p-6 border-b border-[#e5e7eb]">
                       <h2 className="text-lg font-bold text-[#0d2137]">Módulos</h2>
                       <p className="text-sm text-gray-500 mt-1">
                         Curso seleccionado: <span className="font-semibold text-[#0d2137]">{pdfCourses.find(c => c.id === selectedPdfCourseId)?.nombre}</span>
@@ -1694,7 +1749,7 @@ const menuItems = [
                       </div>
                       <div className="overflow-x-auto">
                         <table className="w-full text-left">
-                          <thead className="bg-[#f8f9fa] border-b border-[#dee2e6]">
+                          <thead className="bg-[#f8f9fa] border-b border-[#e5e7eb]">
                             <tr>
                               <th className="px-4 py-3 font-semibold text-sm">#</th>
                               <th className="px-6 py-3 font-semibold text-sm">Título</th>
@@ -1774,8 +1829,8 @@ const menuItems = [
                                   rows.push(
                                     <tr key={`${modulo.id}-pdfs`} className="bg-[#f8f9fa]">
                                       <td colSpan={5} className="px-6 py-4">
-                                        <div className="border border-[#dee2e6] rounded-md bg-white">
-                                          <div className="flex items-center justify-between px-4 py-3 border-b border-[#dee2e6]">
+                                        <div className="border border-[#e5e7eb] rounded-md bg-white">
+                                          <div className="flex items-center justify-between px-4 py-3 border-b border-[#e5e7eb]">
                                             <h4 className="text-sm font-semibold text-[#0d2137]">PDFs de "{modulo.titulo}"</h4>
                                             <button
                                               onClick={() => {
@@ -1877,7 +1932,7 @@ const menuItems = [
                     const count = f === 'todos' ? supportTickets.length : supportTickets.filter(t => t.estado === f).length;
                     return (
                       <button key={f} onClick={() => setSupportFilter(f)}
-                        className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${supportFilter === f ? 'bg-[#1a5c4a] text-white' : 'bg-white border border-[#dee2e6] text-gray-700 hover:bg-gray-50'}`}>
+                        className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${supportFilter === f ? 'bg-[#1a5c4a] text-white' : 'bg-white border border-[#e5e7eb] text-gray-700 hover:bg-gray-50'}`}>
                         {f === 'pendiente' ? 'Pendientes' : f === 'resuelto' ? 'Resueltas' : 'Todas'} ({count})
                       </button>
                     );
@@ -1886,12 +1941,12 @@ const menuItems = [
               </header>
               <div className="space-y-3">
                 {supportTickets.filter(t => supportFilter === 'todos' || t.estado === supportFilter).length === 0 ? (
-                  <div className="bg-white rounded-lg border border-[#dee2e6] shadow-sm p-12 text-center text-gray-500">
+                  <div className="bg-white rounded-lg border border-[#e5e7eb] shadow-sm p-12 text-center text-gray-500">
                     <LifeBuoy size={40} className="mx-auto mb-3 text-gray-300" />
                     No hay consultas {supportFilter === 'pendiente' ? 'pendientes' : supportFilter === 'resuelto' ? 'resueltas' : ''}.
                   </div>
                 ) : supportTickets.filter(t => supportFilter === 'todos' || t.estado === supportFilter).map(t => (
-                  <div key={t.id} className={`bg-white rounded-lg border shadow-sm p-5 ${t.estado === 'resuelto' ? 'border-[#dee2e6] opacity-70' : 'border-[#00a86b]/30'}`}>
+                  <div key={t.id} className={`bg-white rounded-lg border shadow-sm p-5 ${t.estado === 'resuelto' ? 'border-[#e5e7eb] opacity-70' : 'border-[#00a86b]/30'}`}>
                     <div className="flex items-start justify-between gap-4 flex-wrap mb-3">
                       <div className="flex items-center gap-3">
                         <div className={`w-10 h-10 rounded-full flex items-center justify-center ${t.estado === 'resuelto' ? 'bg-gray-100 text-gray-500' : 'bg-[#00a86b]/10 text-[#00a86b]'}`}>
@@ -1917,11 +1972,11 @@ const menuItems = [
                           <CheckCircle2 size={16} /> Marcar como resuelta
                         </button>
                       ) : (
-                        <button onClick={() => updateTicketEstado(t.id, 'pendiente')} className="px-4 py-2 rounded-md bg-white border border-[#dee2e6] text-gray-700 text-sm font-medium hover:bg-gray-50">
+                        <button onClick={() => updateTicketEstado(t.id, 'pendiente')} className="px-4 py-2 rounded-md bg-white border border-[#e5e7eb] text-gray-700 text-sm font-medium hover:bg-gray-50">
                           Reabrir
                         </button>
                       )}
-                      <a href={`mailto:${t.email}?subject=Re: tu consulta en Academia`} className="px-4 py-2 rounded-md bg-white border border-[#dee2e6] text-gray-700 text-sm font-medium hover:bg-gray-50 flex items-center gap-1.5">
+                      <a href={`mailto:${t.email}?subject=Re: tu consulta en Academia`} className="px-4 py-2 rounded-md bg-white border border-[#e5e7eb] text-gray-700 text-sm font-medium hover:bg-gray-50 flex items-center gap-1.5">
                         <Mail size={16} /> Responder
                       </a>
                       <button onClick={() => deleteTicket(t.id)} className="px-4 py-2 rounded-md bg-white border border-red-200 text-red-600 text-sm font-medium hover:bg-red-50 flex items-center gap-1.5 ml-auto">
@@ -1953,7 +2008,7 @@ const menuItems = [
                   { key: "media", label: "Medias", color: "amber" },
                   { key: "baja", label: "Bajas", color: "sky" },
                 ] as const).map(c => (
-                  <div key={c.key} className={`bg-white p-4 rounded-lg border border-[#dee2e6] shadow-sm`}>
+                  <div key={c.key} className={`bg-white p-4 rounded-lg border border-[#e5e7eb] shadow-sm`}>
                     <div className={`text-xs font-semibold uppercase tracking-wider text-${c.color}-600`}>{c.label}</div>
                     <div className="text-2xl font-bold text-[#0d2137] mt-1">{issueCounts[c.key]}</div>
                   </div>
@@ -1964,12 +2019,12 @@ const menuItems = [
                 </div>
               </div>
 
-              <div className="bg-white rounded-lg border border-[#dee2e6] shadow-sm p-4 mb-4 flex flex-wrap gap-3">
+              <div className="bg-white rounded-lg border border-[#e5e7eb] shadow-sm p-4 mb-4 flex flex-wrap gap-3">
                 <div className="flex items-center gap-2">
                   <span className="text-xs font-medium text-gray-500">Origen:</span>
                   {(["todos","academia","landing"] as const).map(o => (
                     <button key={o} onClick={() => setIssueOrigen(o)}
-                      className={`px-3 py-1 rounded-full text-xs font-medium border transition-all ${issueOrigen===o ? "bg-[#1a5c4a] text-white border-[#1a5c4a]" : "bg-white text-gray-600 border-[#dee2e6] hover:border-gray-400"}`}>
+                      className={`px-3 py-1 rounded-full text-xs font-medium border transition-all ${issueOrigen===o ? "bg-[#1a5c4a] text-white border-[#1a5c4a]" : "bg-white text-gray-600 border-[#e5e7eb] hover:border-gray-400"}`}>
                       {o === "todos" ? "Todos" : o === "academia" ? "Academia" : "Landing ventas"}
                     </button>
                   ))}
@@ -1979,7 +2034,7 @@ const menuItems = [
                   <span className="text-xs font-medium text-gray-500">Criticidad:</span>
                   {(["todas","critica","alta","media","baja"] as const).map(c => (
                     <button key={c} onClick={() => setIssueCritic(c)}
-                      className={`px-3 py-1 rounded-full text-xs font-medium border transition-all ${issueCritic===c ? "bg-[#1a5c4a] text-white border-[#1a5c4a]" : "bg-white text-gray-600 border-[#dee2e6] hover:border-gray-400"}`}>
+                      className={`px-3 py-1 rounded-full text-xs font-medium border transition-all ${issueCritic===c ? "bg-[#1a5c4a] text-white border-[#1a5c4a]" : "bg-white text-gray-600 border-[#e5e7eb] hover:border-gray-400"}`}>
                       {c === "todas" ? "Todas" : CRIT_META[c].label}
                     </button>
                   ))}
@@ -1989,7 +2044,7 @@ const menuItems = [
                   <span className="text-xs font-medium text-gray-500">Tipo:</span>
                   {(["todos","bug","error","warning","seguridad","performance"] as const).map(t => (
                     <button key={t} onClick={() => setIssueTipo(t)}
-                      className={`px-3 py-1 rounded-full text-xs font-medium border transition-all ${issueTipo===t ? "bg-[#1a5c4a] text-white border-[#1a5c4a]" : "bg-white text-gray-600 border-[#dee2e6] hover:border-gray-400"}`}>
+                      className={`px-3 py-1 rounded-full text-xs font-medium border transition-all ${issueTipo===t ? "bg-[#1a5c4a] text-white border-[#1a5c4a]" : "bg-white text-gray-600 border-[#e5e7eb] hover:border-gray-400"}`}>
                       {t === "todos" ? "Todos" : TIPO_META[t].label}
                     </button>
                   ))}
@@ -1998,7 +2053,7 @@ const menuItems = [
 
               <div className="space-y-2">
                 {filteredIssues.length === 0 && (
-                  <div className="bg-white rounded-lg border border-[#dee2e6] p-8 text-center text-gray-400">No hay hallazgos con estos filtros.</div>
+                  <div className="bg-white rounded-lg border border-[#e5e7eb] p-8 text-center text-gray-400">No hay hallazgos con estos filtros.</div>
                 )}
                 {filteredIssues.map(issue => {
                   const crit = CRIT_META[issue.criticidad];
@@ -2007,7 +2062,7 @@ const menuItems = [
                   const expanded = expandedIssue === issue.id;
                   return (
                     <div key={issue.id}
-                      className={`bg-white rounded-lg border shadow-sm transition-all ${resolved ? "border-[#dee2e6] opacity-60" : crit.border}`}>
+                      className={`bg-white rounded-lg border shadow-sm transition-all ${resolved ? "border-[#e5e7eb] opacity-60" : crit.border}`}>
                       <button
                         onClick={() => setExpandedIssue(expanded ? null : issue.id)}
                         className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-gray-50 transition-colors">
@@ -2026,7 +2081,7 @@ const menuItems = [
                         <span className="text-[11px] font-mono text-gray-400 truncate max-w-[240px] hidden md:block">{issue.archivo}</span>
                       </button>
                       {expanded && (
-                        <div className="px-4 pb-4 pt-1 border-t border-[#dee2e6] bg-gray-50/50">
+                        <div className="px-4 pb-4 pt-1 border-t border-[#e5e7eb] bg-gray-50/50">
                           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-3 text-sm">
                             <div className="md:col-span-2">
                               <div className="text-xs font-semibold uppercase tracking-wider text-gray-500 mb-1">Detalles</div>
@@ -2035,11 +2090,11 @@ const menuItems = [
                             <div className="space-y-3">
                               <div>
                                 <div className="text-xs font-semibold uppercase tracking-wider text-gray-500 mb-1">Ubicación</div>
-                                <code className="text-xs bg-white border border-[#dee2e6] rounded px-2 py-1 block break-all">{issue.archivo}</code>
+                                <code className="text-xs bg-white border border-[#e5e7eb] rounded px-2 py-1 block break-all">{issue.archivo}</code>
                               </div>
                               <button
                                 onClick={() => toggleResolved(issue.id)}
-                                className={`w-full px-3 py-2 rounded-md text-sm font-medium border transition-all ${resolved ? "bg-white text-gray-500 border-[#dee2e6] hover:bg-gray-100" : "bg-[#00a86b] text-white border-[#00a86b] hover:bg-[#008f5a]"}`}>
+                                className={`w-full px-3 py-2 rounded-md text-sm font-medium border transition-all ${resolved ? "bg-white text-gray-500 border-[#e5e7eb] hover:bg-gray-100" : "bg-[#00a86b] text-white border-[#00a86b] hover:bg-[#008f5a]"}`}>
                                 {resolved ? "Reabrir" : "Marcar como resuelto"}
                               </button>
                             </div>
@@ -2067,11 +2122,11 @@ const menuItems = [
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1">
               <label className="text-sm font-medium text-gray-700">Stripe Price ID global (USD)</label>
-              <input type="text" className="w-full px-3 py-2 rounded-md border border-[#dee2e6] focus:outline-none font-mono text-sm" placeholder="price_..." value={courseForm.stripe_price_id} onChange={e => setCourseForm({...courseForm, stripe_price_id: e.target.value})} />
+              <input type="text" className="w-full px-3 py-2 rounded-md border border-[#e5e7eb] focus:outline-none font-mono text-sm" placeholder="price_..." value={courseForm.stripe_price_id} onChange={e => setCourseForm({...courseForm, stripe_price_id: e.target.value})} />
             </div>
             <div className="space-y-1">
               <label className="text-sm font-medium text-gray-700">Precio USD {dolarInfo && <span className="text-gray-400 font-normal">(referencia)</span>}</label>
-              <input type="number" min="0" step="0.01" className="w-full px-3 py-2 rounded-md border border-[#dee2e6] focus:outline-none" placeholder="0.00" value={courseForm.precio_usd || ""} onChange={e => setCourseForm({...courseForm, precio_usd: Number(e.target.value)})} />
+              <input type="number" min="0" step="0.01" className="w-full px-3 py-2 rounded-md border border-[#e5e7eb] focus:outline-none" placeholder="0.00" value={courseForm.precio_usd || ""} onChange={e => setCourseForm({...courseForm, precio_usd: Number(e.target.value)})} />
             </div>
           </div>
 
@@ -2092,7 +2147,7 @@ const menuItems = [
                     className={`relative flex-shrink-0 flex flex-col items-center gap-1 px-3 py-2 rounded-xl border-2 transition-all
                       ${activo
                         ? "border-[#1a7a5e] bg-[#f0faf6] shadow-sm"
-                        : "border-transparent hover:border-[#dee2e6] hover:bg-gray-50"
+                        : "border-transparent hover:border-[#e5e7eb] hover:bg-gray-50"
                       }`}
                   >
                     <span className="text-2xl leading-none">{bandera}</span>
@@ -2132,7 +2187,7 @@ const menuItems = [
                       <label className="text-xs font-medium text-gray-600">Precio en {pais.moneda}</label>
                       <input
                         type="number" min="0"
-                        className="w-full px-3 py-2 rounded-lg border border-[#dee2e6] focus:outline-none focus:ring-2 focus:ring-[#00a86b]/40 bg-white text-sm"
+                        className="w-full px-3 py-2 rounded-lg border border-[#e5e7eb] focus:outline-none focus:ring-2 focus:ring-[#00a86b]/40 bg-white text-sm"
                         placeholder="0"
                         value={entry.precio || ""}
                         onChange={e => {
@@ -2154,7 +2209,7 @@ const menuItems = [
                       <label className="text-xs font-medium text-gray-600">Stripe Price ID</label>
                       <input
                         type="text"
-                        className="w-full px-3 py-2 rounded-lg border border-[#dee2e6] focus:outline-none focus:ring-2 focus:ring-[#00a86b]/40 bg-white font-mono text-xs"
+                        className="w-full px-3 py-2 rounded-lg border border-[#e5e7eb] focus:outline-none focus:ring-2 focus:ring-[#00a86b]/40 bg-white font-mono text-xs"
                         placeholder="price_..."
                         value={entry.stripe_price_id || ""}
                         onChange={e => {
@@ -2177,30 +2232,30 @@ const menuItems = [
 
       <Modal isOpen={isStudentModalOpen} onClose={() => { setIsStudentModalOpen(false); setEditingStudent(null); }} title="Editar Alumno">
         <form onSubmit={handleUpdateStudent} className="space-y-4">
-          <div className="space-y-1"><label className="text-sm font-medium text-gray-700">Nombre</label><input type="text" required className="w-full px-3 py-2 rounded-md border border-[#dee2e6] focus:outline-none" value={studentForm.nombre} onChange={e => setStudentForm({...studentForm, nombre: e.target.value})} /></div>
+          <div className="space-y-1"><label className="text-sm font-medium text-gray-700">Nombre</label><input type="text" required className="w-full px-3 py-2 rounded-md border border-[#e5e7eb] focus:outline-none" value={studentForm.nombre} onChange={e => setStudentForm({...studentForm, nombre: e.target.value})} /></div>
           <div className="space-y-1">
             <label className="text-sm font-medium text-gray-700">Email</label>
-            <input type="email" required className="w-full px-3 py-2 rounded-md border border-[#dee2e6] focus:outline-none focus:ring-2 focus:ring-[#00a86b]/50" value={studentForm.nuevoEmail} onChange={e => setStudentForm({...studentForm, nuevoEmail: e.target.value})} />
+            <input type="email" required className="w-full px-3 py-2 rounded-md border border-[#e5e7eb] focus:outline-none focus:ring-2 focus:ring-[#00a86b]/25 focus:border-[#00a86b]" value={studentForm.nuevoEmail} onChange={e => setStudentForm({...studentForm, nuevoEmail: e.target.value})} />
             {studentForm.nuevoEmail !== studentForm.email && <p className="text-xs text-amber-600">Se cambiará el email de <span className="font-mono">{studentForm.email}</span></p>}
           </div>
-          <div className="space-y-1"><label className="text-sm font-medium text-gray-700">Vencimiento</label><input type="date" className="w-full px-3 py-2 rounded-md border border-[#dee2e6] focus:outline-none" value={studentForm.vencimiento} onChange={e => setStudentForm({...studentForm, vencimiento: e.target.value})} /></div>
+          <div className="space-y-1"><label className="text-sm font-medium text-gray-700">Vencimiento</label><input type="date" className="w-full px-3 py-2 rounded-md border border-[#e5e7eb] focus:outline-none" value={studentForm.vencimiento} onChange={e => setStudentForm({...studentForm, vencimiento: e.target.value})} /></div>
 <div className="flex items-center gap-2"><input type="checkbox" id="student-active" checked={studentForm.activo} onChange={e => setStudentForm({...studentForm, activo: e.target.checked})} /><label htmlFor="student-active" className="text-sm font-medium text-gray-700">Activo</label></div>
           <div className="flex justify-end gap-3 pt-4">
             <button type="button" onClick={() => { setIsStudentModalOpen(false); setEditingStudent(null); }} className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-md transition-colors">Cancelar</button>
-            <button type="submit" className="bg-[#00a86b] text-white px-6 py-2 rounded-md font-medium hover:bg-[#008f5a] transition-colors">Guardar Cambios</button>
+            <button type="submit" className="bg-gradient-to-br from-[#00a86b] to-[#008f5a] text-white px-6 py-2 rounded-lg font-medium hover:shadow-md hover:brightness-110 transition-all shadow-sm">Guardar Cambios</button>
           </div>
         </form>
       </Modal>
 
       <Modal isOpen={isLessonModalOpen} onClose={() => { setIsLessonModalOpen(false); setEditingLesson(null); }} title={editingLesson ? "Editar Lección" : "Nueva Lección"}>
         <form onSubmit={handleCreateLesson} className="space-y-4">
-          <div className="space-y-1"><label className="text-sm font-medium text-gray-700">Título</label><input type="text" required className="w-full px-3 py-2 rounded-md border border-[#dee2e6] focus:outline-none" value={lessonForm.titulo} onChange={e => setLessonForm({...lessonForm, titulo: e.target.value})} /></div>
+          <div className="space-y-1"><label className="text-sm font-medium text-gray-700">Título</label><input type="text" required className="w-full px-3 py-2 rounded-md border border-[#e5e7eb] focus:outline-none" value={lessonForm.titulo} onChange={e => setLessonForm({...lessonForm, titulo: e.target.value})} /></div>
           <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-1"><label className="text-sm font-medium text-gray-700">Vimeo ID</label><input type="text" required className="w-full px-3 py-2 rounded-md border border-[#dee2e6] focus:outline-none" value={lessonForm.vimeo_id} onChange={e => setLessonForm({...lessonForm, vimeo_id: e.target.value})} /></div>
-            <div className="space-y-1"><label className="text-sm font-medium text-gray-700">Duración (segundos)</label><input type="number" required className="w-full px-3 py-2 rounded-md border border-[#dee2e6] focus:outline-none" value={lessonForm.duracion} onChange={e => setLessonForm({...lessonForm, duracion: Number(e.target.value)})} /></div>
+            <div className="space-y-1"><label className="text-sm font-medium text-gray-700">Vimeo ID</label><input type="text" required className="w-full px-3 py-2 rounded-md border border-[#e5e7eb] focus:outline-none" value={lessonForm.vimeo_id} onChange={e => setLessonForm({...lessonForm, vimeo_id: e.target.value})} /></div>
+            <div className="space-y-1"><label className="text-sm font-medium text-gray-700">Duración (segundos)</label><input type="number" required className="w-full px-3 py-2 rounded-md border border-[#e5e7eb] focus:outline-none" value={lessonForm.duracion} onChange={e => setLessonForm({...lessonForm, duracion: Number(e.target.value)})} /></div>
           </div>
           <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-1"><label className="text-sm font-medium text-gray-700">Orden</label><input type="number" required className="w-full px-3 py-2 rounded-md border border-[#dee2e6] focus:outline-none" value={lessonForm.orden} onChange={e => setLessonForm({...lessonForm, orden: Number(e.target.value)})} /></div>
+            <div className="space-y-1"><label className="text-sm font-medium text-gray-700">Orden</label><input type="number" required className="w-full px-3 py-2 rounded-md border border-[#e5e7eb] focus:outline-none" value={lessonForm.orden} onChange={e => setLessonForm({...lessonForm, orden: Number(e.target.value)})} /></div>
             <div className="flex items-center gap-2 pt-6"><input type="checkbox" id="is_preview" checked={lessonForm.preview} onChange={e => setLessonForm({...lessonForm, preview: e.target.checked})} /><label htmlFor="is_preview" className="text-sm font-medium text-gray-700">Es preview</label></div>
           </div>
           <div className="flex justify-end gap-3 pt-4">
@@ -2218,7 +2273,7 @@ const menuItems = [
               {(["pdf", "link", "comentario"] as const).map(t => (
                 <button key={t} type="button"
                   onClick={() => setRecursoForm(f => ({ ...f, tipo: t, contenido: "" }))}
-                  className={`flex flex-col items-center gap-1.5 py-3 rounded-md border text-sm font-medium transition-all ${recursoForm.tipo === t ? "border-[#00a86b] bg-[#eaf4ee] text-[#1a5c4a]" : "border-[#dee2e6] text-gray-500 hover:border-gray-400"}`}>
+                  className={`flex flex-col items-center gap-1.5 py-3 rounded-md border text-sm font-medium transition-all ${recursoForm.tipo === t ? "border-[#00a86b] bg-[#eaf4ee] text-[#1a5c4a]" : "border-[#e5e7eb] text-gray-500 hover:border-gray-400"}`}>
                   {t === "pdf" && <FileText size={18} />}
                   {t === "link" && <Link2 size={18} />}
                   {t === "comentario" && <MessageSquare size={18} />}
@@ -2229,7 +2284,7 @@ const menuItems = [
           </div>
           <div className="space-y-1">
             <label className="text-sm font-medium text-gray-700">Título</label>
-            <input type="text" required className="w-full px-3 py-2 rounded-md border border-[#dee2e6] focus:outline-none focus:ring-2 focus:ring-[#00a86b]/50"
+            <input type="text" required className="w-full px-3 py-2 rounded-md border border-[#e5e7eb] focus:outline-none focus:ring-2 focus:ring-[#00a86b]/25 focus:border-[#00a86b]"
               placeholder={recursoForm.tipo === "pdf" ? "Ej: Ejercicios Módulo 1" : recursoForm.tipo === "link" ? "Ej: Documentación oficial" : "Ej: Nota importante"}
               value={recursoForm.titulo} onChange={e => setRecursoForm(f => ({ ...f, titulo: e.target.value }))} />
           </div>
@@ -2238,7 +2293,7 @@ const menuItems = [
               <label className="text-sm font-medium text-gray-700">Archivo PDF</label>
               <input ref={fileInputRef} type="file" accept="application/pdf" className="hidden" onChange={handlePdfUpload} />
               <button type="button" onClick={() => fileInputRef.current?.click()}
-                className="w-full flex items-center justify-center gap-2 px-4 py-3 border-2 border-dashed border-[#dee2e6] rounded-md text-gray-500 hover:border-[#00a86b] hover:text-[#1a5c4a] transition-all">
+                className="w-full flex items-center justify-center gap-2 px-4 py-5 border-2 border-dashed border-[#e5e7eb] rounded-xl text-gray-500 hover:border-[#00a86b] hover:bg-[#eaf4ee]/30 hover:text-[#1a5c4a] transition-all font-medium">
                 <Upload size={18} />
                 {recursoForm.contenido ? "PDF cargado ✓ (click para cambiar)" : "Click para subir PDF (máx. 10 MB)"}
               </button>
@@ -2247,14 +2302,14 @@ const menuItems = [
           {recursoForm.tipo === "link" && (
             <div className="space-y-1">
               <label className="text-sm font-medium text-gray-700">URL</label>
-              <input type="url" required className="w-full px-3 py-2 rounded-md border border-[#dee2e6] focus:outline-none focus:ring-2 focus:ring-[#00a86b]/50"
+              <input type="url" required className="w-full px-3 py-2 rounded-md border border-[#e5e7eb] focus:outline-none focus:ring-2 focus:ring-[#00a86b]/25 focus:border-[#00a86b]"
                 placeholder="https://..." value={recursoForm.contenido} onChange={e => setRecursoForm(f => ({ ...f, contenido: e.target.value }))} />
             </div>
           )}
           {recursoForm.tipo === "comentario" && (
             <div className="space-y-1">
               <label className="text-sm font-medium text-gray-700">Contenido</label>
-              <textarea rows={4} required className="w-full px-3 py-2 rounded-md border border-[#dee2e6] focus:outline-none focus:ring-2 focus:ring-[#00a86b]/50"
+              <textarea rows={4} required className="w-full px-3 py-2 rounded-md border border-[#e5e7eb] focus:outline-none focus:ring-2 focus:ring-[#00a86b]/25 focus:border-[#00a86b]"
                 placeholder="Escribí una nota o comentario para los alumnos..."
                 value={recursoForm.contenido} onChange={e => setRecursoForm(f => ({ ...f, contenido: e.target.value }))} />
             </div>
@@ -2276,26 +2331,26 @@ const menuItems = [
         <form onSubmit={handleSavePdfCourse} className="space-y-4">
           <div className="space-y-1">
             <label className="text-sm font-medium text-gray-700">Nombre *</label>
-            <input type="text" required className="w-full px-3 py-2 rounded-md border border-[#dee2e6] focus:outline-none focus:ring-2 focus:ring-[#00a86b]/50"
+            <input type="text" required className="w-full px-3 py-2 rounded-md border border-[#e5e7eb] focus:outline-none focus:ring-2 focus:ring-[#00a86b]/25 focus:border-[#00a86b]"
               placeholder="Ej: Curso Gemini" value={pdfCourseForm.nombre}
               onChange={e => setPdfCourseForm(f => ({ ...f, nombre: e.target.value }))} />
           </div>
           <div className="space-y-1">
             <label className="text-sm font-medium text-gray-700">Slug *</label>
-            <input type="text" required className="w-full px-3 py-2 rounded-md border border-[#dee2e6] focus:outline-none focus:ring-2 focus:ring-[#00a86b]/50"
+            <input type="text" required className="w-full px-3 py-2 rounded-md border border-[#e5e7eb] focus:outline-none focus:ring-2 focus:ring-[#00a86b]/25 focus:border-[#00a86b]"
               placeholder="Ej: gemini (sin espacios, minúsculas)" value={pdfCourseForm.slug}
               onChange={e => setPdfCourseForm(f => ({ ...f, slug: e.target.value.toLowerCase().replace(/\s+/g, '_') }))} />
             <p className="text-xs text-gray-400">Identificador único. Úsalo para asignar el curso a alumnos.</p>
           </div>
           <div className="space-y-1">
             <label className="text-sm font-medium text-gray-700">Descripción</label>
-            <textarea rows={3} className="w-full px-3 py-2 rounded-md border border-[#dee2e6] focus:outline-none focus:ring-2 focus:ring-[#00a86b]/50"
+            <textarea rows={3} className="w-full px-3 py-2 rounded-md border border-[#e5e7eb] focus:outline-none focus:ring-2 focus:ring-[#00a86b]/25 focus:border-[#00a86b]"
               placeholder="Descripción del curso..." value={pdfCourseForm.descripcion}
               onChange={e => setPdfCourseForm(f => ({ ...f, descripcion: e.target.value }))} />
           </div>
           <div className="space-y-1">
             <label className="text-sm font-medium text-gray-700">URL Imagen (opcional)</label>
-            <input type="url" className="w-full px-3 py-2 rounded-md border border-[#dee2e6] focus:outline-none focus:ring-2 focus:ring-[#00a86b]/50"
+            <input type="url" className="w-full px-3 py-2 rounded-md border border-[#e5e7eb] focus:outline-none focus:ring-2 focus:ring-[#00a86b]/25 focus:border-[#00a86b]"
               placeholder="https://..." value={pdfCourseForm.imagen_url}
               onChange={e => setPdfCourseForm(f => ({ ...f, imagen_url: e.target.value }))} />
           </div>
@@ -2318,17 +2373,17 @@ const menuItems = [
         <form onSubmit={handleSavePdfModulo} className="space-y-4">
           <div className="space-y-1">
             <label className="text-sm font-medium text-gray-700">Título *</label>
-            <input type="text" required className="w-full px-3 py-2 rounded-md border border-[#dee2e6] focus:outline-none focus:ring-2 focus:ring-[#00a86b]/50"
+            <input type="text" required className="w-full px-3 py-2 rounded-md border border-[#e5e7eb] focus:outline-none focus:ring-2 focus:ring-[#00a86b]/25 focus:border-[#00a86b]"
               placeholder="Ej: Módulo 1 - Introducción" value={pdfModuloForm.titulo}
               onChange={e => setPdfModuloForm(f => ({ ...f, titulo: e.target.value }))} />
           </div>
           <div className="space-y-1">
             <label className="text-sm font-medium text-gray-700">Orden</label>
-            <input type="number" min={1} className="w-full px-3 py-2 rounded-md border border-[#dee2e6] focus:outline-none focus:ring-2 focus:ring-[#00a86b]/50"
+            <input type="number" min={1} className="w-full px-3 py-2 rounded-md border border-[#e5e7eb] focus:outline-none focus:ring-2 focus:ring-[#00a86b]/25 focus:border-[#00a86b]"
               value={pdfModuloForm.orden}
               onChange={e => setPdfModuloForm(f => ({ ...f, orden: parseInt(e.target.value) || 1 }))} />
           </div>
-          <p className="text-xs text-gray-500 bg-[#f8f9fa] border border-[#dee2e6] rounded-md p-3">
+          <p className="text-xs text-gray-500 bg-[#f8f9fa] border border-[#e5e7eb] rounded-md p-3">
             Después de crear el módulo, expandílo desde la tabla para agregar uno o más PDFs.
           </p>
           <div className="flex justify-end gap-3 pt-4">
@@ -2350,7 +2405,7 @@ const menuItems = [
         <form onSubmit={handleSavePdfArchivo} className="space-y-4">
           <div className="space-y-1">
             <label className="text-sm font-medium text-gray-700">Nombre del PDF</label>
-            <input type="text" className="w-full px-3 py-2 rounded-md border border-[#dee2e6] focus:outline-none focus:ring-2 focus:ring-[#00a86b]/50"
+            <input type="text" className="w-full px-3 py-2 rounded-md border border-[#e5e7eb] focus:outline-none focus:ring-2 focus:ring-[#00a86b]/25 focus:border-[#00a86b]"
               placeholder="Ej: Apunte teórico, Ejercicios..." value={pdfArchivoForm.nombre}
               onChange={e => setPdfArchivoForm(f => ({ ...f, nombre: e.target.value }))} />
           </div>
@@ -2375,12 +2430,12 @@ const menuItems = [
                 reader.readAsDataURL(file);
               }} />
             <button type="button" onClick={() => pdfFileInputRef.current?.click()}
-              className="w-full flex items-center justify-center gap-2 px-4 py-3 border-2 border-dashed border-[#dee2e6] rounded-md text-gray-500 hover:border-[#00a86b] hover:text-[#1a5c4a] transition-all">
+              className="w-full flex items-center justify-center gap-2 px-4 py-5 border-2 border-dashed border-[#e5e7eb] rounded-xl text-gray-500 hover:border-[#00a86b] hover:bg-[#eaf4ee]/30 hover:text-[#1a5c4a] transition-all font-medium">
               <Upload size={18} />
               {pdfArchivoForm.pdf_url ? "Archivo cargado ✓ (click para cambiar)" : "Click para subir PDF/PPT (máx. 10 MB)"}
             </button>
             <p className="text-xs text-gray-400">También podés pegar una URL directa abajo.</p>
-            <input type="url" className="w-full px-3 py-2 rounded-md border border-[#dee2e6] focus:outline-none focus:ring-2 focus:ring-[#00a86b]/50 mt-2"
+            <input type="url" className="w-full px-3 py-2 rounded-md border border-[#e5e7eb] focus:outline-none focus:ring-2 focus:ring-[#00a86b]/25 focus:border-[#00a86b] mt-2"
               placeholder="https://... (URL alternativa)"
               value={pdfArchivoForm.pdf_url.startsWith('data:') ? '' : pdfArchivoForm.pdf_url}
               onChange={e => setPdfArchivoForm(f => ({ ...f, pdf_url: e.target.value }))} />
@@ -2410,7 +2465,7 @@ const menuItems = [
             <p className="text-sm text-gray-500">Ingresá los datos del curso y el temario.</p>
             <div>
               <label className="text-sm font-medium text-gray-700">Nombre del curso *</label>
-              <input type="text" className="w-full mt-1 px-3 py-2 rounded-md border border-[#dee2e6] focus:outline-none focus:ring-2 focus:ring-[#00a86b]/50"
+              <input type="text" className="w-full mt-1 px-3 py-2 rounded-md border border-[#e5e7eb] focus:outline-none focus:ring-2 focus:ring-[#00a86b]/25 focus:border-[#00a86b]"
                 placeholder="Ej: Excel Avanzado 2024" value={wizardCourseInfo.nombre}
                 onChange={e => {
                   const n = e.target.value;
@@ -2420,19 +2475,19 @@ const menuItems = [
             </div>
             <div>
               <label className="text-sm font-medium text-gray-700">Slug (URL)</label>
-              <input type="text" className="w-full mt-1 px-3 py-2 rounded-md border border-[#dee2e6] focus:outline-none focus:ring-2 focus:ring-[#00a86b]/50 font-mono text-sm"
+              <input type="text" className="w-full mt-1 px-3 py-2 rounded-md border border-[#e5e7eb] focus:outline-none focus:ring-2 focus:ring-[#00a86b]/25 focus:border-[#00a86b] font-mono text-sm"
                 placeholder="excel-avanzado-2024" value={wizardCourseInfo.slug}
                 onChange={e => setWizardCourseInfo(f => ({ ...f, slug: e.target.value }))} />
             </div>
             <div>
               <label className="text-sm font-medium text-gray-700">Descripción</label>
-              <textarea className="w-full mt-1 px-3 py-2 rounded-md border border-[#dee2e6] focus:outline-none focus:ring-2 focus:ring-[#00a86b]/50 resize-none"
+              <textarea className="w-full mt-1 px-3 py-2 rounded-md border border-[#e5e7eb] focus:outline-none focus:ring-2 focus:ring-[#00a86b]/25 focus:border-[#00a86b] resize-none"
                 rows={2} placeholder="Descripción del curso..." value={wizardCourseInfo.descripcion}
                 onChange={e => setWizardCourseInfo(f => ({ ...f, descripcion: e.target.value }))} />
             </div>
             <div>
               <label className="text-sm font-medium text-gray-700">Temario <span className="text-gray-400 font-normal">(un módulo por línea)</span></label>
-              <textarea className="w-full mt-1 px-3 py-2 rounded-md border border-[#dee2e6] focus:outline-none focus:ring-2 focus:ring-[#00a86b]/50 resize-none font-mono text-sm"
+              <textarea className="w-full mt-1 px-3 py-2 rounded-md border border-[#e5e7eb] focus:outline-none focus:ring-2 focus:ring-[#00a86b]/25 focus:border-[#00a86b] resize-none font-mono text-sm"
                 rows={7} placeholder="Módulo 1 - Introducción&#10;Módulo 2 - Fórmulas&#10;Módulo 3 - Macros"
                 value={wizardTemario} onChange={e => setWizardTemario(e.target.value)} />
               <p className="text-xs text-gray-400 mt-1">{wizardTemario.split("\n").filter(t => t.trim()).length} módulos detectados</p>
@@ -2444,7 +2499,7 @@ const menuItems = [
                   if (!wizardTemario.split("\n").filter(t => t.trim()).length) return setToast({ message: "Escribí al menos un módulo", type: "error" });
                   setWizardStep(2);
                 }}
-                className="bg-[#1a7a5e] text-white px-6 py-2 rounded-md font-medium hover:bg-[#00a86b] transition-colors"
+                className="bg-gradient-to-br from-[#1a7a5e] to-[#00a86b] text-white px-6 py-2 rounded-lg font-medium hover:shadow-md hover:brightness-110 transition-all shadow-sm"
               >Siguiente →</button>
             </div>
           </div>
@@ -2461,12 +2516,12 @@ const menuItems = [
               <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
                 <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Asigná cada PDF a un módulo</p>
                 {wizardFiles.map((f, i) => (
-                  <div key={i} className="flex items-center gap-2 p-2 bg-gray-50 rounded-md border border-[#dee2e6]">
+                  <div key={i} className="flex items-center gap-2 p-2 bg-gray-50 rounded-md border border-[#e5e7eb]">
                     <FileText size={14} className="text-[#00a86b] shrink-0" />
                     <input type="text" className="flex-1 text-sm bg-transparent border-none outline-none font-medium text-[#0d2137] min-w-0"
                       value={f.nombre}
                       onChange={e => setWizardFiles(files => files.map((x, j) => j === i ? { ...x, nombre: e.target.value } : x))} />
-                    <select className="text-xs border border-[#dee2e6] rounded px-2 py-1 bg-white focus:outline-none shrink-0"
+                    <select className="text-xs border border-[#e5e7eb] rounded px-2 py-1 bg-white focus:outline-none shrink-0"
                       value={f.moduloIdx}
                       onChange={e => setWizardFiles(files => files.map((x, j) => j === i ? { ...x, moduloIdx: Number(e.target.value) } : x))}>
                       {wizardTemario.split("\n").map(t => t.trim()).filter(Boolean).map((m, mi) => <option key={mi} value={mi}>{m}</option>)}
@@ -2480,9 +2535,9 @@ const menuItems = [
               {wizardTemario.split("\n").filter(t => t.trim()).length} módulos · {wizardFiles.length} PDFs listos para subir
             </div>
             <div className="flex justify-between pt-2">
-              <button onClick={() => setWizardStep(1)} className="px-4 py-2 text-gray-500 hover:bg-gray-100 rounded-md transition-colors">← Atrás</button>
+              <button onClick={() => setWizardStep(1)} className="px-4 py-2 text-gray-600 bg-white ring-1 ring-[#e5e7eb] hover:bg-[#f6f7f9] hover:text-[#0d2137] rounded-lg font-medium transition-colors">← Atrás</button>
               <button onClick={handleWizardSubmit} disabled={wizardLoading}
-                className="bg-[#1a7a5e] text-white px-6 py-2 rounded-md font-medium hover:bg-[#00a86b] transition-colors disabled:opacity-50 flex items-center gap-2">
+                className="bg-gradient-to-br from-[#1a7a5e] to-[#00a86b] text-white px-6 py-2 rounded-lg font-medium hover:shadow-md hover:brightness-110 transition-all shadow-sm disabled:opacity-50 flex items-center gap-2">
                 {wizardLoading ? <><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />Creando...</> : "✓ Crear Curso Completo"}
               </button>
             </div>
@@ -2500,13 +2555,13 @@ const menuItems = [
           <p className="text-sm text-gray-500">Seleccioná múltiples archivos PDF/PPT de una sola vez.</p>
           <input ref={bulkModuloFileInputRef} type="file" accept="application/pdf,.ppt,.pptx" multiple className="hidden" onChange={handleBulkModuloFileUpload} />
           <button type="button" onClick={() => bulkModuloFileInputRef.current?.click()}
-            className="w-full flex items-center justify-center gap-2 px-4 py-4 border-2 border-dashed border-[#dee2e6] rounded-md text-gray-500 hover:border-[#00a86b] hover:text-[#1a5c4a] transition-all font-medium">
+            className="w-full flex items-center justify-center gap-2 px-4 py-5 border-2 border-dashed border-[#e5e7eb] rounded-xl text-gray-500 hover:border-[#00a86b] hover:bg-[#eaf4ee]/30 hover:text-[#1a5c4a] transition-all font-medium">
             <Upload size={20} />Seleccionar múltiples PDFs
           </button>
           {bulkModuloFiles.length > 0 && (
             <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
               {bulkModuloFiles.map((f, i) => (
-                <div key={i} className="flex items-center gap-2 p-2 bg-gray-50 rounded-md border border-[#dee2e6]">
+                <div key={i} className="flex items-center gap-2 p-2 bg-gray-50 rounded-md border border-[#e5e7eb]">
                   <FileText size={14} className="text-[#00a86b] shrink-0" />
                   <input type="text" className="flex-1 text-sm bg-transparent border-none outline-none font-medium"
                     value={f.nombre}
@@ -2518,9 +2573,9 @@ const menuItems = [
           )}
           <div className="flex justify-end gap-3 pt-2">
             <button onClick={() => { setIsBulkModuloModalOpen(false); setBulkModuloFiles([]); setBulkModuloTargetId(null); }}
-              className="px-4 py-2 text-gray-500 hover:bg-gray-100 rounded-md transition-colors">Cancelar</button>
+              className="px-4 py-2 text-gray-600 bg-white ring-1 ring-[#e5e7eb] hover:bg-[#f6f7f9] hover:text-[#0d2137] rounded-lg font-medium transition-colors">Cancelar</button>
             <button onClick={handleBulkModuloSubmit} disabled={bulkModuloLoading || bulkModuloFiles.length === 0}
-              className="bg-[#1a7a5e] text-white px-6 py-2 rounded-md font-medium hover:bg-[#00a86b] transition-colors disabled:opacity-50 flex items-center gap-2">
+              className="bg-gradient-to-br from-[#1a7a5e] to-[#00a86b] text-white px-6 py-2 rounded-lg font-medium hover:shadow-md hover:brightness-110 transition-all shadow-sm disabled:opacity-50 flex items-center gap-2">
               {bulkModuloLoading ? <><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />Subiendo...</> : `Subir ${bulkModuloFiles.length} PDF${bulkModuloFiles.length !== 1 ? "s" : ""}`}
             </button>
           </div>
