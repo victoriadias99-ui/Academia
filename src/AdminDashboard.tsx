@@ -348,6 +348,22 @@ export default function AdminDashboard({ onLogout }: { onLogout: () => void }) {
   const [pdfArchivoForm, setPdfArchivoForm] = useState({ nombre: "", pdf_url: "" });
   const pdfFileInputRef = useRef<HTMLInputElement>(null);
 
+  // ─── Wizard creación asistida ───────────────────────────────────
+  const [isWizardOpen, setIsWizardOpen] = useState(false);
+  const [wizardStep, setWizardStep] = useState<1 | 2>(1);
+  const [wizardCourseInfo, setWizardCourseInfo] = useState({ nombre: "", slug: "", descripcion: "" });
+  const [wizardTemario, setWizardTemario] = useState("");
+  const [wizardFiles, setWizardFiles] = useState<{ nombre: string; dataUrl: string; moduloIdx: number }[]>([]);
+  const [wizardLoading, setWizardLoading] = useState(false);
+  const wizardFileInputRef = useRef<HTMLInputElement>(null);
+
+  // ─── Bulk upload a módulo existente ────────────────────────────
+  const [isBulkModuloModalOpen, setIsBulkModuloModalOpen] = useState(false);
+  const [bulkModuloTargetId, setBulkModuloTargetId] = useState<string | null>(null);
+  const [bulkModuloFiles, setBulkModuloFiles] = useState<{ nombre: string; dataUrl: string }[]>([]);
+  const [bulkModuloLoading, setBulkModuloLoading] = useState(false);
+  const bulkModuloFileInputRef = useRef<HTMLInputElement>(null);
+
 
   useEffect(() => { checkAuth(); }, []);
   useEffect(() => {
@@ -692,6 +708,79 @@ export default function AdminDashboard({ onLogout }: { onLogout: () => void }) {
       if (res.ok) { setToast({ message: "✓ PDF eliminado", type: 'success' }); fetchPdfCourses(); }
       else setToast({ message: "Error al eliminar", type: 'error' });
     } catch { setToast({ message: "Error de conexión", type: 'error' }); }
+  };
+
+  // ─── Wizard handlers ────────────────────────────────────────────
+  const handleWizardFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    const reads = files.map(file => new Promise<{ nombre: string; dataUrl: string; moduloIdx: number }>(resolve => {
+      const reader = new FileReader();
+      reader.onload = () => resolve({ nombre: file.name.replace(/\.[^.]+$/, ""), dataUrl: reader.result as string, moduloIdx: 0 });
+      reader.readAsDataURL(file);
+    }));
+    Promise.all(reads).then(newFiles => setWizardFiles(f => [...f, ...newFiles]));
+    e.target.value = "";
+  };
+
+  const handleWizardSubmit = async () => {
+    const modules = wizardTemario.split("\n").map(t => t.trim()).filter(Boolean);
+    if (!wizardCourseInfo.nombre) return setToast({ message: "Nombre del curso requerido", type: "error" });
+    if (modules.length === 0) return setToast({ message: "Escribe al menos un módulo en el temario", type: "error" });
+    setWizardLoading(true);
+    try {
+      const modulosPayload = modules.map((titulo, i) => ({
+        titulo, orden: i + 1,
+        pdfs: wizardFiles.filter(f => f.moduloIdx === i).map(f => ({ nombre: f.nombre, pdf_url: f.dataUrl })),
+      }));
+      const res = await authFetch("/api/admin/cursos-pdf/bulk-create", {
+        method: "POST",
+        body: JSON.stringify({ ...wizardCourseInfo, modulos: modulosPayload }),
+      });
+      if (res.ok) {
+        setToast({ message: "✓ Curso creado con todos sus módulos y PDFs", type: "success" });
+        setIsWizardOpen(false); setWizardStep(1);
+        setWizardCourseInfo({ nombre: "", slug: "", descripcion: "" });
+        setWizardTemario(""); setWizardFiles([]);
+        fetchPdfCourses();
+      } else {
+        const err = await res.json().catch(() => ({}));
+        setToast({ message: err.error || "Error al crear curso", type: "error" });
+      }
+    } catch { setToast({ message: "Error de conexión", type: "error" }); }
+    finally { setWizardLoading(false); }
+  };
+
+  // ─── Bulk to existing module handlers ──────────────────────────
+  const handleBulkModuloFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    const reads = files.map(file => new Promise<{ nombre: string; dataUrl: string }>(resolve => {
+      const reader = new FileReader();
+      reader.onload = () => resolve({ nombre: file.name.replace(/\.[^.]+$/, ""), dataUrl: reader.result as string });
+      reader.readAsDataURL(file);
+    }));
+    Promise.all(reads).then(newFiles => setBulkModuloFiles(f => [...f, ...newFiles]));
+    e.target.value = "";
+  };
+
+  const handleBulkModuloSubmit = async () => {
+    if (!selectedPdfCourseId || !bulkModuloTargetId) return;
+    if (bulkModuloFiles.length === 0) return setToast({ message: "Seleccioná al menos un PDF", type: "error" });
+    setBulkModuloLoading(true);
+    try {
+      const res = await authFetch(`/api/admin/cursos-pdf/${selectedPdfCourseId}/modulos/${bulkModuloTargetId}/pdfs/bulk`, {
+        method: "POST",
+        body: JSON.stringify({ pdfs: bulkModuloFiles.map(f => ({ nombre: f.nombre, pdf_url: f.dataUrl })) }),
+      });
+      if (res.ok) {
+        setToast({ message: `✓ ${bulkModuloFiles.length} PDFs agregados`, type: "success" });
+        setIsBulkModuloModalOpen(false); setBulkModuloTargetId(null); setBulkModuloFiles([]);
+        fetchPdfCourses();
+      } else {
+        const err = await res.json().catch(() => ({}));
+        setToast({ message: err.error || "Error al subir PDFs", type: "error" });
+      }
+    } catch { setToast({ message: "Error de conexión", type: "error" }); }
+    finally { setBulkModuloLoading(false); }
   };
 
 const menuItems = [
@@ -1109,12 +1198,18 @@ const menuItems = [
                   <p className="text-gray-500">Gestión de cursos modulares en PDF</p>
                 </div>
                 <div className="flex flex-col sm:flex-row gap-2">
-                  <button 
-                    onClick={() => { 
-                      setEditingPdfCourse(null); 
-                      setPdfCourseForm({ nombre: "", descripcion: "", imagen_url: "", slug: "" }); 
-                      setIsPdfCourseModalOpen(true); 
-                    }} 
+                  <button
+                    onClick={() => { setWizardStep(1); setWizardCourseInfo({ nombre: "", slug: "", descripcion: "" }); setWizardTemario(""); setWizardFiles([]); setIsWizardOpen(true); }}
+                    className="bg-[#00a86b] text-white px-6 py-2 rounded-md font-medium hover:bg-[#008f5a] transition-colors flex items-center gap-2"
+                  >
+                    <Upload size={20} />Creación Asistida
+                  </button>
+                  <button
+                    onClick={() => {
+                      setEditingPdfCourse(null);
+                      setPdfCourseForm({ nombre: "", descripcion: "", imagen_url: "", slug: "" });
+                      setIsPdfCourseModalOpen(true);
+                    }}
                     className="bg-[#1a7a5e] text-white px-6 py-2 rounded-md font-medium hover:bg-[#00a86b] transition-colors flex items-center gap-2"
                   >
                     <Plus size={20} />Nuevo curso PDF
@@ -1283,9 +1378,16 @@ const menuItems = [
                                             setIsPdfArchivoModalOpen(true);
                                           }}
                                           className="p-1 text-gray-400 hover:text-[#00a86b] transition-colors"
-                                          title="Agregar PDF a este módulo"
+                                          title="Agregar 1 PDF"
                                         >
                                           <Plus size={14} />
+                                        </button>
+                                        <button
+                                          onClick={() => { setBulkModuloTargetId(modulo.id); setBulkModuloFiles([]); setIsBulkModuloModalOpen(true); }}
+                                          className="p-1 text-gray-400 hover:text-purple-600 transition-colors"
+                                          title="Carga masiva de PDFs"
+                                        >
+                                          <Upload size={14} />
                                         </button>
                                         <button
                                           onClick={() => {
@@ -1848,7 +1950,7 @@ const menuItems = [
         </form>
       </Modal>
 
-      {/* Modal Módulo PDF (solo metadata: título + orden) */}
+      {/* Modal Módulo PDF */}
       <Modal
         isOpen={isPdfModuloModalOpen}
         onClose={() => { setIsPdfModuloModalOpen(false); setEditingPdfModulo(null); }}
@@ -1868,20 +1970,19 @@ const menuItems = [
               onChange={e => setPdfModuloForm(f => ({ ...f, orden: parseInt(e.target.value) || 1 }))} />
           </div>
           <p className="text-xs text-gray-500 bg-[#f8f9fa] border border-[#dee2e6] rounded-md p-3">
-            Después de crear el módulo, expandilo desde la tabla para agregar uno o más PDFs.
+            Después de crear el módulo, expandílo desde la tabla para agregar uno o más PDFs.
           </p>
           <div className="flex justify-end gap-3 pt-4">
             <button type="button" onClick={() => { setIsPdfModuloModalOpen(false); setEditingPdfModulo(null); }}
               className="px-6 py-2 rounded-md font-medium text-gray-500 hover:bg-gray-100 transition-colors">Cancelar</button>
-            <button type="submit"
-              className="px-6 py-2 rounded-md font-medium bg-[#1a7a5e] text-white hover:bg-[#00a86b] transition-colors">
+            <button type="submit" className="px-6 py-2 rounded-md font-medium bg-[#1a7a5e] text-white hover:bg-[#00a86b] transition-colors">
               {editingPdfModulo ? "Guardar cambios" : "Crear módulo"}
             </button>
           </div>
         </form>
       </Modal>
 
-      {/* Modal PDF dentro de un módulo (uno por archivo) */}
+      {/* Modal PDF dentro de un módulo */}
       <Modal
         isOpen={isPdfArchivoModalOpen}
         onClose={() => { setIsPdfArchivoModalOpen(false); setEditingPdfArchivo(null); setArchivoTargetModuloId(null); }}
@@ -1934,6 +2035,137 @@ const menuItems = [
             </button>
           </div>
         </form>
+      </Modal>
+
+      {/* Wizard: Creación Asistida */}
+      <Modal isOpen={isWizardOpen} onClose={() => setIsWizardOpen(false)} title="Creación Asistida de Curso PDF" maxWidth="max-w-2xl">
+        <div className="flex items-center gap-3 mb-6">
+          <div className={`flex items-center justify-center w-8 h-8 rounded-full text-sm font-bold shrink-0 ${wizardStep >= 1 ? 'bg-[#00a86b] text-white' : 'bg-gray-100 text-gray-400'}`}>1</div>
+          <div className="flex-1 h-1 bg-gray-200 rounded overflow-hidden">
+            <div className={`h-full bg-[#00a86b] rounded transition-all duration-300 ${wizardStep === 2 ? 'w-full' : 'w-0'}`} />
+          </div>
+          <div className={`flex items-center justify-center w-8 h-8 rounded-full text-sm font-bold shrink-0 ${wizardStep === 2 ? 'bg-[#00a86b] text-white' : 'bg-gray-100 text-gray-400'}`}>2</div>
+        </div>
+        {wizardStep === 1 && (
+          <div className="space-y-4">
+            <p className="text-sm text-gray-500">Ingresá los datos del curso y el temario.</p>
+            <div>
+              <label className="text-sm font-medium text-gray-700">Nombre del curso *</label>
+              <input type="text" className="w-full mt-1 px-3 py-2 rounded-md border border-[#dee2e6] focus:outline-none focus:ring-2 focus:ring-[#00a86b]/50"
+                placeholder="Ej: Excel Avanzado 2024" value={wizardCourseInfo.nombre}
+                onChange={e => {
+                  const n = e.target.value;
+                  const slug = n.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+                  setWizardCourseInfo(f => ({ ...f, nombre: n, slug }));
+                }} />
+            </div>
+            <div>
+              <label className="text-sm font-medium text-gray-700">Slug (URL)</label>
+              <input type="text" className="w-full mt-1 px-3 py-2 rounded-md border border-[#dee2e6] focus:outline-none focus:ring-2 focus:ring-[#00a86b]/50 font-mono text-sm"
+                placeholder="excel-avanzado-2024" value={wizardCourseInfo.slug}
+                onChange={e => setWizardCourseInfo(f => ({ ...f, slug: e.target.value }))} />
+            </div>
+            <div>
+              <label className="text-sm font-medium text-gray-700">Descripción</label>
+              <textarea className="w-full mt-1 px-3 py-2 rounded-md border border-[#dee2e6] focus:outline-none focus:ring-2 focus:ring-[#00a86b]/50 resize-none"
+                rows={2} placeholder="Descripción del curso..." value={wizardCourseInfo.descripcion}
+                onChange={e => setWizardCourseInfo(f => ({ ...f, descripcion: e.target.value }))} />
+            </div>
+            <div>
+              <label className="text-sm font-medium text-gray-700">Temario <span className="text-gray-400 font-normal">(un módulo por línea)</span></label>
+              <textarea className="w-full mt-1 px-3 py-2 rounded-md border border-[#dee2e6] focus:outline-none focus:ring-2 focus:ring-[#00a86b]/50 resize-none font-mono text-sm"
+                rows={7} placeholder="Módulo 1 - Introducción&#10;Módulo 2 - Fórmulas&#10;Módulo 3 - Macros"
+                value={wizardTemario} onChange={e => setWizardTemario(e.target.value)} />
+              <p className="text-xs text-gray-400 mt-1">{wizardTemario.split("\n").filter(t => t.trim()).length} módulos detectados</p>
+            </div>
+            <div className="flex justify-end pt-2">
+              <button
+                onClick={() => {
+                  if (!wizardCourseInfo.nombre) return setToast({ message: "Nombre del curso requerido", type: "error" });
+                  if (!wizardTemario.split("\n").filter(t => t.trim()).length) return setToast({ message: "Escribí al menos un módulo", type: "error" });
+                  setWizardStep(2);
+                }}
+                className="bg-[#1a7a5e] text-white px-6 py-2 rounded-md font-medium hover:bg-[#00a86b] transition-colors"
+              >Siguiente →</button>
+            </div>
+          </div>
+        )}
+        {wizardStep === 2 && (
+          <div className="space-y-4">
+            <p className="text-sm text-gray-500">Subí todos los PDFs de una vez y asignálos a cada módulo.</p>
+            <input ref={wizardFileInputRef} type="file" accept="application/pdf,.ppt,.pptx" multiple className="hidden" onChange={handleWizardFileUpload} />
+            <button type="button" onClick={() => wizardFileInputRef.current?.click()}
+              className="w-full flex items-center justify-center gap-2 px-4 py-4 border-2 border-dashed border-[#00a86b]/40 rounded-md text-[#1a5c4a] hover:border-[#00a86b] hover:bg-[#eaf4ee]/50 transition-all font-medium">
+              <Upload size={20} />Seleccionar PDFs (múltiples a la vez)
+            </button>
+            {wizardFiles.length > 0 && (
+              <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
+                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Asigná cada PDF a un módulo</p>
+                {wizardFiles.map((f, i) => (
+                  <div key={i} className="flex items-center gap-2 p-2 bg-gray-50 rounded-md border border-[#dee2e6]">
+                    <FileText size={14} className="text-[#00a86b] shrink-0" />
+                    <input type="text" className="flex-1 text-sm bg-transparent border-none outline-none font-medium text-[#0d2137] min-w-0"
+                      value={f.nombre}
+                      onChange={e => setWizardFiles(files => files.map((x, j) => j === i ? { ...x, nombre: e.target.value } : x))} />
+                    <select className="text-xs border border-[#dee2e6] rounded px-2 py-1 bg-white focus:outline-none shrink-0"
+                      value={f.moduloIdx}
+                      onChange={e => setWizardFiles(files => files.map((x, j) => j === i ? { ...x, moduloIdx: Number(e.target.value) } : x))}>
+                      {wizardTemario.split("\n").map(t => t.trim()).filter(Boolean).map((m, mi) => <option key={mi} value={mi}>{m}</option>)}
+                    </select>
+                    <button onClick={() => setWizardFiles(files => files.filter((_, j) => j !== i))} className="text-gray-400 hover:text-red-500 shrink-0"><X size={14} /></button>
+                  </div>
+                ))}
+              </div>
+            )}
+            <div className="bg-[#eaf4ee] rounded-md p-3 text-sm text-[#1a5c4a] font-medium">
+              {wizardTemario.split("\n").filter(t => t.trim()).length} módulos · {wizardFiles.length} PDFs listos para subir
+            </div>
+            <div className="flex justify-between pt-2">
+              <button onClick={() => setWizardStep(1)} className="px-4 py-2 text-gray-500 hover:bg-gray-100 rounded-md transition-colors">← Atrás</button>
+              <button onClick={handleWizardSubmit} disabled={wizardLoading}
+                className="bg-[#1a7a5e] text-white px-6 py-2 rounded-md font-medium hover:bg-[#00a86b] transition-colors disabled:opacity-50 flex items-center gap-2">
+                {wizardLoading ? <><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />Creando...</> : "✓ Crear Curso Completo"}
+              </button>
+            </div>
+          </div>
+        )}
+      </Modal>
+
+      {/* Modal: Carga Masiva a módulo existente */}
+      <Modal
+        isOpen={isBulkModuloModalOpen}
+        onClose={() => { setIsBulkModuloModalOpen(false); setBulkModuloFiles([]); setBulkModuloTargetId(null); }}
+        title="Carga Masiva de PDFs al módulo"
+      >
+        <div className="space-y-4">
+          <p className="text-sm text-gray-500">Seleccioná múltiples archivos PDF/PPT de una sola vez.</p>
+          <input ref={bulkModuloFileInputRef} type="file" accept="application/pdf,.ppt,.pptx" multiple className="hidden" onChange={handleBulkModuloFileUpload} />
+          <button type="button" onClick={() => bulkModuloFileInputRef.current?.click()}
+            className="w-full flex items-center justify-center gap-2 px-4 py-4 border-2 border-dashed border-[#dee2e6] rounded-md text-gray-500 hover:border-[#00a86b] hover:text-[#1a5c4a] transition-all font-medium">
+            <Upload size={20} />Seleccionar múltiples PDFs
+          </button>
+          {bulkModuloFiles.length > 0 && (
+            <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
+              {bulkModuloFiles.map((f, i) => (
+                <div key={i} className="flex items-center gap-2 p-2 bg-gray-50 rounded-md border border-[#dee2e6]">
+                  <FileText size={14} className="text-[#00a86b] shrink-0" />
+                  <input type="text" className="flex-1 text-sm bg-transparent border-none outline-none font-medium"
+                    value={f.nombre}
+                    onChange={e => setBulkModuloFiles(files => files.map((x, j) => j === i ? { ...x, nombre: e.target.value } : x))} />
+                  <button onClick={() => setBulkModuloFiles(files => files.filter((_, j) => j !== i))} className="text-gray-400 hover:text-red-500"><X size={14} /></button>
+                </div>
+              ))}
+            </div>
+          )}
+          <div className="flex justify-end gap-3 pt-2">
+            <button onClick={() => { setIsBulkModuloModalOpen(false); setBulkModuloFiles([]); setBulkModuloTargetId(null); }}
+              className="px-4 py-2 text-gray-500 hover:bg-gray-100 rounded-md transition-colors">Cancelar</button>
+            <button onClick={handleBulkModuloSubmit} disabled={bulkModuloLoading || bulkModuloFiles.length === 0}
+              className="bg-[#1a7a5e] text-white px-6 py-2 rounded-md font-medium hover:bg-[#00a86b] transition-colors disabled:opacity-50 flex items-center gap-2">
+              {bulkModuloLoading ? <><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />Subiendo...</> : `Subir ${bulkModuloFiles.length} PDF${bulkModuloFiles.length !== 1 ? "s" : ""}`}
+            </button>
+          </div>
+        </div>
       </Modal>
 
       <AnimatePresence>

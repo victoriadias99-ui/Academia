@@ -726,6 +726,67 @@ async function startServer() {
     catch (e: any) { console.error("Error listando cursos PDF:", e?.message); res.status(500).json({ error: "Error interno" }); }
   });
 
+  // ─── BULK CREATE: crea curso completo con módulos y PDFs en un solo request ───
+  app.post("/api/admin/cursos-pdf/bulk-create", requireAdmin, async (req, res) => {
+    try {
+      await ensurePdfTable();
+      const { nombre, descripcion, imagen_url, slug, modulos } = req.body || {};
+      if (!nombre) return res.status(400).json({ error: "nombre es requerido" });
+      const slugFinal = (slug || nombre)
+        .toLowerCase()
+        .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+        .replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+      const [result]: any = await pool.query(
+        "INSERT INTO academia_pdf_cursos (slug, nombre, descripcion, imagen_url, activo, modulos) VALUES (?, ?, ?, ?, 1, '[]')",
+        [slugFinal, String(nombre).trim(), descripcion || "", imagen_url || ""]
+      );
+      const courseId = result.insertId;
+      const now = Date.now();
+      const modulosWithIds = (Array.isArray(modulos) ? modulos : []).map((m: any, i: number) => ({
+        id: `pdf_${courseId}_${now + i}`,
+        titulo: String(m.titulo || `Módulo ${i + 1}`).trim(),
+        orden: m.orden ?? i + 1,
+        pdfs: (Array.isArray(m.pdfs) ? m.pdfs : []).map((p: any, j: number) => ({
+          id: `f_${now}_${i}_${j}_${Math.floor(Math.random() * 1e6)}`,
+          nombre: String(p.nombre || "PDF").trim(),
+          pdf_url: p.pdf_url,
+        })),
+      }));
+      await pool.query("UPDATE academia_pdf_cursos SET modulos=? WHERE id=?", [JSON.stringify(modulosWithIds), courseId]);
+      res.json({ status: "ok", id: courseId });
+    } catch (e: any) {
+      console.error("Error en bulk-create:", e?.message);
+      res.status(500).json({ error: "Error interno" });
+    }
+  });
+
+  // ─── BULK PDFs: agrega múltiples PDFs a un módulo existente ─────────────────
+  app.post("/api/admin/cursos-pdf/:id/modulos/:moduloId/pdfs/bulk", requireAdmin, async (req, res) => {
+    try {
+      await ensurePdfTable();
+      const { id, moduloId } = req.params;
+      const { pdfs } = req.body || {};
+      if (!Array.isArray(pdfs) || pdfs.length === 0)
+        return res.status(400).json({ error: "pdfs[] es requerido" });
+      const course = await getPdfCourseById(Number(id));
+      if (!course) return res.status(404).json({ error: "Curso no encontrado" });
+      const now = Date.now();
+      const newPdfs = pdfs.map((p: any, i: number) => ({
+        id: `f_${now}_${i}_${Math.floor(Math.random() * 1e6)}`,
+        nombre: String(p.nombre || "PDF").trim(),
+        pdf_url: p.pdf_url,
+      }));
+      const modulos = (course.modulos || []).map((m: any) =>
+        m.id !== moduloId ? m : { ...m, pdfs: [...(m.pdfs || []), ...newPdfs] }
+      );
+      await pool.query("UPDATE academia_pdf_cursos SET modulos=? WHERE id=?", [JSON.stringify(modulos), id]);
+      res.json({ status: "ok", added: newPdfs.length });
+    } catch (e: any) {
+      console.error("Error en bulk pdfs:", e?.message);
+      res.status(500).json({ error: "Error interno" });
+    }
+  });
+
   app.post("/api/admin/cursos-pdf", requireAdmin, async (req, res) => {
     const { nombre, descripcion, imagen_url, slug } = req.body || {};
     if (!nombre || !slug) return res.status(400).json({ error: "Nombre y slug son requeridos" });
@@ -1051,12 +1112,16 @@ async function startServer() {
       if (!pdfCurso) return res.status(404).json({ error: "Curso no encontrado" });
       const completadas: string[] = (await getUserProgress(req.user.email))[id.toString()] || [];
       const modulos = Array.isArray(pdfCurso.modulos) ? pdfCurso.modulos : [];
+      const modulosOrdenados = [...modulos].sort((a: any, b: any) => (a.orden ?? 0) - (b.orden ?? 0));
       const lecciones: any[] = [];
-      for (const m of modulos) {
+      for (const m of modulosOrdenados) {
         for (const pdf of (m.pdfs || [])) {
           lecciones.push({
             id: pdf.id,
-            titulo: `${m.titulo} — ${pdf.nombre}`,
+            titulo: pdf.nombre,
+            modulo_id: m.id,
+            modulo_titulo: m.titulo,
+            modulo_orden: m.orden ?? 0,
             vimeo_id: "",
             duracion: 0,
             completada: completadas.includes(pdf.id),

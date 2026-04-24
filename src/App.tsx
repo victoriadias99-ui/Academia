@@ -16,6 +16,9 @@ interface Lesson {
   completada: boolean;
   pdf_url?: string;
   tipo?: string;
+  modulo_id?: string;
+  modulo_titulo?: string;
+  modulo_orden?: number;
 }
 
 interface Course {
@@ -537,36 +540,81 @@ function PlayerView({ courseId, onBack }: { courseId: number, onBack: () => void
             </p>
           </div>
           <div className="flex-1 overflow-y-auto">
-            {lessons.map((lesson, index) => (
-              <button
-                key={lesson.id}
-                onClick={() => setCurrentLessonIndex(index)}
-                className={`w-full flex items-center gap-3 px-4 py-3 transition-all text-left relative ${
-                  index === currentLessonIndex
-                    ? 'bg-verde-brillante/15 border-l-2 border-verde-brillante'
-                    : 'hover:bg-white/5 border-l-2 border-transparent'
-                }`}
-              >
-                <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0 ${
-                  lesson.completada
-                    ? 'bg-verde-brillante text-white'
-                    : index === currentLessonIndex
-                    ? 'bg-verde-brillante text-white'
-                    : 'bg-white/10 text-white/40'
-                }`}>
-                  {lesson.completada ? <Check size={12} /> : index + 1}
+            {(() => {
+              const hasModulos = lessons.some(l => l.modulo_id);
+              if (!hasModulos) {
+                return lessons.map((lesson, index) => (
+                  <button
+                    key={lesson.id}
+                    onClick={() => setCurrentLessonIndex(index)}
+                    className={`w-full flex items-center gap-3 px-4 py-3 transition-all text-left relative ${
+                      index === currentLessonIndex
+                        ? 'bg-verde-brillante/15 border-l-2 border-verde-brillante'
+                        : 'hover:bg-white/5 border-l-2 border-transparent'
+                    }`}
+                  >
+                    <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0 ${
+                      lesson.completada || index === currentLessonIndex ? 'bg-verde-brillante text-white' : 'bg-white/10 text-white/40'
+                    }`}>
+                      {lesson.completada ? <Check size={12} /> : index + 1}
+                    </div>
+                    <div className="flex-1 overflow-hidden">
+                      <p className={`text-[12px] truncate ${
+                        lesson.completada ? 'text-white/35 line-through' :
+                        index === currentLessonIndex ? 'text-white font-semibold' : 'text-white/65'
+                      }`}>
+                        {lesson.titulo}
+                      </p>
+                      <p className="text-[10px] text-white/25 mt-0.5">{formatDuracion(lesson.duracion)}</p>
+                    </div>
+                  </button>
+                ));
+              }
+              // Agrupar por módulo
+              const grupos: { modId: string; modTitulo: string; items: { lesson: Lesson; index: number }[] }[] = [];
+              lessons.forEach((lesson, index) => {
+                const modId = lesson.modulo_id || '_sin_modulo';
+                let g = grupos.find(x => x.modId === modId);
+                if (!g) {
+                  g = { modId, modTitulo: lesson.modulo_titulo || 'Sin módulo', items: [] };
+                  grupos.push(g);
+                }
+                g.items.push({ lesson, index });
+              });
+              return grupos.map(grupo => (
+                <div key={grupo.modId} className="border-b border-white/5">
+                  <div className="px-4 py-2 bg-white/5 text-white/80 text-[11px] font-bold uppercase tracking-wide">
+                    {grupo.modTitulo}
+                  </div>
+                  {grupo.items.map(({ lesson, index }) => (
+                    <button
+                      key={lesson.id}
+                      onClick={() => setCurrentLessonIndex(index)}
+                      className={`w-full flex items-center gap-3 px-4 py-2.5 transition-all text-left relative ${
+                        index === currentLessonIndex
+                          ? 'bg-verde-brillante/15 border-l-2 border-verde-brillante'
+                          : 'hover:bg-white/5 border-l-2 border-transparent'
+                      }`}
+                    >
+                      <div className={`w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-bold shrink-0 ${
+                        lesson.completada || index === currentLessonIndex ? 'bg-verde-brillante text-white' : 'bg-white/10 text-white/40'
+                      }`}>
+                        {lesson.completada ? <Check size={10} /> : grupo.items.findIndex(it => it.lesson.id === lesson.id) + 1}
+                      </div>
+                      <div className="flex-1 overflow-hidden">
+                        <p className={`text-[12px] truncate ${
+                          lesson.completada ? 'text-white/35 line-through' :
+                          index === currentLessonIndex ? 'text-white font-semibold' : 'text-white/65'
+                        }`}>
+                          {lesson.titulo}
+                        </p>
+                        <p className="text-[10px] text-white/25 mt-0.5">PDF</p>
+                      </div>
+                    </button>
+                  ))}
                 </div>
-                <div className="flex-1 overflow-hidden">
-                  <p className={`text-[12px] truncate ${
-                    lesson.completada ? 'text-white/35 line-through' :
-                    index === currentLessonIndex ? 'text-white font-semibold' : 'text-white/65'
-                  }`}>
-                    {lesson.titulo}
-                  </p>
-                  <p className="text-[10px] text-white/25 mt-0.5">{lesson.pdf_url ? 'Módulo PDF' : formatDuracion(lesson.duracion)}</p>
-                </div>
-              </button>
-            ))}
+              ));
+            })()}
           </div>
         </aside>
 
@@ -574,11 +622,36 @@ function PlayerView({ courseId, onBack }: { courseId: number, onBack: () => void
         <div className="flex-1 flex flex-col bg-black overflow-hidden">
           <div className="flex-1 relative">
             {currentLesson.pdf_url ? (
-              <iframe
-                src={currentLesson.pdf_url}
-                className="absolute inset-0 w-full h-full"
-                frameBorder="0"
-              />
+              <div className="absolute inset-0 w-full h-full flex items-center justify-center bg-gradient-to-br from-[#0e2318] to-[#1a5c4a] p-8">
+                <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden">
+                  {course.imagen_url ? (
+                    <img
+                      src={course.imagen_url}
+                      alt={currentLesson.titulo}
+                      className="w-full h-56 object-cover"
+                      referrerPolicy="no-referrer"
+                    />
+                  ) : (
+                    <div className="w-full h-56 bg-gradient-to-br from-verde-brillante to-verde-navbar flex items-center justify-center">
+                      <BookOpen size={72} className="text-white/70" />
+                    </div>
+                  )}
+                  <div className="p-6 text-center">
+                    <p className="text-[11px] font-bold text-verde-brillante uppercase tracking-wide mb-1">
+                      {currentLesson.modulo_titulo || 'PDF'}
+                    </p>
+                    <h3 className="text-lg font-bold text-azul-marino mb-4">{currentLesson.titulo}</h3>
+                    <a
+                      href={currentLesson.pdf_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center justify-center gap-2 w-full bg-verde-boton hover:bg-verde-brillante text-white font-bold px-6 py-3 rounded-lg transition-all shadow-md"
+                    >
+                      Abrir PDF
+                    </a>
+                  </div>
+                </div>
+              </div>
             ) : (
               <iframe
                 src={`https://player.vimeo.com/video/${currentLesson.vimeo_id}?autoplay=1`}
