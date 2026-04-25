@@ -331,19 +331,40 @@ export default function AdminDashboard({ onLogout }: { onLogout: () => void }) {
   const [expandedIssue, setExpandedIssue] = useState<string | null>(null);
   const [isScanningIssues, setIsScanningIssues] = useState(false);
   const [lastIssueScan, setLastIssueScan] = useState<Date | null>(null);
+  const [scannedIssues, setScannedIssues] = useState<(Issue & { status?: "open" | "auto_resolved" | "unverified"; generic?: boolean })[] | null>(null);
+  const [scanMeta, setScanMeta] = useState<{ files_scanned: number; duration_ms: number } | null>(null);
 
   const handleScanIssues = async () => {
     if (isScanningIssues) return;
     setIsScanningIssues(true);
-    // Simula re-escaneo del codebase contra el catálogo de auditoría
-    await new Promise(r => setTimeout(r, 1400));
-    const nuevos = 0; // catálogo estático: no se detectan nuevos hallazgos
-    setLastIssueScan(new Date());
-    setIsScanningIssues(false);
-    setToast({
-      message: nuevos === 0 ? "✓ Sin nuevos hallazgos" : `${nuevos} nuevos hallazgos detectados`,
-      type: nuevos === 0 ? "success" : "error"
-    });
+    try {
+      const res = await authFetch("/api/admin/issues/scan");
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        setToast({ message: err.error || "Error al escanear", type: "error" });
+        return;
+      }
+      const data = await res.json();
+      const prevIds = new Set((scannedIssues || []).map(i => i.id));
+      const nuevosDetectados = (data.issues as any[]).filter(
+        i => i.status === "open" && !prevIds.has(i.id)
+      ).length;
+      const autoResueltos = (data.issues as any[]).filter(i => i.status === "auto_resolved").length;
+      setScannedIssues(data.issues);
+      setScanMeta({ files_scanned: data.files_scanned, duration_ms: data.duration_ms });
+      setLastIssueScan(new Date(data.scanned_at));
+      const partes: string[] = [];
+      if (nuevosDetectados > 0) partes.push(`${nuevosDetectados} nuevo${nuevosDetectados > 1 ? "s" : ""}`);
+      if (autoResueltos > 0) partes.push(`${autoResueltos} auto-resuelto${autoResueltos > 1 ? "s" : ""}`);
+      setToast({
+        message: partes.length === 0 ? "✓ Sin novedades" : "✓ " + partes.join(" · "),
+        type: nuevosDetectados > 0 ? "error" : "success"
+      });
+    } catch (e: any) {
+      setToast({ message: "Error de red al escanear", type: "error" });
+    } finally {
+      setIsScanningIssues(false);
+    }
   };
   const [resolvedIssues, setResolvedIssues] = useState<Record<string, boolean>>(() => {
     try { return JSON.parse(localStorage.getItem("resolved_issues") || "{}"); } catch { return {}; }
@@ -370,19 +391,33 @@ export default function AdminDashboard({ onLogout }: { onLogout: () => void }) {
     performance: { label: "Performance", Icon: AlertTriangle },
   };
 
-  const filteredIssues = ISSUES_CATALOG
+  // Si hay un escaneo del backend, usá los issues vivos; sino, el catálogo estático como fallback inicial
+  const activeIssues: (Issue & { status?: "open" | "auto_resolved" | "unverified"; generic?: boolean })[] =
+    scannedIssues ?? ISSUES_CATALOG.map(i => ({ ...i, status: "open" }));
+
+  // Considerar issue como resuelto si: backend lo auto-resolvió OR el admin lo marcó manual
+  const isIssueResolved = (i: { id: string; status?: string }) =>
+    i.status === "auto_resolved" || !!resolvedIssues[i.id];
+
+  const filteredIssues = activeIssues
     .filter(i => issueOrigen === "todos" || i.origen === issueOrigen)
     .filter(i => issueCritic === "todas" || i.criticidad === issueCritic)
     .filter(i => issueTipo === "todos" || i.tipo === issueTipo)
-    .sort((a, b) => CRIT_META[a.criticidad].order - CRIT_META[b.criticidad].order);
+    .sort((a, b) => {
+      // Pendientes primero, después por criticidad
+      const ar = isIssueResolved(a) ? 1 : 0;
+      const br = isIssueResolved(b) ? 1 : 0;
+      if (ar !== br) return ar - br;
+      return CRIT_META[a.criticidad].order - CRIT_META[b.criticidad].order;
+    });
 
   const issueCounts = {
-    critica: ISSUES_CATALOG.filter(i => i.criticidad === "critica" && !resolvedIssues[i.id]).length,
-    alta:    ISSUES_CATALOG.filter(i => i.criticidad === "alta" && !resolvedIssues[i.id]).length,
-    media:   ISSUES_CATALOG.filter(i => i.criticidad === "media" && !resolvedIssues[i.id]).length,
-    baja:    ISSUES_CATALOG.filter(i => i.criticidad === "baja" && !resolvedIssues[i.id]).length,
-    resueltos: Object.values(resolvedIssues).filter(Boolean).length,
-    total: ISSUES_CATALOG.length,
+    critica: activeIssues.filter(i => i.criticidad === "critica" && !isIssueResolved(i)).length,
+    alta:    activeIssues.filter(i => i.criticidad === "alta" && !isIssueResolved(i)).length,
+    media:   activeIssues.filter(i => i.criticidad === "media" && !isIssueResolved(i)).length,
+    baja:    activeIssues.filter(i => i.criticidad === "baja" && !isIssueResolved(i)).length,
+    resueltos: activeIssues.filter(i => isIssueResolved(i)).length,
+    total: activeIssues.length,
   };
 
   const fetchDolar = async () => {
@@ -447,6 +482,7 @@ export default function AdminDashboard({ onLogout }: { onLogout: () => void }) {
     if (activeTab === "ventas") { fetchDashboard(); fetchCourses(); }
     if (activeTab === "cursos-pdf") { fetchPdfCourses(); }
     if (activeTab === "soporte") fetchSupportTickets();
+    if (activeTab === "errores" && scannedIssues === null) handleScanIssues();
   }, [activeTab, selectedCourseId]);
 
   const checkAuth = async () => {
@@ -2455,7 +2491,13 @@ const menuItems = [
                 <div className="flex items-center gap-2">
                   <div className="inline-flex items-center gap-2 bg-white border border-[#e5e7eb] rounded-lg px-3 py-2 shadow-sm">
                     <ShieldCheck size={14} className="text-[#1a7a5e]" />
-                    <span className="text-xs text-gray-600 font-medium">{ISSUES_CATALOG.length} hallazgos</span>
+                    <span className="text-xs text-gray-600 font-medium">{activeIssues.length} hallazgos</span>
+                    {scanMeta && (
+                      <>
+                        <span className="text-gray-300">·</span>
+                        <span className="text-[10px] text-gray-500 tabular-nums">{scanMeta.files_scanned} archivos</span>
+                      </>
+                    )}
                     {lastIssueScan && (
                       <>
                         <span className="text-gray-300">·</span>
@@ -2469,7 +2511,7 @@ const menuItems = [
                     onClick={handleScanIssues}
                     disabled={isScanningIssues}
                     className="inline-flex items-center gap-1.5 bg-gradient-to-br from-[#1a7a5e] via-[#00a86b] to-[#008f5a] text-white px-3.5 py-2 rounded-lg font-semibold text-xs hover:shadow-md hover:brightness-110 active:scale-[0.98] transition-all shadow-sm shadow-[#00a86b]/20 disabled:opacity-60 disabled:cursor-not-allowed"
-                    title="Buscar nuevos hallazgos"
+                    title="Re-escanear codebase y buscar nuevos hallazgos"
                   >
                     <RefreshCw size={13} className={isScanningIssues ? "animate-spin" : ""} />
                     {isScanningIssues ? "Escaneando..." : "Actualizar"}
@@ -2578,7 +2620,10 @@ const menuItems = [
                 {filteredIssues.map(issue => {
                   const crit = CRIT_META[issue.criticidad];
                   const TipoIcon = TIPO_META[issue.tipo].Icon;
-                  const resolved = !!resolvedIssues[issue.id];
+                  const autoResolved = (issue as any).status === "auto_resolved";
+                  const unverified = (issue as any).status === "unverified";
+                  const isGeneric = !!(issue as any).generic;
+                  const resolved = autoResolved || !!resolvedIssues[issue.id];
                   const expanded = expandedIssue === issue.id;
                   return (
                     <motion.div
@@ -2611,6 +2656,21 @@ const menuItems = [
                         <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wide shrink-0 ring-1 ${issue.origen==="academia" ? "bg-[#eaf4ee] text-[#1a5c4a] ring-[#1a7a5e]/15" : "bg-indigo-50 text-indigo-700 ring-indigo-100"}`}>
                           {issue.origen === "academia" ? "Academia" : "Landing"}
                         </span>
+                        {autoResolved && (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wide bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200 shrink-0">
+                            <CheckCircle2 size={10} />Auto
+                          </span>
+                        )}
+                        {isGeneric && (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wide bg-purple-50 text-purple-700 ring-1 ring-purple-200 shrink-0">
+                            <Sparkles size={10} />Nuevo
+                          </span>
+                        )}
+                        {unverified && (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wide bg-gray-100 text-gray-600 ring-1 ring-gray-200 shrink-0" title="Archivo no encontrado en el escaneo">
+                            <AlertCircle size={10} />Sin verificar
+                          </span>
+                        )}
                         <span className={`flex-1 font-semibold text-sm truncate ${resolved ? "line-through text-gray-400" : "text-[#0d2137]"}`}>{issue.titulo}</span>
                         <code className="text-[11px] font-mono text-gray-400 truncate max-w-[240px] hidden lg:block bg-[#f6f7f9] px-2 py-0.5 rounded">{issue.archivo}</code>
                       </button>
@@ -2630,12 +2690,18 @@ const menuItems = [
                                 </div>
                                 <code className="text-xs bg-[#0f172a] text-[#a5b4fc] border border-[#1e293b] rounded-lg px-2.5 py-1.5 block break-all font-mono">{issue.archivo}</code>
                               </div>
-                              <button
-                                onClick={() => toggleResolved(issue.id)}
-                                className={`w-full px-3 py-2 rounded-lg text-sm font-semibold transition-all flex items-center justify-center gap-1.5 ${resolved ? "bg-white text-gray-600 border border-[#e5e7eb] hover:bg-gray-50" : "bg-gradient-to-br from-emerald-500 to-emerald-600 text-white shadow-sm hover:shadow-md hover:brightness-110 active:scale-[0.98]"}`}
-                              >
-                                {resolved ? "Reabrir" : <><CheckCircle2 size={15} />Marcar como resuelto</>}
-                              </button>
+                              {autoResolved ? (
+                                <div className="w-full px-3 py-2 rounded-lg text-xs font-semibold bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200 flex items-center justify-center gap-1.5">
+                                  <CheckCircle2 size={14} />Resuelto en código
+                                </div>
+                              ) : (
+                                <button
+                                  onClick={() => toggleResolved(issue.id)}
+                                  className={`w-full px-3 py-2 rounded-lg text-sm font-semibold transition-all flex items-center justify-center gap-1.5 ${resolvedIssues[issue.id] ? "bg-white text-gray-600 border border-[#e5e7eb] hover:bg-gray-50" : "bg-gradient-to-br from-emerald-500 to-emerald-600 text-white shadow-sm hover:shadow-md hover:brightness-110 active:scale-[0.98]"}`}
+                                >
+                                  {resolvedIssues[issue.id] ? "Reabrir" : <><CheckCircle2 size={15} />Marcar como resuelto</>}
+                                </button>
+                              )}
                             </div>
                           </div>
                         </div>

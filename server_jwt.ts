@@ -2,6 +2,7 @@ import express from "express";
 import jwt from "jsonwebtoken";
 import { createServer as createViteServer } from "vite";
 import path from "path";
+import fs from "fs/promises";
 import bcrypt from "bcrypt";
 import mysql from "mysql2/promise";
 import nodemailer from "nodemailer";
@@ -718,6 +719,242 @@ async function startServer() {
       await pool.query(`DELETE FROM academia_soporte WHERE id=?`, [req.params.id]);
       res.json({ status: "ok" });
     } catch { res.status(500).json({ error: "Error al eliminar ticket" }); }
+  });
+
+  // ─── ADMIN: ISSUE SCANNER (audit en vivo del codebase) ─────────────
+  // Lee los archivos del repo y aplica detectores regex/AST-lite para
+  // identificar bugs, riesgos de seguridad, warnings y problemas de performance.
+  // Cada detector reporta si el patrón sigue presente; si no, el issue se
+  // marca como auto-resuelto. Soporta detectar issues nuevos no catalogados.
+  type ScanCriticidad = "critica" | "alta" | "media" | "baja";
+  type ScanTipo = "bug" | "error" | "warning" | "seguridad" | "performance";
+  type ScanOrigen = "academia" | "landing";
+  interface IssueDetector {
+    id: string;
+    titulo: string;
+    detalles: string;
+    criticidad: ScanCriticidad;
+    tipo: ScanTipo;
+    origen: ScanOrigen;
+    archivo: string;        // ruta relativa a la base
+    pattern: RegExp;        // patrón que indica que el bug está presente
+    multiline?: boolean;
+  }
+
+  const ACADEMIA_ROOT = process.cwd();
+  const LANDING_ROOT = process.env.LANDING_PATH || "C:\\Users\\vicki\\Excel-test\\public_html";
+
+  const ACADEMIA_DETECTORS: IssueDetector[] = [
+    { id: "SEC-001", titulo: "JWT secret hardcodeado y débil", archivo: "server_jwt.ts",
+      detalles: "JWT_SECRET hardcodeado sin variable de entorno. Un atacante puede forjar tokens de admin.",
+      criticidad: "critica", tipo: "seguridad", origen: "academia",
+      pattern: /JWT_SECRET\s*=\s*["'][^"']+["']/ },
+    { id: "SEC-002", titulo: "Token de Vimeo expuesto", archivo: "server_jwt.ts",
+      detalles: "VIMEO_TOKEN con valor por defecto hardcodeado en código. Cualquiera con acceso al repo puede consumirlo.",
+      criticidad: "critica", tipo: "seguridad", origen: "academia",
+      pattern: /VIMEO_TOKEN\s*=\s*process\.env\.VIMEO_TOKEN\s*\|\|\s*["'][a-zA-Z0-9]{10,}["']/ },
+    { id: "SEC-006", titulo: "Webhook /api/webhook/purchase sin HMAC", archivo: "server_jwt.ts",
+      detalles: "El webhook valida un header plano en lugar de firma HMAC-SHA256. Permite replay y falsificación.",
+      criticidad: "critica", tipo: "seguridad", origen: "academia",
+      pattern: /\/api\/webhook\/purchase[\s\S]{0,500}headers\[['"]x-webhook-secret['"]\]/ },
+    { id: "BUG-004", titulo: "Progreso de lecciones sin validar acceso al curso", archivo: "server_jwt.ts",
+      detalles: "POST /api/cursos/progreso no verifica que el usuario tenga el curso comprado.",
+      criticidad: "critica", tipo: "seguridad", origen: "academia",
+      pattern: /\/api\/cursos\/progreso[\s\S]{0,400}requireAuth(?![\s\S]{0,300}cursos_comprados|tieneAcceso|hasCourse)/ },
+    { id: "SEC-003", titulo: "Email de admin hardcodeado", archivo: "server_jwt.ts",
+      detalles: "victoria.pdias99@gmail.com aparece hardcodeado como admin. Expone la cuenta principal en el repo.",
+      criticidad: "alta", tipo: "seguridad", origen: "academia",
+      pattern: /ADMIN_EMAILS\s*=\s*\[[^\]]*["']victoria\.pdias99@gmail\.com["']/ },
+    { id: "SEC-005", titulo: "Login acepta password en texto plano (legacy)", archivo: "server_jwt.ts",
+      detalles: "Fallback para passwords sin hash sigue activo. Riesgo si la BD se filtra.",
+      criticidad: "alta", tipo: "seguridad", origen: "academia",
+      pattern: /password\s*===\s*\w+\.password\b|user\.password\s*===\s*password/ },
+    { id: "SEC-004", titulo: "SQL update dinámico sin lista blanca", archivo: "server_jwt.ts",
+      detalles: "updateUserField concatena claves al SET. Si las keys vinieran de input habría inyección SQL.",
+      criticidad: "alta", tipo: "seguridad", origen: "academia",
+      pattern: /SET\s+\$\{[^}]+\}\s*=\s*\?|`SET\s+\$\{field\}/ },
+    { id: "PERF-003", titulo: "GET /api/admin/usuarios sin paginación", archivo: "server_jwt.ts",
+      detalles: "Devuelve todos los alumnos en una sola respuesta. A miles de filas puede colgar el navegador.",
+      criticidad: "alta", tipo: "performance", origen: "academia",
+      pattern: /\/api\/admin\/usuarios[\s\S]{0,400}SELECT[\s\S]{0,200}FROM\s+\w+(?![\s\S]{0,200}LIMIT)/i },
+    { id: "BUG-002", titulo: "useEffect carga Google Fonts sin array de deps", archivo: "src/App.tsx",
+      detalles: "El efecto se ejecuta en cada render e inyecta un nuevo <link>. Memory leak.",
+      criticidad: "media", tipo: "bug", origen: "academia",
+      pattern: /useEffect\(\s*\(\)\s*=>\s*\{[\s\S]{0,300}fonts\.googleapis\.com[\s\S]{0,200}\}\s*\)\s*;(?!\s*\/\/)/ },
+    { id: "BUG-001", titulo: "useEffect principal no incluye selectedRecursoCursoId", archivo: "src/AdminDashboard.tsx",
+      detalles: "Cambiar de curso en la pestaña Recursos no dispara el refetch porque la dep falta.",
+      criticidad: "media", tipo: "bug", origen: "academia",
+      pattern: /useEffect\(\s*\(\)\s*=>\s*\{[\s\S]{0,500}fetchRecursos\(selectedRecursoCursoId\)[\s\S]{0,200}\},\s*\[(?:(?!selectedRecursoCursoId)[^\]])*\]\)/ },
+    { id: "PERF-001", titulo: "authFetch sin AbortController ni timeout", archivo: "src/AdminDashboard.tsx",
+      detalles: "Si el backend no responde, las requests quedan colgadas y el UI se traba.",
+      criticidad: "media", tipo: "warning", origen: "academia",
+      pattern: /const\s+authFetch\s*=\s*\([^)]*\)\s*=>\s*\n?\s*fetch\(/ },
+    { id: "TYPE-001", titulo: "Uso excesivo de 'any' en server_jwt.ts", archivo: "server_jwt.ts",
+      detalles: "Anula la seguridad de tipos. Refactorear a interfaces para req/res y usuarios.",
+      criticidad: "media", tipo: "warning", origen: "academia",
+      pattern: /:\s*any\b/ },
+    { id: "BUG-003", titulo: "generateId con Math.random puede colisionar", archivo: "server_jwt.ts",
+      detalles: "Math.random()*2e9 no es criptográfico. Riesgo de colisión y de predicción de IDs.",
+      criticidad: "media", tipo: "bug", origen: "academia",
+      pattern: /Math\.random\(\)\s*\*\s*[12]e9|Math\.floor\(Math\.random\(\)\s*\*\s*\d{6,}/ },
+    { id: "ACC-001", titulo: "Links de PDF sin validación MIME", archivo: "src/App.tsx",
+      detalles: "La descarga confía en la extensión. Un admin podría subir un archivo con MIME distinto.",
+      criticidad: "media", tipo: "seguridad", origen: "academia",
+      pattern: /<a[^>]*href=\{[^}]*\.pdf_url[^}]*\}[^>]*download(?![^>]*type=)/ },
+    { id: "ACC-002", titulo: "Imágenes con alt posiblemente vacío", archivo: "src/App.tsx",
+      detalles: "Si course.nombre es undefined, el alt queda vacío. Falla WCAG 1.1.1.",
+      criticidad: "baja", tipo: "warning", origen: "academia",
+      pattern: /<img[^>]*alt=\{[^}]*\.nombre\s*\}/ },
+  ];
+
+  const LANDING_DETECTORS: IssueDetector[] = [
+    { id: "AUTH-001", titulo: "checkAbandonedUser.php sin validación de token", archivo: "checkAbandonedUser.php",
+      detalles: "La comprobación de token está comentada y reemplazada por true. Cualquiera accede a emails y teléfonos.",
+      criticidad: "critica", tipo: "seguridad", origen: "landing",
+      pattern: /\/\/\s*if\s*\([^)]*token[^)]*\)|if\s*\(\s*true\s*\)\s*\{[\s\S]{0,200}emails?|email[\s\S]{0,300}telefono/i },
+    { id: "BACKEND-001", titulo: "Stripe secret key leída desde BD", archivo: "recuperar_carrito.php",
+      detalles: "STRIPE_SECRET_KEY se obtiene de la BD y se pasa a Stripe::setApiKey(). Debe ir por env var.",
+      criticidad: "alta", tipo: "seguridad", origen: "landing",
+      pattern: /Stripe::setApiKey\([^)]*\$[a-zA-Z_]+(?!\s*=\s*getenv)/ },
+    { id: "CRED-001", titulo: "Credenciales MySQL con fallback hardcodeado", archivo: "a-includes/conexion2.php",
+      detalles: "Si faltan vars de entorno, cae a usuario hardcodeado. Riesgo si el deploy olvida el .env.",
+      criticidad: "alta", tipo: "seguridad", origen: "landing",
+      pattern: /(getenv\([^)]+\)\s*[?:]\s*["'][a-zA-Z_]+["'])|(\$db_user\s*=\s*["'][a-zA-Z_]+["'])/ },
+    { id: "COOKIE-001", titulo: "$_COOKIE serializada en BD sin cifrar", archivo: "a-includes/logicparametros.php",
+      detalles: "Se guardan todas las cookies del visitante en DB en texto claro.",
+      criticidad: "alta", tipo: "seguridad", origen: "landing",
+      pattern: /serialize\s*\(\s*\$_COOKIE|json_encode\s*\(\s*\$_COOKIE/ },
+    { id: "INJ-001", titulo: "idVenta de $_GET reusado en JSON sin escapar", archivo: "unirse.php",
+      detalles: "Aunque se usan prepared statements, el valor se interpola luego en JS y puede producir XSS.",
+      criticidad: "alta", tipo: "seguridad", origen: "landing",
+      pattern: /\$_GET\[['"]idVenta['"]\][\s\S]{0,500}<script|echo\s+\$idVenta(?!\s*\.|\s*,\s*ENT_QUOTES|.*htmlspecialchars)/ },
+    { id: "DEBUG-001", titulo: "Debug bar expuesta con ?dev o ?resetip", archivo: "a-includes/logicparametros.php",
+      detalles: "Muestra IP, país y estado de caché en producción. Permite enumeración de infraestructura.",
+      criticidad: "media", tipo: "seguridad", origen: "landing",
+      pattern: /\$_GET\[['"](?:dev|resetip)['"]\]/ },
+    { id: "NOSEC-001", titulo: "display_errors activable con ?test", archivo: "unirse.php",
+      detalles: "Un visitante puede forzar errores PHP visibles y filtrar rutas/SQL.",
+      criticidad: "media", tipo: "seguridad", origen: "landing",
+      pattern: /\$_GET\[['"]test['"]\][\s\S]{0,200}display_errors|ini_set\s*\(\s*['"]display_errors['"]/ },
+    { id: "REDIR-001", titulo: "Redirección sin validar REQUEST_URI", archivo: "a-includes/logicparametros.php",
+      detalles: "Se construye destino con REQUEST_URI sin sanitizar. Puede abrir open-redirect.",
+      criticidad: "media", tipo: "seguridad", origen: "landing",
+      pattern: /header\s*\(\s*['"]Location:[^'"]*\$_SERVER\[['"]REQUEST_URI/ },
+    { id: "CSRF-001", titulo: "reenviar_credenciales.php sin token CSRF", archivo: "reenviar_credenciales.php",
+      detalles: "Un sitio externo puede disparar reenvíos masivos de credenciales.",
+      criticidad: "media", tipo: "seguridad", origen: "landing",
+      pattern: /<\?php(?![\s\S]*csrf|[\s\S]*token)/i },
+  ];
+
+  // Detectores genéricos para hallazgos NO catalogados (pattern + tipo)
+  // Se ejecutan sobre todos los archivos del set y reportan ocurrencias nuevas.
+  interface GenericDetector {
+    id: string;
+    titulo: string;
+    detalles: string;
+    criticidad: ScanCriticidad;
+    tipo: ScanTipo;
+    origen: ScanOrigen;
+    files: string[]; // rutas relativas
+    pattern: RegExp;
+  }
+  const GENERIC_DETECTORS: GenericDetector[] = [
+    { id: "GEN-CONSOLE", titulo: "console.log en código de producción", detalles: "Logs olvidados pueden filtrar datos sensibles en el browser/servidor.",
+      criticidad: "baja", tipo: "warning", origen: "academia",
+      files: ["src/App.tsx", "src/AdminDashboard.tsx", "server_jwt.ts"],
+      pattern: /console\.log\(/ },
+    { id: "GEN-TODO", titulo: "TODO/FIXME pendientes en código", detalles: "Marcadores TODO/FIXME que indican deuda técnica sin resolver.",
+      criticidad: "baja", tipo: "warning", origen: "academia",
+      files: ["src/App.tsx", "src/AdminDashboard.tsx", "server_jwt.ts"],
+      pattern: /\/\/\s*(TODO|FIXME|XXX|HACK)\b/i },
+    { id: "GEN-EVAL", titulo: "Uso de eval()", detalles: "eval permite ejecución arbitraria de código. Riesgo crítico de RCE.",
+      criticidad: "critica", tipo: "seguridad", origen: "academia",
+      files: ["src/App.tsx", "src/AdminDashboard.tsx", "server_jwt.ts"],
+      pattern: /\beval\s*\(/ },
+    { id: "GEN-INNERHTML", titulo: "dangerouslySetInnerHTML sin sanitizar", detalles: "Inyección HTML directa puede producir XSS si la fuente no es confiable.",
+      criticidad: "alta", tipo: "seguridad", origen: "academia",
+      files: ["src/App.tsx", "src/AdminDashboard.tsx"],
+      pattern: /dangerouslySetInnerHTML/ },
+  ];
+
+  const findFileLine = (content: string, pattern: RegExp): number | null => {
+    const m = content.match(pattern);
+    if (!m || m.index === undefined) return null;
+    return content.substring(0, m.index).split("\n").length;
+  };
+
+  const safeReadFile = async (basePath: string, relPath: string): Promise<string | null> => {
+    try {
+      const full = path.join(basePath, relPath);
+      // Anti-traversal: no permitir salir del basePath
+      if (!path.resolve(full).startsWith(path.resolve(basePath))) return null;
+      return await fs.readFile(full, "utf-8");
+    } catch { return null; }
+  };
+
+  app.get("/api/admin/issues/scan", requireAdmin, async (_req, res) => {
+    const startedAt = Date.now();
+    const issues: any[] = [];
+    let filesScanned = 0;
+    const allDetectors = [
+      ...ACADEMIA_DETECTORS.map(d => ({ ...d, _root: ACADEMIA_ROOT })),
+      ...LANDING_DETECTORS.map(d => ({ ...d, _root: LANDING_ROOT })),
+    ];
+
+    // 1) Verificar catálogo: cada detector reporta si el patrón sigue presente
+    for (const det of allDetectors) {
+      const content = await safeReadFile(det._root, det.archivo);
+      if (content === null) {
+        // Archivo no encontrado: no podemos verificar → mantener como pendiente sin línea
+        issues.push({
+          id: det.id, titulo: det.titulo, archivo: det.archivo, detalles: det.detalles,
+          criticidad: det.criticidad, tipo: det.tipo, origen: det.origen,
+          status: "unverified", line: null,
+        });
+        continue;
+      }
+      filesScanned++;
+      const present = det.pattern.test(content);
+      const line = present ? findFileLine(content, det.pattern) : null;
+      issues.push({
+        id: det.id, titulo: det.titulo,
+        archivo: line ? `${det.archivo}:${line}` : det.archivo,
+        detalles: det.detalles,
+        criticidad: det.criticidad, tipo: det.tipo, origen: det.origen,
+        status: present ? "open" : "auto_resolved",
+        line,
+      });
+    }
+
+    // 2) Detectores genéricos: hallazgos nuevos no catalogados
+    for (const gen of GENERIC_DETECTORS) {
+      const root = gen.origen === "academia" ? ACADEMIA_ROOT : LANDING_ROOT;
+      for (const file of gen.files) {
+        const content = await safeReadFile(root, file);
+        if (content === null) continue;
+        filesScanned++;
+        const matches = [...content.matchAll(new RegExp(gen.pattern, "g"))];
+        if (matches.length === 0) continue;
+        const firstLine = findFileLine(content, gen.pattern);
+        issues.push({
+          id: `${gen.id}-${file.replace(/[^a-z0-9]/gi, "_")}`,
+          titulo: `${gen.titulo} (${matches.length}x)`,
+          archivo: firstLine ? `${file}:${firstLine}` : file,
+          detalles: `${gen.detalles} Ocurrencias detectadas: ${matches.length}.`,
+          criticidad: gen.criticidad, tipo: gen.tipo, origen: gen.origen,
+          status: "open", line: firstLine, generic: true,
+        });
+      }
+    }
+
+    res.json({
+      issues,
+      scanned_at: new Date().toISOString(),
+      files_scanned: filesScanned,
+      duration_ms: Date.now() - startedAt,
+      academia_root: ACADEMIA_ROOT,
+      landing_root: LANDING_ROOT,
+    });
   });
 
   // ─── ADMIN: CURSOS PDF MODULARES ─────────────────────────────────
