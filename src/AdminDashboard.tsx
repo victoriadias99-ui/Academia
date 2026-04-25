@@ -2293,130 +2293,240 @@ const menuItems = [
 
           {activeTab === "soporte" && (
             <motion.div key="soporte" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="p-8">
-
-              <header className="mb-6 flex items-start justify-between gap-4 flex-wrap">
+              {/* Header */}
+              <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-6">
                 <div>
-                  <h1 className="text-3xl font-bold text-[#0d2137]">Soporte</h1>
-                  <p className="text-gray-500">Consultas recibidas desde la página de login</p>
+                  <h1 className="text-3xl font-bold text-[#0d2137] tracking-tight flex items-center gap-3">
+                    <span className="w-10 h-10 rounded-xl bg-gradient-to-br from-sky-500 to-sky-400 text-white flex items-center justify-center shadow-md">
+                      <LifeBuoy size={20} />
+                    </span>
+                    Soporte
+                  </h1>
+                  <p className="text-gray-500 mt-1">Consultas recibidas desde la página de login</p>
                 </div>
-                <div className="flex gap-2">
-                  {(['pendiente', 'resuelto', 'todos'] as const).map(f => {
-                    const count = f === 'todos' ? supportTickets.length : supportTickets.filter(t => t.estado === f).length;
-                    return (
-                      <button key={f} onClick={() => setSupportFilter(f)}
-                        className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${supportFilter === f ? 'bg-[#1a5c4a] text-white' : 'bg-white border border-[#e5e7eb] text-gray-700 hover:bg-gray-50'}`}>
-                        {f === 'pendiente' ? 'Pendientes' : f === 'resuelto' ? 'Resueltas' : 'Todas'} ({count})
-                      </button>
-                    );
-                  })}
-                </div>
-              </header>
+              </div>
+
+              {/* Mini stats + filtros */}
+              {(() => {
+                const pendientes = supportTickets.filter(t => t.estado === 'pendiente').length;
+                const resueltas = supportTickets.filter(t => t.estado === 'resuelto').length;
+                const cards = [
+                  { key: 'todos' as const, label: 'Total consultas', value: supportTickets.length, icon: LifeBuoy, tint: 'bg-sky-50 text-sky-600 ring-sky-100', grad: 'from-sky-500 to-sky-400' },
+                  { key: 'pendiente' as const, label: 'Pendientes', value: pendientes, icon: AlertCircle, tint: 'bg-amber-50 text-amber-600 ring-amber-100', grad: 'from-amber-500 to-orange-400' },
+                  { key: 'resuelto' as const, label: 'Resueltas', value: resueltas, icon: CheckCircle2, tint: 'bg-emerald-50 text-emerald-600 ring-emerald-100', grad: 'from-emerald-500 to-emerald-400' },
+                ];
+                return (
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                    {cards.map((c, idx) => {
+                      const active = supportFilter === c.key;
+                      return (
+                        <motion.button
+                          key={c.key}
+                          onClick={() => setSupportFilter(c.key)}
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ delay: idx * 0.05 }}
+                          className={`relative overflow-hidden bg-white rounded-xl border shadow-sm hover:shadow-md p-5 group text-left transition-all ${active ? 'border-[#1a7a5e] ring-2 ring-[#00a86b]/20' : 'border-[#e5e7eb]'}`}
+                        >
+                          <div className={`absolute top-0 left-0 right-0 h-1 bg-gradient-to-r ${c.grad}`} />
+                          <div className="flex items-start justify-between mb-3">
+                            <div className={`w-11 h-11 rounded-xl ${c.tint} flex items-center justify-center ring-1 shadow-inner`}>
+                              <c.icon size={20} strokeWidth={2.2} />
+                            </div>
+                            {active && <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-[#1a7a5e]"><span className="w-1.5 h-1.5 rounded-full bg-[#00a86b] animate-pulse" />Activo</span>}
+                          </div>
+                          <div className="text-[11px] font-semibold uppercase tracking-wider text-gray-500 mb-1">{c.label}</div>
+                          <div className="text-3xl font-bold text-[#0d2137] tabular-nums">{c.value}</div>
+                        </motion.button>
+                      );
+                    })}
+                  </div>
+                );
+              })()}
+
               <div className="space-y-3">
                 {supportTickets.filter(t => supportFilter === 'todos' || t.estado === supportFilter).length === 0 ? (
-                  <div className="bg-white rounded-lg border border-[#e5e7eb] shadow-sm p-12 text-center text-gray-500">
-                    <LifeBuoy size={40} className="mx-auto mb-3 text-gray-300" />
-                    No hay consultas {supportFilter === 'pendiente' ? 'pendientes' : supportFilter === 'resuelto' ? 'resueltas' : ''}.
+                  <div className="bg-gradient-to-br from-white to-sky-50/30 rounded-2xl border-2 border-dashed border-sky-200 p-16 text-center">
+                    <div className="w-16 h-16 rounded-2xl bg-white shadow-md mx-auto mb-4 flex items-center justify-center text-sky-500 ring-1 ring-sky-100">
+                      <LifeBuoy size={28} />
+                    </div>
+                    <h3 className="text-[#0d2137] font-bold text-base mb-1">Sin consultas {supportFilter === 'pendiente' ? 'pendientes' : supportFilter === 'resuelto' ? 'resueltas' : ''}</h3>
+                    <p className="text-gray-500 text-sm">Las consultas aparecerán acá cuando los alumnos contacten desde el login</p>
                   </div>
-                ) : supportTickets.filter(t => supportFilter === 'todos' || t.estado === supportFilter).map(t => (
-                  <div key={t.id} className={`bg-white rounded-lg border shadow-sm p-5 ${t.estado === 'resuelto' ? 'border-[#e5e7eb] opacity-70' : 'border-[#00a86b]/30'}`}>
-                    <div className="flex items-start justify-between gap-4 flex-wrap mb-3">
-                      <div className="flex items-center gap-3">
-                        <div className={`w-10 h-10 rounded-full flex items-center justify-center ${t.estado === 'resuelto' ? 'bg-gray-100 text-gray-500' : 'bg-[#00a86b]/10 text-[#00a86b]'}`}>
-                          <LifeBuoy size={18} />
+                ) : supportTickets.filter(t => supportFilter === 'todos' || t.estado === supportFilter).map((t, i) => {
+                  const inicial = (t.nombre || t.email || '?').charAt(0).toUpperCase();
+                  const gradients = ['from-sky-500 to-sky-400', 'from-indigo-500 to-indigo-400', 'from-amber-500 to-amber-400', 'from-rose-500 to-rose-400', 'from-violet-500 to-violet-400'];
+                  const grad = gradients[i % gradients.length];
+                  const isResolved = t.estado === 'resuelto';
+                  return (
+                    <motion.div
+                      key={t.id}
+                      initial={{ opacity: 0, y: 8 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className={`relative overflow-hidden bg-white rounded-xl border shadow-sm hover:shadow-md transition-all ${isResolved ? 'border-[#e5e7eb] opacity-75' : 'border-[#e5e7eb]'}`}
+                    >
+                      <div className={`absolute top-0 left-0 bottom-0 w-1 ${isResolved ? 'bg-gradient-to-b from-emerald-400 to-emerald-300' : 'bg-gradient-to-b from-amber-500 to-orange-400'}`} />
+                      <div className="p-5 pl-6">
+                        <div className="flex items-start justify-between gap-4 flex-wrap mb-3">
+                          <div className="flex items-center gap-3">
+                            <div className={`w-11 h-11 rounded-full bg-gradient-to-br ${grad} flex items-center justify-center text-white font-semibold shadow-sm ring-2 ring-white`}>
+                              {inicial}
+                            </div>
+                            <div>
+                              <div className="font-bold text-[#0d2137]">{t.nombre}</div>
+                              <div className="flex items-center gap-1.5 text-[11px] text-gray-500 mt-0.5">
+                                <Calendar size={11} />
+                                <span className="tabular-nums">{new Date(t.created_at).toLocaleString('es-AR')}</span>
+                              </div>
+                            </div>
+                          </div>
+                          <span className={`inline-flex items-center gap-1.5 text-[11px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider ring-1 ${isResolved ? 'bg-emerald-50 text-emerald-700 ring-emerald-200' : 'bg-amber-50 text-amber-700 ring-amber-200'}`}>
+                            {isResolved ? <><CheckCircle2 size={11} />Resuelto</> : <><span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />Pendiente</>}
+                          </span>
                         </div>
-                        <div>
-                          <div className="font-bold text-[#0d2137]">{t.nombre}</div>
-                          <div className="text-xs text-gray-500">{new Date(t.created_at).toLocaleString('es-AR')}</div>
+                        <div className="flex flex-wrap gap-2 mb-3">
+                          <a href={`mailto:${t.email}`} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#f6f7f9] text-gray-600 hover:text-[#1a7a5e] hover:bg-[#eaf4ee] text-xs font-medium ring-1 ring-[#e5e7eb] transition-colors">
+                            <Mail size={12} />{t.email}
+                          </a>
+                          {t.telefono && (
+                            <a href={`tel:${t.telefono}`} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#f6f7f9] text-gray-600 hover:text-[#1a7a5e] hover:bg-[#eaf4ee] text-xs font-medium ring-1 ring-[#e5e7eb] transition-colors">
+                              <Phone size={12} />{t.telefono}
+                            </a>
+                          )}
+                        </div>
+                        <div className="bg-gradient-to-br from-[#f8faf9] to-[#f6f7f9] rounded-lg p-3.5 text-sm text-gray-700 whitespace-pre-wrap ring-1 ring-[#e5e7eb] mb-4">
+                          <MessageSquare size={13} className="inline text-gray-400 mr-1.5 -mt-0.5" />
+                          {t.consulta}
+                        </div>
+                        <div className="flex gap-2 flex-wrap">
+                          {!isResolved ? (
+                            <button onClick={() => updateTicketEstado(t.id, 'resuelto')} className="px-4 py-2 rounded-lg bg-gradient-to-br from-emerald-500 to-emerald-600 text-white text-sm font-semibold hover:shadow-md hover:brightness-110 active:scale-[0.98] transition-all shadow-sm flex items-center gap-1.5">
+                              <CheckCircle2 size={15} /> Marcar como resuelta
+                            </button>
+                          ) : (
+                            <button onClick={() => updateTicketEstado(t.id, 'pendiente')} className="px-4 py-2 rounded-lg bg-white border border-[#e5e7eb] text-gray-700 text-sm font-semibold hover:bg-gray-50 hover:shadow-sm transition-all flex items-center gap-1.5">
+                              Reabrir
+                            </button>
+                          )}
+                          <a href={`mailto:${t.email}?subject=Re: tu consulta en Academia`} className="px-4 py-2 rounded-lg bg-white border border-[#e5e7eb] text-gray-700 text-sm font-semibold hover:bg-gray-50 hover:shadow-sm transition-all flex items-center gap-1.5">
+                            <Mail size={15} /> Responder
+                          </a>
+                          <button onClick={() => deleteTicket(t.id)} className="px-4 py-2 rounded-lg bg-white border border-red-200 text-red-600 text-sm font-semibold hover:bg-red-50 hover:shadow-sm transition-all flex items-center gap-1.5 ml-auto">
+                            <Trash2 size={15} /> Eliminar
+                          </button>
                         </div>
                       </div>
-                      <span className={`text-[11px] font-semibold px-3 py-1 rounded-full uppercase tracking-wider ${t.estado === 'resuelto' ? 'bg-gray-100 text-gray-600' : 'bg-orange-100 text-orange-700'}`}>
-                        {t.estado === 'resuelto' ? 'Resuelto' : 'Pendiente'}
-                      </span>
-                    </div>
-                    <div className="flex flex-wrap gap-x-5 gap-y-1 text-sm text-gray-600 mb-3">
-                      <a href={`mailto:${t.email}`} className="flex items-center gap-1.5 hover:text-[#00a86b]"><Mail size={14} />{t.email}</a>
-                      {t.telefono && <a href={`tel:${t.telefono}`} className="flex items-center gap-1.5 hover:text-[#00a86b]"><Phone size={14} />{t.telefono}</a>}
-                    </div>
-                    <div className="bg-gray-50 rounded-md p-3 text-sm text-gray-700 whitespace-pre-wrap mb-3">{t.consulta}</div>
-                    <div className="flex gap-2 flex-wrap">
-                      {t.estado === 'pendiente' ? (
-                        <button onClick={() => updateTicketEstado(t.id, 'resuelto')} className="px-4 py-2 rounded-md bg-[#00a86b] text-white text-sm font-medium hover:bg-[#008f5a] flex items-center gap-1.5">
-                          <CheckCircle2 size={16} /> Marcar como resuelta
-                        </button>
-                      ) : (
-                        <button onClick={() => updateTicketEstado(t.id, 'pendiente')} className="px-4 py-2 rounded-md bg-white border border-[#e5e7eb] text-gray-700 text-sm font-medium hover:bg-gray-50">
-                          Reabrir
-                        </button>
-                      )}
-                      <a href={`mailto:${t.email}?subject=Re: tu consulta en Academia`} className="px-4 py-2 rounded-md bg-white border border-[#e5e7eb] text-gray-700 text-sm font-medium hover:bg-gray-50 flex items-center gap-1.5">
-                        <Mail size={16} /> Responder
-                      </a>
-                      <button onClick={() => deleteTicket(t.id)} className="px-4 py-2 rounded-md bg-white border border-red-200 text-red-600 text-sm font-medium hover:bg-red-50 flex items-center gap-1.5 ml-auto">
-                        <Trash2 size={16} /> Eliminar
-                      </button>
-                    </div>
-                  </div>
-                ))}
+                    </motion.div>
+                  );
+                })}
               </div>
             </motion.div>
           )}
 
           {activeTab === "errores" && (
             <motion.div key="errores" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="p-8">
-              <header className="mb-6 flex items-start justify-between gap-4 flex-wrap">
+              {/* Header */}
+              <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-4 mb-6">
                 <div>
-                  <h1 className="text-3xl font-bold text-[#0d2137] flex items-center gap-3"><Bug className="text-[#00a86b]" size={28}/>Fix de errores</h1>
-                  <p className="text-gray-500">Bugs, warnings y riesgos de seguridad detectados en la Academia y la landing de ventas.</p>
+                  <h1 className="text-3xl font-bold text-[#0d2137] tracking-tight flex items-center gap-3">
+                    <span className="w-10 h-10 rounded-xl bg-gradient-to-br from-red-500 to-rose-500 text-white flex items-center justify-center shadow-md">
+                      <Bug size={20} />
+                    </span>
+                    Fix de errores
+                  </h1>
+                  <p className="text-gray-500 mt-1">Bugs, warnings y riesgos de seguridad detectados en Academia y landing</p>
                 </div>
-                <div className="text-xs text-gray-500">
-                  Auditoría automática · {ISSUES_CATALOG.length} hallazgos
-                </div>
-              </header>
-
-              <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-6">
-                {([
-                  { key: "critica", label: "Críticas", color: "red" },
-                  { key: "alta", label: "Altas", color: "orange" },
-                  { key: "media", label: "Medias", color: "amber" },
-                  { key: "baja", label: "Bajas", color: "sky" },
-                ] as const).map(c => (
-                  <div key={c.key} className={`bg-white p-4 rounded-lg border border-[#e5e7eb] shadow-sm`}>
-                    <div className={`text-xs font-semibold uppercase tracking-wider text-${c.color}-600`}>{c.label}</div>
-                    <div className="text-2xl font-bold text-[#0d2137] mt-1">{issueCounts[c.key]}</div>
-                  </div>
-                ))}
-                <div className="bg-[#00a86b]/10 p-4 rounded-lg border border-[#00a86b]/30">
-                  <div className="text-xs font-semibold uppercase tracking-wider text-[#1a5c4a]">Resueltos</div>
-                  <div className="text-2xl font-bold text-[#1a5c4a] mt-1">{issueCounts.resueltos}/{issueCounts.total}</div>
+                <div className="inline-flex items-center gap-2 bg-white border border-[#e5e7eb] rounded-lg px-3 py-2 shadow-sm">
+                  <ShieldCheck size={14} className="text-[#1a7a5e]" />
+                  <span className="text-xs text-gray-600 font-medium">Auditoría automática</span>
+                  <span className="text-xs font-bold text-[#0d2137] tabular-nums">{ISSUES_CATALOG.length}</span>
+                  <span className="text-[10px] text-gray-400 uppercase font-bold tracking-wider">hallazgos</span>
                 </div>
               </div>
 
-              <div className="bg-white rounded-lg border border-[#e5e7eb] shadow-sm p-4 mb-4 flex flex-wrap gap-3">
-                <div className="flex items-center gap-2">
-                  <span className="text-xs font-medium text-gray-500">Origen:</span>
+              {/* Stats */}
+              <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
+                {([
+                  { key: "critica", label: "Críticas", icon: ShieldAlert, grad: "from-red-500 to-rose-500", tint: "bg-red-50 text-red-600 ring-red-100" },
+                  { key: "alta", label: "Altas", icon: AlertTriangle, grad: "from-orange-500 to-amber-500", tint: "bg-orange-50 text-orange-600 ring-orange-100" },
+                  { key: "media", label: "Medias", icon: AlertCircle, grad: "from-amber-500 to-yellow-400", tint: "bg-amber-50 text-amber-600 ring-amber-100" },
+                  { key: "baja", label: "Bajas", icon: Activity, grad: "from-sky-500 to-sky-400", tint: "bg-sky-50 text-sky-600 ring-sky-100" },
+                ] as const).map((c, idx) => {
+                  const Icon = c.icon;
+                  return (
+                    <motion.div
+                      key={c.key}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: idx * 0.05 }}
+                      className="relative overflow-hidden bg-white rounded-xl border border-[#e5e7eb] shadow-sm hover:shadow-md p-4 group transition-shadow"
+                    >
+                      <div className={`absolute top-0 left-0 right-0 h-1 bg-gradient-to-r ${c.grad}`} />
+                      <div className="flex items-center gap-3">
+                        <div className={`w-10 h-10 rounded-xl ${c.tint} ring-1 flex items-center justify-center shadow-inner`}>
+                          <Icon size={18} strokeWidth={2.2} />
+                        </div>
+                        <div>
+                          <div className="text-[10px] font-bold uppercase tracking-wider text-gray-500">{c.label}</div>
+                          <div className="text-2xl font-bold text-[#0d2137] tabular-nums">{issueCounts[c.key]}</div>
+                        </div>
+                      </div>
+                    </motion.div>
+                  );
+                })}
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.2 }}
+                  className="relative overflow-hidden bg-gradient-to-br from-[#eaf4ee] to-[#d4ebde] rounded-xl border border-[#1a7a5e]/20 shadow-sm hover:shadow-md p-4 group transition-shadow"
+                >
+                  <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-[#1a5c4a] to-[#00a86b]" />
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-white text-[#1a7a5e] ring-1 ring-[#1a7a5e]/10 flex items-center justify-center shadow-sm">
+                      <CheckCircle2 size={18} strokeWidth={2.2} />
+                    </div>
+                    <div className="min-w-0">
+                      <div className="text-[10px] font-bold uppercase tracking-wider text-[#1a5c4a]">Resueltos</div>
+                      <div className="text-2xl font-bold text-[#0d2137] tabular-nums">
+                        {issueCounts.resueltos}<span className="text-base text-[#1a7a5e]">/{issueCounts.total}</span>
+                      </div>
+                    </div>
+                  </div>
+                  {issueCounts.total > 0 && (
+                    <div className="mt-2 h-1.5 bg-white/60 rounded-full overflow-hidden ring-1 ring-[#1a7a5e]/10">
+                      <div className="h-full bg-gradient-to-r from-[#1a5c4a] to-[#00a86b] rounded-full transition-all" style={{ width: `${(issueCounts.resueltos / issueCounts.total) * 100}%` }} />
+                    </div>
+                  )}
+                </motion.div>
+              </div>
+
+              {/* Filtros */}
+              <div className="bg-white rounded-xl border border-[#e5e7eb] shadow-sm p-4 mb-4 flex flex-wrap gap-x-5 gap-y-3">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-gray-500">Origen:</span>
                   {(["todos","academia","landing"] as const).map(o => (
                     <button key={o} onClick={() => setIssueOrigen(o)}
-                      className={`px-3 py-1 rounded-full text-xs font-medium border transition-all ${issueOrigen===o ? "bg-[#1a5c4a] text-white border-[#1a5c4a]" : "bg-white text-gray-600 border-[#e5e7eb] hover:border-gray-400"}`}>
-                      {o === "todos" ? "Todos" : o === "academia" ? "Academia" : "Landing ventas"}
+                      className={`px-2.5 py-1 rounded-full text-xs font-semibold border transition-all ${issueOrigen===o ? "bg-gradient-to-br from-[#1a7a5e] to-[#00a86b] text-white border-transparent shadow-sm" : "bg-white text-gray-600 border-[#e5e7eb] hover:border-[#1a7a5e]/30 hover:text-[#1a7a5e]"}`}>
+                      {o === "todos" ? "Todos" : o === "academia" ? "Academia" : "Landing"}
                     </button>
                   ))}
                 </div>
-                <div className="w-px bg-[#dee2e6]" />
-                <div className="flex items-center gap-2">
-                  <span className="text-xs font-medium text-gray-500">Criticidad:</span>
+                <div className="w-px bg-[#e5e7eb] self-stretch" />
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-gray-500">Criticidad:</span>
                   {(["todas","critica","alta","media","baja"] as const).map(c => (
                     <button key={c} onClick={() => setIssueCritic(c)}
-                      className={`px-3 py-1 rounded-full text-xs font-medium border transition-all ${issueCritic===c ? "bg-[#1a5c4a] text-white border-[#1a5c4a]" : "bg-white text-gray-600 border-[#e5e7eb] hover:border-gray-400"}`}>
+                      className={`px-2.5 py-1 rounded-full text-xs font-semibold border transition-all ${issueCritic===c ? "bg-gradient-to-br from-[#1a7a5e] to-[#00a86b] text-white border-transparent shadow-sm" : "bg-white text-gray-600 border-[#e5e7eb] hover:border-[#1a7a5e]/30 hover:text-[#1a7a5e]"}`}>
                       {c === "todas" ? "Todas" : CRIT_META[c].label}
                     </button>
                   ))}
                 </div>
-                <div className="w-px bg-[#dee2e6]" />
-                <div className="flex items-center gap-2">
-                  <span className="text-xs font-medium text-gray-500">Tipo:</span>
+                <div className="w-px bg-[#e5e7eb] self-stretch" />
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-gray-500">Tipo:</span>
                   {(["todos","bug","error","warning","seguridad","performance"] as const).map(t => (
                     <button key={t} onClick={() => setIssueTipo(t)}
-                      className={`px-3 py-1 rounded-full text-xs font-medium border transition-all ${issueTipo===t ? "bg-[#1a5c4a] text-white border-[#1a5c4a]" : "bg-white text-gray-600 border-[#e5e7eb] hover:border-gray-400"}`}>
+                      className={`px-2.5 py-1 rounded-full text-xs font-semibold border transition-all ${issueTipo===t ? "bg-gradient-to-br from-[#1a7a5e] to-[#00a86b] text-white border-transparent shadow-sm" : "bg-white text-gray-600 border-[#e5e7eb] hover:border-[#1a7a5e]/30 hover:text-[#1a7a5e]"}`}>
                       {t === "todos" ? "Todos" : TIPO_META[t].label}
                     </button>
                   ))}
@@ -2425,7 +2535,12 @@ const menuItems = [
 
               <div className="space-y-2">
                 {filteredIssues.length === 0 && (
-                  <div className="bg-white rounded-lg border border-[#e5e7eb] p-8 text-center text-gray-400">No hay hallazgos con estos filtros.</div>
+                  <div className="bg-gradient-to-br from-white to-[#eaf4ee]/40 rounded-2xl border-2 border-dashed border-[#1a7a5e]/20 p-12 text-center">
+                    <div className="w-14 h-14 rounded-2xl bg-white shadow-md mx-auto mb-3 flex items-center justify-center text-[#1a7a5e] ring-1 ring-[#1a7a5e]/10">
+                      <ShieldCheck size={24} />
+                    </div>
+                    <div className="text-[#0d2137] font-bold text-sm">Sin hallazgos con estos filtros</div>
+                  </div>
                 )}
                 {filteredIssues.map(issue => {
                   const crit = CRIT_META[issue.criticidad];
@@ -2433,47 +2548,66 @@ const menuItems = [
                   const resolved = !!resolvedIssues[issue.id];
                   const expanded = expandedIssue === issue.id;
                   return (
-                    <div key={issue.id}
-                      className={`bg-white rounded-lg border shadow-sm transition-all ${resolved ? "border-[#e5e7eb] opacity-60" : crit.border}`}>
+                    <motion.div
+                      key={issue.id}
+                      initial={{ opacity: 0, y: 6 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className={`relative overflow-hidden bg-white rounded-xl border shadow-sm hover:shadow-md transition-all ${resolved ? "border-[#e5e7eb] opacity-60" : "border-[#e5e7eb]"}`}
+                    >
+                      <div className={`absolute top-0 left-0 bottom-0 w-1 ${
+                        resolved ? "bg-gradient-to-b from-emerald-400 to-emerald-300" :
+                        issue.criticidad === "critica" ? "bg-gradient-to-b from-red-500 to-rose-500" :
+                        issue.criticidad === "alta" ? "bg-gradient-to-b from-orange-500 to-amber-500" :
+                        issue.criticidad === "media" ? "bg-gradient-to-b from-amber-500 to-yellow-400" :
+                        "bg-gradient-to-b from-sky-500 to-sky-400"
+                      }`} />
                       <button
                         onClick={() => setExpandedIssue(expanded ? null : issue.id)}
-                        className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-gray-50 transition-colors">
-                        {expanded ? <ChevronDown size={18} className="text-gray-400 shrink-0"/> : <ChevronRight size={18} className="text-gray-400 shrink-0"/>}
-                        <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${crit.bg} ${crit.text} ${crit.border} border shrink-0`}>
+                        className="w-full flex items-center gap-3 px-4 py-3 pl-5 text-left hover:bg-[#fafbfc] transition-colors"
+                      >
+                        <div className="shrink-0 text-gray-400">
+                          {expanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+                        </div>
+                        <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider ${crit.bg} ${crit.text} ring-1 ${crit.border} shrink-0`}>
                           {crit.label}
                         </span>
-                        <span className="flex items-center gap-1 text-xs text-gray-500 shrink-0">
-                          <TipoIcon size={14}/>{TIPO_META[issue.tipo].label}
+                        <span className="inline-flex items-center gap-1 text-xs text-gray-600 font-medium shrink-0">
+                          <TipoIcon size={13}/>{TIPO_META[issue.tipo].label}
                         </span>
-                        <span className="text-[10px] font-mono text-gray-400 shrink-0">{issue.id}</span>
-                        <span className={`px-2 py-0.5 rounded text-[10px] font-semibold shrink-0 ${issue.origen==="academia" ? "bg-[#00a86b]/15 text-[#1a5c4a]" : "bg-indigo-50 text-indigo-700"}`}>
+                        <code className="text-[10px] font-mono text-gray-400 bg-[#f6f7f9] px-1.5 py-0.5 rounded shrink-0">{issue.id}</code>
+                        <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wide shrink-0 ring-1 ${issue.origen==="academia" ? "bg-[#eaf4ee] text-[#1a5c4a] ring-[#1a7a5e]/15" : "bg-indigo-50 text-indigo-700 ring-indigo-100"}`}>
                           {issue.origen === "academia" ? "Academia" : "Landing"}
                         </span>
-                        <span className={`flex-1 font-medium ${resolved ? "line-through text-gray-400" : "text-[#0d2137]"}`}>{issue.titulo}</span>
-                        <span className="text-[11px] font-mono text-gray-400 truncate max-w-[240px] hidden md:block">{issue.archivo}</span>
+                        <span className={`flex-1 font-semibold text-sm truncate ${resolved ? "line-through text-gray-400" : "text-[#0d2137]"}`}>{issue.titulo}</span>
+                        <code className="text-[11px] font-mono text-gray-400 truncate max-w-[240px] hidden lg:block bg-[#f6f7f9] px-2 py-0.5 rounded">{issue.archivo}</code>
                       </button>
                       {expanded && (
-                        <div className="px-4 pb-4 pt-1 border-t border-[#e5e7eb] bg-gray-50/50">
+                        <div className="px-5 pb-4 pt-2 border-t border-[#eef0f3] bg-gradient-to-br from-[#fafbfc] to-white">
                           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-3 text-sm">
                             <div className="md:col-span-2">
-                              <div className="text-xs font-semibold uppercase tracking-wider text-gray-500 mb-1">Detalles</div>
+                              <div className="text-[10px] font-bold uppercase tracking-wider text-gray-500 mb-1.5 flex items-center gap-1.5">
+                                <Activity size={11} />Detalles
+                              </div>
                               <p className="text-gray-700 leading-relaxed">{issue.detalles}</p>
                             </div>
                             <div className="space-y-3">
                               <div>
-                                <div className="text-xs font-semibold uppercase tracking-wider text-gray-500 mb-1">Ubicación</div>
-                                <code className="text-xs bg-white border border-[#e5e7eb] rounded px-2 py-1 block break-all">{issue.archivo}</code>
+                                <div className="text-[10px] font-bold uppercase tracking-wider text-gray-500 mb-1.5 flex items-center gap-1.5">
+                                  <FileText size={11} />Ubicación
+                                </div>
+                                <code className="text-xs bg-[#0f172a] text-[#a5b4fc] border border-[#1e293b] rounded-lg px-2.5 py-1.5 block break-all font-mono">{issue.archivo}</code>
                               </div>
                               <button
                                 onClick={() => toggleResolved(issue.id)}
-                                className={`w-full px-3 py-2 rounded-md text-sm font-medium border transition-all ${resolved ? "bg-white text-gray-500 border-[#e5e7eb] hover:bg-gray-100" : "bg-[#00a86b] text-white border-[#00a86b] hover:bg-[#008f5a]"}`}>
-                                {resolved ? "Reabrir" : "Marcar como resuelto"}
+                                className={`w-full px-3 py-2 rounded-lg text-sm font-semibold transition-all flex items-center justify-center gap-1.5 ${resolved ? "bg-white text-gray-600 border border-[#e5e7eb] hover:bg-gray-50" : "bg-gradient-to-br from-emerald-500 to-emerald-600 text-white shadow-sm hover:shadow-md hover:brightness-110 active:scale-[0.98]"}`}
+                              >
+                                {resolved ? "Reabrir" : <><CheckCircle2 size={15} />Marcar como resuelto</>}
                               </button>
                             </div>
                           </div>
                         </div>
                       )}
-                    </div>
+                    </motion.div>
                   );
                 })}
               </div>
