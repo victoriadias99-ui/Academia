@@ -1307,56 +1307,127 @@ const menuItems = [
 
           {activeTab === "cursos" && (
             <motion.div key="cursos" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="p-8">
-              <header className="flex items-center justify-between mb-8">
-                <div><h1 className="text-3xl font-bold text-[#0d2137]">Cursos</h1><p className="text-gray-500">Administración de la oferta académica</p></div>
-                <div className="flex gap-2">
-                  <button onClick={handleImportarPreciosLanding} disabled={importandoPrecios} className="border border-[#1a7a5e] text-[#1a7a5e] px-4 py-2 rounded-md font-medium hover:bg-[#f0faf6] transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed text-sm">
-                    {importandoPrecios ? "Importando..." : "↓ Importar precios de la landing"}
-                  </button>
-                  <button onClick={() => { setEditingCourse(null); setCourseForm({ academia: "Aprende Excel", nombre: "", descripcion: "", imagen_url: "", stripe_price_id: "", precio_ars: 0, precio_usd: 0, orden: 0, precios_paises: {} }); setIsCourseModalOpen(true); }} className="bg-gradient-to-br from-[#1a7a5e] to-[#00a86b] text-white px-6 py-2 rounded-lg font-medium hover:shadow-md hover:brightness-110 transition-all shadow-sm flex items-center gap-2"><Plus size={20} />Agregar curso</button>
+              <div className="mb-6">
+                <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
+                  <div>
+                    <h1 className="text-3xl font-bold text-[#0d2137] tracking-tight flex items-center gap-3">
+                      <span className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-indigo-400 text-white flex items-center justify-center shadow-md">
+                        <BookOpen size={20} />
+                      </span>
+                      Cursos
+                    </h1>
+                    <p className="text-gray-500 mt-1">Administración de la oferta académica de video</p>
+                    {dolarInfo && (
+                      <div className="inline-flex items-center gap-1.5 mt-2 px-2.5 py-1 rounded-full bg-amber-50 text-amber-700 text-xs font-semibold ring-1 ring-amber-200">
+                        <DollarSign size={11} />
+                        USD referencia: ${dolarInfo.venta} {dolarInfo.fecha ? `· ${dolarInfo.fecha}` : ''}
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    <button onClick={handleImportarPreciosLanding} disabled={importandoPrecios} className="bg-white ring-1 ring-[#1a7a5e]/30 text-[#1a7a5e] px-4 py-2 rounded-lg font-medium hover:bg-[#eaf4ee] hover:ring-[#1a7a5e]/50 transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed text-sm shadow-sm">
+                      {importandoPrecios ? (
+                        <><div className="w-3 h-3 border-2 border-[#1a7a5e] border-t-transparent rounded-full animate-spin" /> Importando...</>
+                      ) : (
+                        <><ArrowUpRight size={14} /> Importar precios landing</>
+                      )}
+                    </button>
+                    <button onClick={() => { setEditingCourse(null); setCourseForm({ academia: "Aprende Excel", nombre: "", descripcion: "", imagen_url: "", stripe_price_id: "", precio_ars: 0, precio_usd: 0, orden: 0, precios_paises: {} }); setIsCourseModalOpen(true); }} className="bg-gradient-to-br from-[#1a7a5e] to-[#00a86b] text-white px-5 py-2 rounded-lg font-medium hover:shadow-md hover:brightness-110 transition-all shadow-sm flex items-center gap-2 text-sm"><Plus size={16} />Agregar curso</button>
+                  </div>
                 </div>
-              </header>
-              <div className="bg-white rounded-lg border border-[#e5e7eb] shadow-sm overflow-hidden">
+              </div>
+
+              <div className="bg-white rounded-xl border border-[#e5e7eb] shadow-sm overflow-hidden">
                 <div className="overflow-x-auto">
                   <table className="w-full text-left">
-                    <thead className="bg-[#1a5c4a] text-white">
-                      <tr><th className="px-6 py-4 font-semibold">Nombre</th><th className="px-6 py-4 font-semibold">Academia</th><th className="px-6 py-4 font-semibold">Stripe Price ID</th><th className="px-6 py-4 font-semibold">Precio ARS</th><th className="px-6 py-4 font-semibold">Precio USD</th><th className="px-6 py-4 font-semibold">Activo</th><th className="px-6 py-4 font-semibold">Acciones</th></tr>
+                    <thead>
+                      <tr className="bg-[#f6f7f9] border-b border-[#e5e7eb]">
+                        <th className="px-6 py-3 text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Curso</th>
+                        <th className="px-6 py-3 text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Academia</th>
+                        <th className="px-6 py-3 text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Stripe Price ID</th>
+                        <th className="px-6 py-3 text-[11px] font-semibold text-gray-500 uppercase tracking-wider text-right">ARS</th>
+                        <th className="px-6 py-3 text-[11px] font-semibold text-gray-500 uppercase tracking-wider text-right">USD</th>
+                        <th className="px-6 py-3 text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Estado</th>
+                        <th className="px-6 py-3 text-[11px] font-semibold text-gray-500 uppercase tracking-wider text-right">Acciones</th>
+                      </tr>
                     </thead>
-                    <tbody className="divide-y divide-[#dee2e6]">
-                      {filteredCourses.map((course) => (
-                        <tr key={course.id} className="hover:bg-gray-50 transition-colors">
-                          <td className="px-6 py-4 font-medium text-[#0d2137]">{course.nombre}</td>
-                          <td className="px-6 py-4 text-gray-600">{course.academia || "Aprende Excel"}</td>
-                          <td className="px-6 py-4 text-xs font-mono text-gray-500">{course.stripe_price_id || "price_..."}</td>
-                          <td className="px-6 py-4 text-gray-600">${course.precio_ars?.toLocaleString("es-AR") || "0"}</td>
-                          <td className="px-6 py-4 text-gray-600">
+                    <tbody className="divide-y divide-[#eef0f3]">
+                      {filteredCourses.length === 0 && (
+                        <tr><td colSpan={7} className="px-6 py-16 text-center">
+                          <div className="flex flex-col items-center gap-2">
+                            <div className="w-14 h-14 rounded-full bg-gray-50 flex items-center justify-center text-gray-300">
+                              <BookOpen size={24} />
+                            </div>
+                            <div className="text-gray-500 font-medium">No hay cursos todavía</div>
+                            <div className="text-xs text-gray-400">Agregá tu primer curso para empezar</div>
+                          </div>
+                        </td></tr>
+                      )}
+                      {filteredCourses.map((course) => {
+                        const isExcel = (course.academia || "Aprende Excel") === ACADEMIA_EXCEL;
+                        return (
+                        <tr key={course.id} className="hover:bg-[#fafbfc] transition-colors">
+                          <td className="px-6 py-4">
+                            <div className="flex items-center gap-3">
+                              {course.imagen_url ? (
+                                <img src={course.imagen_url} alt="" className="w-10 h-10 rounded-lg object-cover ring-1 ring-[#e5e7eb] shrink-0" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
+                              ) : (
+                                <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-indigo-100 to-indigo-50 text-indigo-600 flex items-center justify-center shrink-0">
+                                  <BookOpen size={16} />
+                                </div>
+                              )}
+                              <div className="min-w-0">
+                                <div className="font-semibold text-[#0d2137] text-sm truncate max-w-[240px]">{course.nombre}</div>
+                                {course.orden !== undefined && <div className="text-[10px] text-gray-400 font-mono">Orden #{course.orden}</div>}
+                              </div>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4">
+                            <span className={`inline-flex items-center px-2.5 py-1 rounded-md text-xs font-semibold ring-1 ${isExcel ? 'bg-[#eaf4ee] text-[#1a5c4a] ring-[#1a5c4a]/10' : 'bg-blue-50 text-blue-700 ring-blue-200'}`}>
+                              {course.academia || "Aprende Excel"}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4">
+                            {course.stripe_price_id ? (
+                              <code className="text-[11px] font-mono text-gray-600 bg-gray-50 px-2 py-1 rounded ring-1 ring-gray-200 truncate inline-block max-w-[180px]">{course.stripe_price_id}</code>
+                            ) : (
+                              <span className="text-xs text-gray-300 italic">sin configurar</span>
+                            )}
+                          </td>
+                          <td className="px-6 py-4 text-right tabular-nums font-medium text-[#0d2137]">${course.precio_ars?.toLocaleString("es-AR") || "0"}</td>
+                          <td className="px-6 py-4 text-right tabular-nums">
                             {(() => {
                               const usd = course.precio_usd && course.precio_usd > 0
                                 ? course.precio_usd
                                 : (course.precio_ars > 0 && dolarInfo ? Math.round((course.precio_ars / dolarInfo.venta) * 100) / 100 : 0);
                               return usd > 0
-                                ? <span>${usd.toFixed(2)}</span>
+                                ? <span className="font-medium text-[#0d2137]">${usd.toFixed(2)}</span>
                                 : <span className="text-gray-300">$0.00</span>;
                             })()}
                           </td>
-                          <td className="px-6 py-4"><span className={`px-2 py-1 rounded-full text-[10px] font-bold uppercase ${course.activo !== false ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>{course.activo !== false ? 'Activo' : 'Inactivo'}</span></td>
                           <td className="px-6 py-4">
-                            <div className="flex gap-2">
+                            <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ring-1 ${course.activo !== false ? 'bg-emerald-50 text-emerald-700 ring-emerald-200' : 'bg-red-50 text-red-700 ring-red-200'}`}>
+                              <span className={`w-1.5 h-1.5 rounded-full ${course.activo !== false ? 'bg-emerald-500 shadow-[0_0_6px_#10b981]' : 'bg-red-500'}`} />
+                              {course.activo !== false ? 'Activo' : 'Inactivo'}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4">
+                            <div className="flex items-center gap-1.5 justify-end">
                               <button onClick={() => {
                                 setEditingCourse(course);
                                 const pp = { ...(course.precios_paises || {}) };
-                                // Si hay precio_ars pero AR no tiene precio en precios_paises, pre-popularlo
                                 if (course.precio_ars > 0 && !pp["AR"]) pp["AR"] = { precio: course.precio_ars, stripe_price_id: "" };
                                 setCourseForm({ academia: course.academia || "Aprende Excel", nombre: course.nombre, descripcion: course.descripcion || "", imagen_url: course.imagen_url || "", stripe_price_id: course.stripe_price_id, precio_ars: course.precio_ars, precio_usd: course.precio_usd, orden: course.orden || 0, precios_paises: pp });
                                 setSelectedPaisCode("AR");
                                 fetchDolar();
                                 setIsCourseModalOpen(true);
-                              }} className="p-1 text-gray-400 hover:text-indigo-600 transition-colors"><Edit2 size={16} /></button>
-                              <button onClick={() => handleDeleteCourse(course.id)} className="p-1 text-gray-400 hover:text-red-600 transition-colors"><Trash2 size={16} /></button>
+                              }} title="Editar" className="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-600 hover:bg-indigo-100 hover:shadow-sm flex items-center justify-center transition-all"><Edit2 size={14} /></button>
+                              <button onClick={() => handleDeleteCourse(course.id)} title="Eliminar" className="w-8 h-8 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 hover:shadow-sm flex items-center justify-center transition-all"><Trash2 size={14} /></button>
                             </div>
                           </td>
                         </tr>
-                      ))}
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>
@@ -1366,47 +1437,190 @@ const menuItems = [
 
           {activeTab === "lecciones" && (
             <motion.div key="lecciones" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="p-8">
-              <header className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
-                <div><h1 className="text-3xl font-bold text-[#0d2137]">Lecciones</h1><p className="text-gray-500">Contenido de los cursos</p></div>
-                <div className="flex gap-2">
-                  <select className="px-4 py-2 rounded-md border border-[#e5e7eb] focus:outline-none focus:ring-2 focus:ring-[#00a86b]/25 focus:border-[#00a86b] bg-white" value={selectedCourseId || ""} onChange={(e) => setSelectedCourseId(Number(e.target.value))}>
-                    <option value="">Seleccionar curso...</option>
-                    {filteredCourses.map(c => (<option key={c.id} value={c.id}>{c.nombre}</option>))}
-                  </select>
-                  <button disabled={!selectedCourseId} onClick={() => { setEditingLesson(null); setLessonForm({ titulo: "", vimeo_id: "", duracion: 0, orden: 0, preview: false }); setIsLessonModalOpen(true); }} className="bg-gradient-to-br from-[#00a86b] to-[#008f5a] text-white px-6 py-2 rounded-lg font-medium hover:shadow-md hover:brightness-110 transition-all shadow-sm flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"><Plus size={20} />Agregar lección</button>
+              {/* Header */}
+              <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-8">
+                <div>
+                  <h1 className="text-3xl font-bold text-[#0d2137] tracking-tight flex items-center gap-3">
+                    <span className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-500 to-violet-400 text-white flex items-center justify-center shadow-md">
+                      <PlayCircle size={20} />
+                    </span>
+                    Lecciones
+                  </h1>
+                  <p className="text-gray-500 mt-1">Videos y contenido de cada curso</p>
                 </div>
-              </header>
-              {selectedCourseId ? (
-                <div className="bg-white rounded-lg border border-[#e5e7eb] shadow-sm overflow-hidden">
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-left">
-                      <thead className="bg-[#1a5c4a] text-white">
-                        <tr><th className="px-6 py-4 font-semibold w-16">#</th><th className="px-6 py-4 font-semibold">Título</th><th className="px-6 py-4 font-semibold">Vimeo ID</th><th className="px-6 py-4 font-semibold">Duración</th><th className="px-6 py-4 font-semibold">Preview</th><th className="px-6 py-4 font-semibold">Acciones</th></tr>
-                      </thead>
-                      <tbody className="divide-y divide-[#dee2e6]">
-                        {lessons.map((lesson, i) => (
-                          <tr key={lesson.id} className="hover:bg-gray-50 transition-colors">
-                            <td className="px-6 py-4 text-gray-400 font-mono">{lesson.orden || i + 1}</td>
-                            <td className="px-6 py-4 font-medium text-[#0d2137]">{lesson.titulo}</td>
-                            <td className="px-6 py-4 text-gray-600 font-mono text-sm">{lesson.vimeo_id}</td>
-                            <td className="px-6 py-4 text-gray-500">{Math.floor(lesson.duracion / 60)}:{(lesson.duracion % 60).toString().padStart(2, '0')}</td>
-                            <td className="px-6 py-4">{lesson.preview ? <span className="bg-blue-100 text-blue-700 px-2 py-1 rounded-full text-[10px] font-bold uppercase">Sí</span> : <span className="text-gray-300 text-[10px] font-bold uppercase">No</span>}</td>
-                            <td className="px-6 py-4">
-                              <div className="flex gap-2">
-                                <button onClick={() => { setEditingLesson(lesson); setLessonForm({ titulo: lesson.titulo, vimeo_id: lesson.vimeo_id, duracion: lesson.duracion, orden: lesson.orden, preview: lesson.preview }); setIsLessonModalOpen(true); }} className="p-1 text-gray-400 hover:text-indigo-600 transition-colors"><Edit2 size={16} /></button>
-                                <button onClick={() => handleDeleteLesson(lesson.id)} className="p-1 text-gray-400 hover:text-red-600 transition-colors"><Trash2 size={16} /></button>
-                              </div>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
+                <div className="flex flex-col sm:flex-row gap-2">
+                  <div className="relative">
+                    <BookOpen size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                    <select
+                      className="pl-9 pr-8 py-2.5 rounded-lg border border-[#e5e7eb] focus:outline-none focus:ring-2 focus:ring-[#00a86b]/25 focus:border-[#00a86b] bg-white shadow-sm text-sm font-medium text-[#0d2137] min-w-[220px] appearance-none cursor-pointer hover:border-[#d1d5db] transition-colors"
+                      value={selectedCourseId || ""}
+                      onChange={(e) => setSelectedCourseId(Number(e.target.value))}
+                    >
+                      <option value="">Seleccionar curso...</option>
+                      {filteredCourses.map(c => (<option key={c.id} value={c.id}>{c.nombre}</option>))}
+                    </select>
+                    <ChevronDown size={15} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
                   </div>
+                  <button
+                    disabled={!selectedCourseId}
+                    onClick={() => { setEditingLesson(null); setLessonForm({ titulo: "", vimeo_id: "", duracion: 0, orden: 0, preview: false }); setIsLessonModalOpen(true); }}
+                    className="bg-gradient-to-br from-[#1a7a5e] via-[#00a86b] to-[#008f5a] text-white px-5 py-2.5 rounded-lg font-semibold text-sm hover:shadow-lg hover:brightness-110 active:scale-[0.98] transition-all shadow-md shadow-[#00a86b]/20 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none"
+                  >
+                    <Plus size={18} />Agregar lección
+                  </button>
                 </div>
+              </div>
+
+              {selectedCourseId ? (
+                <>
+                  {/* Mini stats */}
+                  {lessons.length > 0 && (() => {
+                    const totalDur = lessons.reduce((acc, l) => acc + (Number(l.duracion) || 0), 0);
+                    const previews = lessons.filter(l => l.preview).length;
+                    const horas = Math.floor(totalDur / 3600);
+                    const mins = Math.floor((totalDur % 3600) / 60);
+                    return (
+                      <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6">
+                        <div className="bg-white rounded-xl border border-[#e5e7eb] shadow-sm p-4 flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-lg bg-violet-50 text-violet-600 flex items-center justify-center ring-1 ring-violet-100">
+                            <PlayCircle size={18} />
+                          </div>
+                          <div>
+                            <div className="text-[10px] font-bold uppercase tracking-wider text-gray-500">Total lecciones</div>
+                            <div className="text-xl font-bold text-[#0d2137] tabular-nums">{lessons.length}</div>
+                          </div>
+                        </div>
+                        <div className="bg-white rounded-xl border border-[#e5e7eb] shadow-sm p-4 flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center ring-1 ring-amber-100">
+                            <Activity size={18} />
+                          </div>
+                          <div>
+                            <div className="text-[10px] font-bold uppercase tracking-wider text-gray-500">Duración total</div>
+                            <div className="text-xl font-bold text-[#0d2137] tabular-nums">{horas > 0 ? `${horas}h ` : ''}{mins}m</div>
+                          </div>
+                        </div>
+                        <div className="bg-white rounded-xl border border-[#e5e7eb] shadow-sm p-4 flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-lg bg-sky-50 text-sky-600 flex items-center justify-center ring-1 ring-sky-100">
+                            <Sparkles size={18} />
+                          </div>
+                          <div>
+                            <div className="text-[10px] font-bold uppercase tracking-wider text-gray-500">Preview gratis</div>
+                            <div className="text-xl font-bold text-[#0d2137] tabular-nums">{previews}</div>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })()}
+
+                  {/* Tabla */}
+                  <div className="bg-white rounded-xl border border-[#e5e7eb] shadow-sm overflow-hidden">
+                    <div className="flex items-center justify-between px-6 py-4 border-b border-[#e5e7eb] bg-gradient-to-r from-[#f8faf9] to-white">
+                      <div className="flex items-center gap-3">
+                        <div className="w-9 h-9 rounded-lg bg-violet-50 text-violet-600 flex items-center justify-center">
+                          <PlayCircle size={16} />
+                        </div>
+                        <div>
+                          <h2 className="text-sm font-bold text-[#0d2137] tracking-tight">Lecciones del curso</h2>
+                          <p className="text-[11px] text-gray-500">Ordenadas por secuencia de reproducción</p>
+                        </div>
+                      </div>
+                      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-violet-50 text-violet-700 text-xs font-bold ring-1 ring-violet-100">
+                        {lessons.length} {lessons.length === 1 ? 'lección' : 'lecciones'}
+                      </span>
+                    </div>
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-left">
+                        <thead>
+                          <tr className="bg-[#f6f7f9] border-b border-[#e5e7eb]">
+                            <th className="px-6 py-3 text-[11px] font-semibold text-gray-500 uppercase tracking-wider w-16">#</th>
+                            <th className="px-6 py-3 text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Título</th>
+                            <th className="px-6 py-3 text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Vimeo ID</th>
+                            <th className="px-6 py-3 text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Duración</th>
+                            <th className="px-6 py-3 text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Preview</th>
+                            <th className="px-6 py-3 text-[11px] font-semibold text-gray-500 uppercase tracking-wider text-right">Acciones</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-[#eef0f3]">
+                          {lessons.length === 0 && (
+                            <tr><td colSpan={6} className="px-6 py-16 text-center">
+                              <div className="flex flex-col items-center gap-3">
+                                <div className="w-14 h-14 rounded-2xl bg-violet-50 flex items-center justify-center text-violet-400 ring-1 ring-violet-100">
+                                  <PlayCircle size={24} />
+                                </div>
+                                <div>
+                                  <div className="text-[#0d2137] font-semibold text-sm">Este curso todavía no tiene lecciones</div>
+                                  <div className="text-gray-500 text-xs mt-0.5">Agregá la primera para empezar</div>
+                                </div>
+                              </div>
+                            </td></tr>
+                          )}
+                          {lessons.map((lesson, i) => (
+                            <tr key={lesson.id} className="hover:bg-[#fafbfc] transition-colors group">
+                              <td className="px-6 py-4">
+                                <span className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-violet-50 text-violet-700 font-bold text-xs tabular-nums ring-1 ring-violet-100">
+                                  {lesson.orden || i + 1}
+                                </span>
+                              </td>
+                              <td className="px-6 py-4">
+                                <div className="flex items-center gap-3">
+                                  <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-violet-500 to-violet-400 flex items-center justify-center text-white shrink-0 shadow-sm ring-2 ring-white">
+                                    <PlayCircle size={16} fill="currentColor" />
+                                  </div>
+                                  <div className="font-semibold text-[#0d2137] text-sm">{lesson.titulo}</div>
+                                </div>
+                              </td>
+                              <td className="px-6 py-4">
+                                <code className="inline-flex items-center px-2 py-1 rounded-md bg-[#0f172a] text-[#a5b4fc] font-mono text-[11px] ring-1 ring-[#1e293b]">
+                                  {lesson.vimeo_id}
+                                </code>
+                              </td>
+                              <td className="px-6 py-4">
+                                <span className="inline-flex items-center gap-1.5 text-gray-600 text-sm tabular-nums">
+                                  <Activity size={13} className="text-gray-400" />
+                                  {Math.floor(lesson.duracion / 60)}:{(lesson.duracion % 60).toString().padStart(2, '0')}
+                                </span>
+                              </td>
+                              <td className="px-6 py-4">
+                                {lesson.preview ? (
+                                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-sky-50 text-sky-700 text-[10px] font-bold uppercase tracking-wide ring-1 ring-sky-200">
+                                    <Sparkles size={10} />Sí
+                                  </span>
+                                ) : (
+                                  <span className="text-gray-300 text-[10px] font-bold uppercase">—</span>
+                                )}
+                              </td>
+                              <td className="px-6 py-4">
+                                <div className="flex gap-1.5 justify-end">
+                                  <button
+                                    onClick={() => { setEditingLesson(lesson); setLessonForm({ titulo: lesson.titulo, vimeo_id: lesson.vimeo_id, duracion: lesson.duracion, orden: lesson.orden, preview: lesson.preview }); setIsLessonModalOpen(true); }}
+                                    className="p-1.5 rounded-lg text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 transition-colors"
+                                    title="Editar"
+                                  >
+                                    <Edit2 size={15} />
+                                  </button>
+                                  <button
+                                    onClick={() => handleDeleteLesson(lesson.id)}
+                                    className="p-1.5 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors"
+                                    title="Eliminar"
+                                  >
+                                    <Trash2 size={15} />
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </>
               ) : (
-                <div className="bg-white rounded-lg border border-dashed border-[#e5e7eb] p-12 text-center">
-                  <PlayCircle size={48} className="mx-auto text-gray-300 mb-4" />
-                  <p className="text-gray-500">Seleccioná un curso para ver y gestionar sus lecciones</p>
+                <div className="bg-gradient-to-br from-white to-violet-50/30 rounded-2xl border-2 border-dashed border-violet-200 p-16 text-center">
+                  <div className="w-16 h-16 rounded-2xl bg-white shadow-md mx-auto mb-4 flex items-center justify-center text-violet-500 ring-1 ring-violet-100">
+                    <PlayCircle size={28} />
+                  </div>
+                  <h3 className="text-[#0d2137] font-bold text-base mb-1">Seleccioná un curso</h3>
+                  <p className="text-gray-500 text-sm">Elegí un curso del menú superior para ver y gestionar sus lecciones</p>
                 </div>
               )}
             </motion.div>
@@ -1414,59 +1628,164 @@ const menuItems = [
 
           {activeTab === "recursos" && (
             <motion.div key="recursos" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="p-8">
-              <header className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
-                <div><h1 className="text-3xl font-bold text-[#0d2137]">Recursos</h1><p className="text-gray-500">PDFs, links y comentarios por curso</p></div>
-                <div className="flex gap-2">
-                  <select className="px-4 py-2 rounded-md border border-[#e5e7eb] bg-white focus:outline-none focus:ring-2 focus:ring-[#00a86b]/25 focus:border-[#00a86b]"
-                    value={selectedRecursoCursoId}
-                    onChange={e => { setSelectedRecursoCursoId(e.target.value); fetchRecursos(e.target.value); }}>
-                    <option value="">Seleccionar curso...</option>
-                    {filteredCourses.map(c => <option key={c.id} value={c.id.toString()}>{c.nombre}</option>)}
-                  </select>
-                  <button disabled={!selectedRecursoCursoId}
+              {/* Header */}
+              <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-8">
+                <div>
+                  <h1 className="text-3xl font-bold text-[#0d2137] tracking-tight flex items-center gap-3">
+                    <span className="w-10 h-10 rounded-xl bg-gradient-to-br from-orange-500 to-amber-400 text-white flex items-center justify-center shadow-md">
+                      <FolderOpen size={20} />
+                    </span>
+                    Recursos
+                  </h1>
+                  <p className="text-gray-500 mt-1">PDFs, links y comentarios complementarios por curso</p>
+                </div>
+                <div className="flex flex-col sm:flex-row gap-2">
+                  <div className="relative">
+                    <BookOpen size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                    <select
+                      className="pl-9 pr-8 py-2.5 rounded-lg border border-[#e5e7eb] focus:outline-none focus:ring-2 focus:ring-[#00a86b]/25 focus:border-[#00a86b] bg-white shadow-sm text-sm font-medium text-[#0d2137] min-w-[220px] appearance-none cursor-pointer hover:border-[#d1d5db] transition-colors"
+                      value={selectedRecursoCursoId}
+                      onChange={e => { setSelectedRecursoCursoId(e.target.value); fetchRecursos(e.target.value); }}
+                    >
+                      <option value="">Seleccionar curso...</option>
+                      {filteredCourses.map(c => <option key={c.id} value={c.id.toString()}>{c.nombre}</option>)}
+                    </select>
+                    <ChevronDown size={15} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                  </div>
+                  <button
+                    disabled={!selectedRecursoCursoId}
                     onClick={() => { setRecursoForm({ tipo: "link", titulo: "", contenido: "" }); setIsRecursoModalOpen(true); }}
-                    className="bg-gradient-to-br from-[#00a86b] to-[#008f5a] text-white px-6 py-2 rounded-lg font-medium hover:shadow-md hover:brightness-110 transition-all shadow-sm flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
-                    <Plus size={20} />Agregar recurso
+                    className="bg-gradient-to-br from-[#1a7a5e] via-[#00a86b] to-[#008f5a] text-white px-5 py-2.5 rounded-lg font-semibold text-sm hover:shadow-lg hover:brightness-110 active:scale-[0.98] transition-all shadow-md shadow-[#00a86b]/20 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none"
+                  >
+                    <Plus size={18} />Agregar recurso
                   </button>
                 </div>
-              </header>
+              </div>
+
               {!selectedRecursoCursoId ? (
-                <div className="bg-white rounded-lg border border-dashed border-[#e5e7eb] p-12 text-center">
-                  <FolderOpen size={48} className="mx-auto text-gray-300 mb-4" />
-                  <p className="text-gray-500">Seleccioná un curso para ver y gestionar sus recursos</p>
+                <div className="bg-gradient-to-br from-white to-orange-50/30 rounded-2xl border-2 border-dashed border-orange-200 p-16 text-center">
+                  <div className="w-16 h-16 rounded-2xl bg-white shadow-md mx-auto mb-4 flex items-center justify-center text-orange-500 ring-1 ring-orange-100">
+                    <FolderOpen size={28} />
+                  </div>
+                  <h3 className="text-[#0d2137] font-bold text-base mb-1">Seleccioná un curso</h3>
+                  <p className="text-gray-500 text-sm">Elegí un curso del menú superior para ver y gestionar sus recursos</p>
                 </div>
               ) : recursos.length === 0 ? (
-                <div className="bg-white rounded-lg border border-dashed border-[#e5e7eb] p-12 text-center">
-                  <FolderOpen size={48} className="mx-auto text-gray-300 mb-4" />
-                  <p className="text-gray-500">No hay recursos para este curso todavía</p>
+                <div className="bg-gradient-to-br from-white to-orange-50/30 rounded-2xl border-2 border-dashed border-orange-200 p-16 text-center">
+                  <div className="w-16 h-16 rounded-2xl bg-white shadow-md mx-auto mb-4 flex items-center justify-center text-orange-500 ring-1 ring-orange-100">
+                    <FolderOpen size={28} />
+                  </div>
+                  <h3 className="text-[#0d2137] font-bold text-base mb-1">Todavía no hay recursos</h3>
+                  <p className="text-gray-500 text-sm">Agregá PDFs, links o comentarios para este curso</p>
                 </div>
               ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-                  {recursos.map(r => (
-                    <div key={r.id} className="bg-white rounded-lg border border-[#e5e7eb] shadow-sm p-4 flex flex-col gap-3">
-                      <div className="flex items-start justify-between gap-2">
-                        <div className="flex items-center gap-2">
-                          {r.tipo === "pdf" && <div className="w-8 h-8 bg-red-100 rounded-lg flex items-center justify-center shrink-0"><FileText size={16} className="text-red-600" /></div>}
-                          {r.tipo === "link" && <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center shrink-0"><Link2 size={16} className="text-blue-600" /></div>}
-                          {r.tipo === "comentario" && <div className="w-8 h-8 bg-yellow-100 rounded-lg flex items-center justify-center shrink-0"><MessageSquare size={16} className="text-yellow-600" /></div>}
+                <>
+                  {/* Mini stats */}
+                  {(() => {
+                    const pdfs = recursos.filter(r => r.tipo === "pdf").length;
+                    const links = recursos.filter(r => r.tipo === "link").length;
+                    const coments = recursos.filter(r => r.tipo === "comentario").length;
+                    return (
+                      <div className="grid grid-cols-3 gap-4 mb-6">
+                        <div className="bg-white rounded-xl border border-[#e5e7eb] shadow-sm p-4 flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-lg bg-red-50 text-red-600 flex items-center justify-center ring-1 ring-red-100">
+                            <FileText size={18} />
+                          </div>
                           <div>
-                            <p className="font-semibold text-[#0d2137] text-sm">{r.titulo}</p>
-                            <span className={`text-[10px] font-bold uppercase px-1.5 py-0.5 rounded ${r.tipo === "pdf" ? "bg-red-100 text-red-600" : r.tipo === "link" ? "bg-blue-100 text-blue-600" : "bg-yellow-100 text-yellow-600"}`}>{r.tipo}</span>
+                            <div className="text-[10px] font-bold uppercase tracking-wider text-gray-500">PDFs</div>
+                            <div className="text-xl font-bold text-[#0d2137] tabular-nums">{pdfs}</div>
                           </div>
                         </div>
-                        <button onClick={() => handleDeleteRecurso(r.id)} className="p-1 text-gray-400 hover:text-red-600 transition-colors shrink-0"><Trash2 size={15} /></button>
+                        <div className="bg-white rounded-xl border border-[#e5e7eb] shadow-sm p-4 flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center ring-1 ring-blue-100">
+                            <Link2 size={18} />
+                          </div>
+                          <div>
+                            <div className="text-[10px] font-bold uppercase tracking-wider text-gray-500">Links</div>
+                            <div className="text-xl font-bold text-[#0d2137] tabular-nums">{links}</div>
+                          </div>
+                        </div>
+                        <div className="bg-white rounded-xl border border-[#e5e7eb] shadow-sm p-4 flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center ring-1 ring-amber-100">
+                            <MessageSquare size={18} />
+                          </div>
+                          <div>
+                            <div className="text-[10px] font-bold uppercase tracking-wider text-gray-500">Comentarios</div>
+                            <div className="text-xl font-bold text-[#0d2137] tabular-nums">{coments}</div>
+                          </div>
+                        </div>
                       </div>
-                      {r.tipo === "link" && <a href={r.contenido} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-500 hover:underline truncate">{r.contenido}</a>}
-                      {r.tipo === "comentario" && <p className="text-xs text-gray-600 whitespace-pre-wrap">{r.contenido}</p>}
-                      {r.tipo === "pdf" && r.contenido && (
-                        <a href={r.contenido} download={r.titulo} className="inline-flex items-center gap-1.5 text-xs text-[#1a5c4a] font-medium hover:underline">
-                          <FileText size={13} />Descargar PDF
-                        </a>
-                      )}
-                      <p className="text-[10px] text-gray-400 mt-auto">{new Date(r.created_at).toLocaleDateString("es-AR")}</p>
-                    </div>
-                  ))}
-                </div>
+                    );
+                  })()}
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                    {recursos.map(r => {
+                      const tipoConfig = r.tipo === "pdf"
+                        ? { bg: "bg-red-50", text: "text-red-600", ring: "ring-red-100", grad: "from-red-500 to-rose-400", label: "PDF", icon: FileText }
+                        : r.tipo === "link"
+                        ? { bg: "bg-blue-50", text: "text-blue-600", ring: "ring-blue-100", grad: "from-blue-500 to-sky-400", label: "Link", icon: Link2 }
+                        : { bg: "bg-amber-50", text: "text-amber-600", ring: "ring-amber-100", grad: "from-amber-500 to-yellow-400", label: "Nota", icon: MessageSquare };
+                      const TipoIcon = tipoConfig.icon;
+                      return (
+                        <motion.div
+                          key={r.id}
+                          initial={{ opacity: 0, y: 8 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          className="relative overflow-hidden bg-white rounded-xl border border-[#e5e7eb] shadow-sm hover:shadow-md transition-shadow group"
+                        >
+                          <div className={`absolute top-0 left-0 right-0 h-1 bg-gradient-to-r ${tipoConfig.grad}`} />
+                          <div className="p-4 pt-5">
+                            <div className="flex items-start justify-between gap-2 mb-3">
+                              <div className="flex items-center gap-2.5 min-w-0">
+                                <div className={`w-10 h-10 rounded-lg bg-gradient-to-br ${tipoConfig.grad} flex items-center justify-center shrink-0 shadow-sm ring-2 ring-white text-white`}>
+                                  <TipoIcon size={17} />
+                                </div>
+                                <div className="min-w-0">
+                                  <p className="font-semibold text-[#0d2137] text-sm truncate">{r.titulo}</p>
+                                  <span className={`inline-flex items-center text-[10px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded ${tipoConfig.bg} ${tipoConfig.text} ring-1 ${tipoConfig.ring} mt-0.5`}>
+                                    {tipoConfig.label}
+                                  </span>
+                                </div>
+                              </div>
+                              <button
+                                onClick={() => handleDeleteRecurso(r.id)}
+                                className="p-1.5 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors shrink-0 opacity-0 group-hover:opacity-100"
+                                title="Eliminar"
+                              >
+                                <Trash2 size={14} />
+                              </button>
+                            </div>
+
+                            {r.tipo === "link" && (
+                              <a href={r.contenido} target="_blank" rel="noopener noreferrer" className="block bg-[#f6f7f9] rounded-lg p-2.5 ring-1 ring-[#e5e7eb] hover:ring-blue-300 transition-all">
+                                <div className="flex items-center gap-1.5 text-xs text-blue-600 font-medium truncate">
+                                  <Link2 size={11} className="shrink-0" />
+                                  <span className="truncate">{r.contenido}</span>
+                                </div>
+                              </a>
+                            )}
+                            {r.tipo === "comentario" && (
+                              <p className="text-xs text-gray-600 whitespace-pre-wrap bg-amber-50/40 rounded-lg p-3 ring-1 ring-amber-100 line-clamp-3">
+                                {r.contenido}
+                              </p>
+                            )}
+                            {r.tipo === "pdf" && r.contenido && (
+                              <a href={r.contenido} download={r.titulo} className="inline-flex items-center gap-1.5 text-xs text-red-700 font-semibold hover:bg-red-50 bg-red-50/40 ring-1 ring-red-100 rounded-lg px-3 py-2 transition-colors">
+                                <FileText size={13} />Descargar PDF
+                                <ArrowUpRight size={12} className="ml-auto" />
+                              </a>
+                            )}
+
+                            <div className="flex items-center gap-1.5 mt-3 pt-3 border-t border-[#eef0f3] text-[10px] text-gray-400 font-medium">
+                              <Calendar size={10} />
+                              {new Date(r.created_at).toLocaleDateString("es-AR")}
+                            </div>
+                          </div>
+                        </motion.div>
+                      );
+                    })}
+                  </div>
+                </>
               )}
             </motion.div>
           )}
@@ -1606,17 +1925,23 @@ const menuItems = [
 
           {activeTab === "cursos-pdf" && (
             <motion.div key="cursos-pdf" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="p-8">
-              <header className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-8">
+              {/* Header */}
+              <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-6">
                 <div>
-                  <h1 className="text-3xl font-bold text-[#0d2137]">Cursos PDF</h1>
-                  <p className="text-gray-500">Gestión de cursos modulares en PDF</p>
+                  <h1 className="text-3xl font-bold text-[#0d2137] tracking-tight flex items-center gap-3">
+                    <span className="w-10 h-10 rounded-xl bg-gradient-to-br from-rose-500 to-rose-400 text-white flex items-center justify-center shadow-md">
+                      <FileText size={20} />
+                    </span>
+                    Cursos PDF
+                  </h1>
+                  <p className="text-gray-500 mt-1">Gestión de cursos modulares con material descargable</p>
                 </div>
                 <div className="flex flex-col sm:flex-row gap-2">
                   <button
                     onClick={() => { setWizardStep(1); setWizardCourseInfo({ nombre: "", slug: "", descripcion: "" }); setWizardTemario(""); setWizardFiles([]); setIsWizardOpen(true); }}
-                    className="bg-gradient-to-br from-[#00a86b] to-[#008f5a] text-white px-6 py-2 rounded-lg font-medium hover:shadow-md hover:brightness-110 transition-all shadow-sm flex items-center gap-2"
+                    className="bg-white border border-[#e5e7eb] text-[#0d2137] px-5 py-2.5 rounded-lg font-semibold text-sm hover:border-[#1a7a5e] hover:text-[#1a7a5e] hover:shadow-md active:scale-[0.98] transition-all shadow-sm flex items-center gap-2"
                   >
-                    <Upload size={20} />Creación Asistida
+                    <Sparkles size={16} className="text-[#00a86b]" />Creación Asistida
                   </button>
                   <button
                     onClick={() => {
@@ -1624,12 +1949,59 @@ const menuItems = [
                       setPdfCourseForm({ nombre: "", descripcion: "", imagen_url: "", slug: "" });
                       setIsPdfCourseModalOpen(true);
                     }}
-                    className="bg-gradient-to-br from-[#1a7a5e] to-[#00a86b] text-white px-6 py-2 rounded-lg font-medium hover:shadow-md hover:brightness-110 transition-all shadow-sm flex items-center gap-2"
+                    className="bg-gradient-to-br from-[#1a7a5e] via-[#00a86b] to-[#008f5a] text-white px-5 py-2.5 rounded-lg font-semibold text-sm hover:shadow-lg hover:brightness-110 active:scale-[0.98] transition-all shadow-md shadow-[#00a86b]/20 flex items-center gap-2"
                   >
-                    <Plus size={20} />Nuevo curso PDF
+                    <Plus size={18} />Nuevo curso PDF
                   </button>
                 </div>
-              </header>
+              </div>
+
+              {/* Mini stats */}
+              {pdfCourses.length > 0 && (() => {
+                const totalModulos = pdfCourses.reduce((acc, c) => acc + (c.modulos?.length || 0), 0);
+                const activos = pdfCourses.filter(c => c.activo).length;
+                const totalArchivos = pdfCourses.reduce((acc, c) => acc + (c.modulos?.reduce((s, m) => s + (m.pdfs?.length || 0), 0) || 0), 0);
+                return (
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                    <div className="bg-white rounded-xl border border-[#e5e7eb] shadow-sm p-4 flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-lg bg-rose-50 text-rose-600 flex items-center justify-center ring-1 ring-rose-100">
+                        <FileText size={18} />
+                      </div>
+                      <div>
+                        <div className="text-[10px] font-bold uppercase tracking-wider text-gray-500">Cursos</div>
+                        <div className="text-xl font-bold text-[#0d2137] tabular-nums">{pdfCourses.length}</div>
+                      </div>
+                    </div>
+                    <div className="bg-white rounded-xl border border-[#e5e7eb] shadow-sm p-4 flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center ring-1 ring-emerald-100">
+                        <CheckCircle2 size={18} />
+                      </div>
+                      <div>
+                        <div className="text-[10px] font-bold uppercase tracking-wider text-gray-500">Activos</div>
+                        <div className="text-xl font-bold text-[#0d2137] tabular-nums">{activos}</div>
+                      </div>
+                    </div>
+                    <div className="bg-white rounded-xl border border-[#e5e7eb] shadow-sm p-4 flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center ring-1 ring-indigo-100">
+                        <FolderOpen size={18} />
+                      </div>
+                      <div>
+                        <div className="text-[10px] font-bold uppercase tracking-wider text-gray-500">Módulos</div>
+                        <div className="text-xl font-bold text-[#0d2137] tabular-nums">{totalModulos}</div>
+                      </div>
+                    </div>
+                    <div className="bg-white rounded-xl border border-[#e5e7eb] shadow-sm p-4 flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center ring-1 ring-amber-100">
+                        <Upload size={18} />
+                      </div>
+                      <div>
+                        <div className="text-[10px] font-bold uppercase tracking-wider text-gray-500">Archivos</div>
+                        <div className="text-xl font-bold text-[#0d2137] tabular-nums">{totalArchivos}</div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })()}
 
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                 {/* Lista de cursos PDF */}
